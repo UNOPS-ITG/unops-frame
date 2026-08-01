@@ -24,11 +24,19 @@ In: report builder, dashboard composition, sharing, the replication pipeline, th
 
 **RP-5 (P2).** Dashboard sharing follows view rules: a lens, never a grant; every tile trims per viewer; annotated aggregates per PM-5.
 
+**Frame offers no permission bypass on any tile, at any tier.** This is a deliberate, named difference from the incumbent, whose dashboard report widget explicitly shows data to viewers who are not shared to the source sheets. A viewer here sees annotated withheld counts instead, and a migrating team that relied on the bypass must be granted a scoped read — which is the honest form of what the bypass was doing implicitly. Named in product copy and in IN-14's migration report so it arrives as a documented decision rather than a "the dashboard is broken" ticket.
+
+**RP-11 (P2).** Queued execution. Report runs above a cost or duration threshold execute asynchronously rather than on the request path, which Cloud Run's request timeout makes necessary rather than optional; the requester is notified on completion through NT-1 consuming a `frame.report.run_completed` event. **A stored result is never re-served to a different principal.** PM-5 trimming applies at render under the requesting principal, and a run whose requester's compiled rule set has changed since execution is re-executed rather than replayed.
+
 **RP-6 (P3).** Dashboard embedding in Confluence and intranet pages (PRD 09), viewer-authenticated.
 
 ### Replication and the Prism handshake
 
-**RP-7 (P2).** On promotion to organizational tier, the engine generates a Postgres schema from the Blueprint: parent table, child collections as related tables with foreign keys, typed columns from field metadata, soft-delete and version columns, and provenance columns. Schema evolution follows Blueprint versioning with generated migrations; breaking Blueprint changes gate on a successful replica migration plan.
+**RP-7 (P2).** On promotion to organizational tier, the engine generates a Postgres schema from the Blueprint: parent table, child collections as related tables with foreign keys, typed columns from field metadata, soft-delete and version columns, and provenance columns.
+
+Corporate reference fields (PRD 14) replicate as the **key only**, never as a copy of the dimension. The warehouse already holds the dimension and joining there is the natural act; replicating it would create a second staleness surface and a second entitlement question for no analytical gain. Read-time formulas (BP-9, `materialized: false`) are excluded from the replica by definition, since they have no stored column.
+
+**RP-10a (P2).** The vision's refusal to grow an analytics platform (N2) is implemented here by a single line of rationale, and one capable team lead with an executive sponsor will test it. The concrete pathology worth naming when they do: because the incumbent's metric widgets bind to individual cells, every mature estate maintains "metrics sheets" of cross-sheet formulas — each an unversioned, unowned calculation nobody can reconcile, and precisely the archaeology this product exists to end. Relaxing RP-10 would break three things at once: the only reward for accepting governance that a team lead actually values, Prism's guarantee that anything it models has a steward and a stable schema, and the replica's cost model, since team tier is the long tail. The sentence belongs where a team lead sees it, not only in a PRD. Schema evolution follows Blueprint versioning with generated migrations; breaking Blueprint changes gate on a successful replica migration plan.
 
 **RP-8 (P2).** Change data flow: Firestore writes to organizational rows stream to Postgres via the event pipeline (Pub/Sub consumer, idempotent upserts, ordering per row), lag target under 60 seconds p95, with lag monitoring and backfill tooling. Replication carries full row data under a replication service principal; the Postgres layer re-applies access control for its consumers via Prism's entitlement model (entitlement-aware cache keying as established in Prism), so trimming exists on both sides of the boundary, implemented once per side.
 

@@ -31,7 +31,11 @@ Version 0.1, August 2026. Companion to Product Vision: Frame v0.2.
 
 **Catalog.** The organization-wide registry of organizational-tier Blueprints, with credit lines, adoption stats, and stewardship metadata.
 
-**View.** A saved, shareable rendering of a Blueprint's rows: grid, Gantt, board, calendar, or timeline, with filters, sorts, groupings, and column configuration. Views are permission-trimmed at render.
+**View.** A saved, shareable rendering of a Blueprint's rows: grid, Gantt, board, calendar, or timeline, with filters, sorts, groupings, and column configuration. Views are permission-trimmed at render. A view is a lens, never a grant.
+
+**Shared grammar.** One expression language, one parser, one AST, used by formula fields (BP-9), conditional field properties (BP-3a), permission row conditions (PM-2), automation conditions (AU-1), form logic (FM-2), report and view filters (RP-1, GR-11), document conditional blocks (DG-2) and field-qualified search terms (SR-3). Expressions persist as versioned AST JSON, never as strings.
+
+Its **scope set** is declared once as code-first configuration and enforced at Blueprint save (BP-26). *Row scope* is the row's own fields. *Row-plus-parent scope* adds one hop of parent-row attributes. *Row-plus-parent-plus-subject-plus-environment scope* adds the acting principal, principal allow-lists and evaluation time. A value that is materialised, replicated or indexed may never be computed above row-plus-parent scope: a stored value that varies by reader is not a value, it is a bug with a schema.
 
 **Tier.** Blueprint governance level: personal, team, organizational.
 
@@ -69,7 +73,11 @@ These bind every PRD unless a PRD tightens them further.
 
 **Accessibility.** WCAG 2.1 AA across the product, including the grid (this is a hard requirement that constrains the grid component choice; see PRD 11).
 
-**Localization.** English at launch; string externalization from day one; Spanish and French as the first additional locales.
+**Localization.** English at launch; string externalization from day one; Spanish and French as the first additional locales. Transparency annotations (PM-5) are machine-readable objects rather than server-rendered sentences, because a pre-baked English string cannot be translated at the client. Per-field translatability (BP-3) covers user-authored content such as select option labels, which no UI string table can reach.
+
+**Participation.** External participation in v1 is unauthenticated and one-way: published forms and magic-link status pages, never editing an existing row. This is deliberately narrower than the incumbent, where a free guest shared as editor can edit specific items — a model that exists to protect a seat count we do not have. Frame has no seat licence and should not inherit design compromises made to defend one. Everything externally reachable is inventoried by construction in the PM-13 exposure register.
+
+**Tenancy.** The unit of tenancy is a **workspace inside one tenant**, not a tenant. This assumption hardens fastest in exactly the subsystems Phase 1 builds — background jobs, search indexes, the Postgres replica schema — so it is recorded here rather than discovered later.
 
 **Auditability of AI.** Every AI-generated artifact (Blueprint draft, formula, summary) is tagged as such in provenance metadata, with the prompt and model version retained per our AI governance framework.
 
