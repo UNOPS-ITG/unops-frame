@@ -17,6 +17,9 @@ Version 0.1, August 2026. Companion to Product Vision: Frame v0.2.
 | 09 | Integrations | Google Workspace (incl. bound Sheets), Atlassian, webhooks, import/export |
 | 10 | App Composer | Role-scoped composed applications |
 | 11 | Grid Component Evaluation | Research, candidate analysis, recommendation, spike protocol |
+| 12 | Notifications | Notification model, channels, preferences, digests, delivery pipeline, storm control |
+| 13 | Search Architecture | Omnibox, index pipeline, two-stage permission trimming, engine selection |
+| 14 | Corporate Data | Organizational master data and facts from the warehouse, discovered and resolved in the reader's own context |
 
 ## Shared definitions
 
@@ -33,6 +36,12 @@ Version 0.1, August 2026. Companion to Product Vision: Frame v0.2.
 **Tier.** Blueprint governance level: personal, team, organizational.
 
 **Steward.** The person or role accountable for a domain's organizational Blueprints and promotion decisions.
+
+**Dimension.** Organizational master data held in the warehouse and discovered by Frame rather than authored in it: a keyed set of reference entities with a label, attributes and optionally a hierarchy — projects, countries, funds, business units, suppliers, positions. A Blueprint field binds to one; the row stores the key.
+
+**Fact.** Transactional data in the warehouse at a declared grain, exposing measures Frame reads but never aggregates.
+
+**Disclosure class.** Whether a dimension's values are disclosable to any authenticated staff member (`open`) or vary by principal (`entitled`), assigned by mechanical probe of the warehouse's own policies and never by assertion. It decides whether Frame may serve the dimension from its own projection or must resolve it live under the reader's credentials.
 
 ## Personas (shared across PRDs)
 
