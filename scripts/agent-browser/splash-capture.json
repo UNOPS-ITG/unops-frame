@@ -1,0 +1,8 @@
+[
+  {"action":"resize","params":{"width":1440,"height":900}},
+  {"action":"goto","params":{"url":"/splash"}},
+  {"action":"wait","params":{"ms":1500}},
+  {"action":"eval","params":{"expression":"document.querySelectorAll('[data-reveal]').forEach(e=>e.classList.add('is-revealed'));document.querySelectorAll('.splash__rise').forEach(e=>{e.style.opacity='1';e.style.animation='none';});'done'"}},
+  {"action":"wait","params":{"ms":400}},
+  {"action":"screenshot","params":{"name":"splash-full"}}
+]

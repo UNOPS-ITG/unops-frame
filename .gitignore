@@ -1,0 +1,82 @@
+# ---- Secrets and local credentials ----
+# Never commit these. .env.local carried a live dev-auth bypass secret once already.
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+service-account*.json
+application_default_credentials.json
+oauth2-proxy.cfg.yaml
+oauth2-proxy.exe
+oauth2-proxy
+
+# ---- Node / frontend ----
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+coverage/
+.eslintcache
+*.tsbuildinfo
+
+# ---- Python / backend ----
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# ---- Firebase / emulators ----
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+pubsub-debug.log
+emulator-data/
+*-debug.log
+
+# ---- Terraform ----
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# ---- Playwright / test artefacts ----
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+
+# ---- Agent browser harness ----
+scripts/agent-browser/.browser-profile/
+scripts/agent-browser/.output/
+scripts/agent-browser/.batches/
+
+# ---- Regenerable run traces (large; were gitignored in their home repo) ----
+scripts/run-microworld/runtraces/
+
+# ---- Editors and OS ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ---- Claude Code ----
+# Plans and local settings are per-developer; skills and commands are shared.
+.claude/plans/
+.claude/settings.local.json

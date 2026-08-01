@@ -1,0 +1,31 @@
+# Normalise line endings so Windows and Linux developers stop fighting the diff.
+* text=auto eol=lf
+
+# Shell scripts must keep LF or they break under bash, including in Docker.
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Windows-only scripts keep CRLF.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.zip binary
+*.gz binary
+
+# Lockfiles: keep diffs quiet in review.
+package-lock.json -diff
+yarn.lock -diff
+uv.lock -diff

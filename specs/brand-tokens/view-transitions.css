@@ -1,0 +1,24 @@
+::view-transition-group(root) {
+  animation-duration: 1.5s;
+}
+
+::view-transition-new(root) {
+  animation: ops-theme-circle-in 0.5s ease-out;
+}
+
+@keyframes ops-theme-circle-in {
+  from {
+    clip-path: circle(0% at 50% 0);
+  }
+  to {
+    clip-path: circle(150% at 50% 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}

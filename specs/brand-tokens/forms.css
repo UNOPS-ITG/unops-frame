@@ -1,0 +1,87 @@
+/* ==========================================================================
+   Form Controls
+   Standard input, textarea, and select classes for use across all apps.
+   Uses brand tokens for colors, spacing, and radii.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Native <select> caret — applies to EVERY select, not just `.ops-select`.
+
+   Browsers paint the native caret against the border edge and ignore
+   padding-inline-end, so a select styled only with Tailwind (`px-3`) ends up
+   with the arrow jammed into the border. Adopting `.ops-select` per call site
+   never stuck — 41 selects, none used it — so the caret is handled here once
+   and new selects get it for free.
+
+   `select:not([multiple])` scores (0,1,1), which outranks a single utility
+   class like `px-3` (0,1,0) — that is deliberate: it is the only way a shared
+   rule can reclaim the inline-end padding the caret needs. Colours are NOT set
+   here (see the low-specificity default below) so call sites keep control.
+   -------------------------------------------------------------------------- */
+select:not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: var(--spacing-8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%23476580' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-3) center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+/* RTL: the caret belongs on the inline-end edge, which is the left in Arabic.
+   background-position has no logical keyword, so it is mirrored explicitly. */
+[dir='rtl'] select:not([multiple]):not([size]) {
+  background-position: left var(--spacing-3) center;
+}
+
+/* Sane default background for selects that relied on native appearance.
+   Element specificity (0,0,1) on purpose: any `bg-*` utility still wins. */
+select {
+  background-color: var(--color-input-bg);
+}
+
+.ops-input,
+.ops-textarea,
+.ops-select {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-body);
+  transition: var(--transition-fast);
+}
+
+.ops-input:focus,
+.ops-textarea:focus,
+.ops-select:focus {
+  outline: none;
+  border-color: var(--color-input-border-focus);
+  box-shadow: var(--color-focus-ring);
+}
+
+.ops-input:disabled,
+.ops-textarea:disabled,
+.ops-select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* The caret itself now comes from the shared `select` rule above; this keeps
+   the class for call sites that want the full input styling. */
+.ops-select {
+  cursor: pointer;
+}
+
+.ops-textarea {
+  resize: vertical;
+}
+
+.ops-input[readonly],
+.ops-textarea[readonly] {
+  opacity: 0.7;
+  cursor: default;
+}

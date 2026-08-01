@@ -1,0 +1,144 @@
+/* ==========================================================================
+   Button System
+   Standard button classes for use across all apps.
+   Uses brand tokens for colors, spacing, and radii.
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition-fast);
+}
+
+a.btn,
+a.btn:hover,
+a.btn:visited {
+  text-decoration: none;
+}
+
+a.btn--primary,
+a.btn--primary:hover,
+a.btn--primary:visited {
+  color: var(--color-text-on-primary);
+}
+
+a.btn--danger,
+a.btn--danger:hover,
+a.btn--danger:visited {
+  color: var(--color-text-on-primary);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-btn-primary-bg);
+  color: var(--color-text-on-primary);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-btn-primary-hover);
+  color: var(--color-text-on-primary);
+}
+
+.btn--primary:active:not(:disabled) {
+  background: var(--color-btn-primary-active);
+}
+
+.btn--secondary {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.btn--secondary:active:not(:disabled) {
+  background: var(--color-active);
+}
+
+.btn--danger {
+  background: var(--color-brand-error);
+  color: var(--color-text-on-primary);
+  border: none;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--color-btn-danger-hover);
+}
+
+.btn--danger:active:not(:disabled) {
+  background: var(--color-btn-danger-active);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.btn--ghost:active:not(:disabled) {
+  background: var(--color-active);
+}
+
+/* Icon-only: square, no background, subtle hover. For header/toolbar actions
+   (language, help, notifications) that should read as quiet glyphs, not chips. */
+.btn--icon {
+  padding: var(--spacing-2);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  border-radius: var(--radius-md);
+  line-height: 0;
+}
+
+.btn--icon:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.btn--icon:active:not(:disabled) {
+  background: var(--color-active);
+}
+
+.btn--sm {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+}
+
+.btn--lg {
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--font-size-base);
+}
+
+/* ---- Button Groups ---- */
+.btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.btn-group--sm {
+  gap: var(--spacing-1);
+}
+
+.btn-group--lg {
+  gap: var(--spacing-3);
+}

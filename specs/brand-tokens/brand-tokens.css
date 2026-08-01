@@ -1,0 +1,723 @@
+/* ==========================================================================
+   UNPlatform Brand Design Tokens
+
+   Default brand hue: Cool blue (#0092d1, ~198°)
+
+   Principles:
+   - Every neutral carries a trace of the brand hue
+   - Shadows carry brand temperature, never pure black
+   - Text colors lean cool blue-grey, never flat grey
+   - Dark mode is tinted navy, never #000 or #18181b
+   - Interactive states use brand-subtle overlays, never flat grey
+
+   Theming:
+   - Variants: light (default), dark, grey, auto (follows OS)
+   - Switching: set data-theme="light|dark|grey" on <html>
+   - Auto: omit data-theme, CSS prefers-color-scheme takes over
+   - Instance override: import this file first, then layer a brand
+     override file that redefines :root palette variables
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   1. BRAND PALETTE — Invariant across all themes
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* Primary */
+  --color-brand-primary-50: #f0f8ff;
+  --color-brand-primary-100: #e3f2fd;
+  --color-brand-primary-200: #b3e0f7;
+  --color-brand-primary-300: #7dccf0;
+  --color-brand-primary-400: #4ec3e0;
+  --color-brand-primary: #0092d1;
+  --color-brand-primary-600: #007bb8;
+  --color-brand-primary-700: #005a8a;
+  --color-brand-primary-800: #004976;
+  --color-brand-primary-900: #003455;
+
+  /* Secondary */
+  --color-brand-secondary-50: #f0f6ff;
+  --color-brand-secondary-100: #e3f0fd;
+  --color-brand-secondary-200: #b3d4f7;
+  --color-brand-secondary-300: #7db8f0;
+  --color-brand-secondary-400: #4080b8;
+  --color-brand-secondary: #004976;
+  --color-brand-secondary-600: #003a5f;
+  --color-brand-secondary-700: #002b47;
+  --color-brand-secondary-800: #001f35;
+  --color-brand-secondary-900: #001426;
+
+  /* Accents */
+  --color-brand-accent-yellow: #cc8400;
+  --color-brand-accent-yellow-light: #d49207;
+  --color-brand-accent-yellow-lighter: #f59e0b;
+  --color-brand-accent-yellow-dark: #92400e;
+  --color-brand-accent-yellow-darker: #78350f;
+  --color-brand-accent-orange: #e85c0e;
+  --color-brand-accent-cherry: #991e66;
+  --color-brand-accent-lime: #c4d600;
+  --color-brand-accent-teal: #00a997;
+  --color-brand-accent-ocean: #4ec3e0;
+
+  /* Neutrals (raw reference — use semantic tokens in components) */
+  --color-brand-neutral-50: #f9fafb;
+  --color-brand-neutral-100: #f3f4f6;
+  --color-brand-neutral-200: #e8e9ea;
+  --color-brand-neutral-300: #d1d2d3;
+  --color-brand-neutral-400: #b8babb;
+  --color-brand-neutral-500: #97999b;
+  --color-brand-neutral-600: #7a7c7e;
+  --color-brand-neutral-700: #5c5e60;
+  --color-brand-neutral-800: #1a1b1c;
+  --color-brand-neutral-900: #00070a;
+
+  /* Semantic: Feedback — Success (emerald ramp) */
+  --color-brand-success-50: #ecf1ef;
+  --color-brand-success-100: #d5e3de;
+  --color-brand-success-lighter: #34d399;
+  --color-brand-success-light: #16c487;
+  --color-brand-success: #10b981;
+  --color-brand-success-dark: #059669;
+  --color-brand-success-darker: #047857;
+  --color-brand-success-900: #064e3b;
+  --color-brand-success-950: #022c22;
+
+  /* Semantic: Feedback — Warning / Error / Info */
+  --color-brand-warning: #cc8400;
+  --color-brand-warning-light: #f59e0b;
+  /* Readable warning ACCENT for text/icons on plain or lightly-tinted
+     backgrounds. Mixes the brand amber toward the theme's text color, so it
+     darkens on light themes and lightens on dark ones. NOTE:
+     --color-status-warning-text is white-on-solid-amber chip text and must
+     never be used for text on a tinted/plain background. */
+  --color-warning-strong: color-mix(in srgb, var(--color-brand-warning) 60%, var(--color-text));
+  --color-brand-error: #991e66;
+  --color-brand-info: #4ec3e0;
+
+  /* Category Colors */
+  --color-brand-category-1: #3b82f6;
+  --color-brand-category-1-light: #dbeafe;
+  --color-brand-category-1-text: #1e40af;
+  --color-brand-category-2: var(--color-brand-success);
+  --color-brand-category-2-light: var(--color-brand-success-100);
+  --color-brand-category-2-text: var(--color-brand-success-darker);
+  --color-brand-category-3: var(--color-brand-accent-teal);
+  --color-brand-category-3-light: #d2f4ee;
+  --color-brand-category-3-text: #006b5e;
+  --color-brand-category-4: #f59e0b;
+  --color-brand-category-4-light: #fef3c7;
+  --color-brand-category-4-text: #92400e;
+  --color-brand-category-5: #ef4444;
+  --color-brand-category-5-light: #fee2e2;
+  --color-brand-category-5-text: #991b1b;
+
+
+  /* --------------------------------------------------------------------------
+     2. TYPOGRAPHY
+     -------------------------------------------------------------------------- */
+
+  /* Noto Sans Arabic and Noto Sans SC follow Inter for Arabic and Chinese glyph
+     coverage (Inter has neither); Inter itself covers Latin + Cyrillic. Latin
+     text still renders in Inter because it comes first — the fallbacks only
+     pick up the codepoints Inter is missing. */
+  --font-family-display: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
+  --font-family-body: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace;
+  /* Display headings across the app render in Inter (weight/size carry the
+     prominence). Legacy name kept so existing usages restyle in one place. */
+  --font-family-display-serif: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
+  /* Editorial serif reserved for hero moments only: Home greeting,
+     welcome/consent primer. Fraunces covers Latin only — Georgia picks up
+     Cyrillic, Noto Naskh Arabic picks up Arabic, Noto Sans SC picks up Chinese
+     (a sans fallback there beats loading a second CJK family for two headings). */
+  --font-family-hero-serif: 'Fraunces', Georgia, 'Noto Naskh Arabic', 'Noto Sans SC', 'Times New Roman', serif;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.9375rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+  --letter-spacing-wider: 0.06em;
+  --letter-spacing-widest: 0.1em;
+
+
+  /* --------------------------------------------------------------------------
+     3. SPACING, RADIUS, Z-INDEX, TRANSITIONS
+     -------------------------------------------------------------------------- */
+
+  --spacing-0: 0;
+  --spacing-px: 1px;
+  --spacing-0-5: 0.125rem;
+  --spacing-1: 0.25rem;
+  --spacing-1-5: 0.375rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* Layout — page-level max-widths */
+  --layout-xs: 28rem;
+  --layout-sm: 40rem;
+  --layout-md: 52rem;
+  --layout-lg: 60rem;
+  --layout-xl: 72rem;
+  --layout-prompt: 40rem;
+
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  --motion-duration-fast: 0.15s;
+  --motion-duration-base: 0.2s;
+  --motion-duration-slow: 0.35s;
+
+  /* Global app chrome (the top Header, the overlay-mode Sidebar). Deliberately
+     LOW: it must beat every page-level header/toolbar — the Studio header is
+     z 30, the tallest in-page layer is 40 — while still sitting under the
+     modal floor, so a full-screen dialog covers the whole app including this
+     header. Legacy Tailwind dialogs open that floor at z-50, hence 45. */
+  --z-app-chrome: 45;
+
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-tooltip: 600;
+  /* For dialogs launched OVER a legacy fixed popup (MarkdownPopup uses z 1000);
+     keeps such a dialog above it without disturbing the normal scale. */
+  --z-modal-elevated: 1100;
+}
+
+
+/* ==========================================================================
+   4. LIGHT THEME (default)
+
+   Surfaces: white + 2-3% brand blue
+   Borders: grey + 5% brand blue
+   Text: near-black with blue undertone
+   Shadows: rgba(0, 73, 118) — brand secondary hue
+   ========================================================================== */
+
+/* [data-brand-scope]: an element carrying inline --color-brand-primary-*
+   overrides (the app builder's live-preview frame). Custom properties resolve
+   their var() references where they are DECLARED, so ramp-derived tokens
+   (status chips, hover tints, links…) computed at :root would keep the
+   default blue inside the frame. Re-declaring each theme block on the scope
+   makes them recompute against the frame's inline ramp. The runtime app
+   needs no scope — useAppBranding overrides the ramp on <html> (:root)
+   itself. Keep the scoped selectors on every theme block below in sync. */
+:root,
+[data-theme="light"],
+[data-brand-scope] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --color-bg: #f4f7fb;
+  --color-surface: #fafbfe;
+  --color-surface-raised: #fdfeff;
+  --color-surface-sunken: #ecf0f7;
+  --color-surface-overlay: rgba(12, 22, 34, 0.4);
+
+  /* Borders */
+  --color-border: #d8e1ed;
+  --color-border-strong: #b8c6d8;
+  --color-border-subtle: #ebf0f7;
+
+  /* Text — near-black with brand-blue undertone */
+  --color-text: #0c1622;
+  --color-text-secondary: #3a4d62;
+  --color-text-muted: #738ba2;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-dark: #e4ecf5;
+  --color-text-link: var(--color-brand-primary);
+  --color-text-link-hover: var(--color-brand-primary-700);
+
+  /* Shadows — brand tinted, never pure black. Derived from the ramp via
+     color-mix so app accent overrides ([[useAppBranding]]) flow through;
+     values match the previous hand-tuned rgba() tints for the default blue. */
+  --shadow-xs: 0 1px 2px color-mix(in srgb, var(--color-brand-primary-800) 5%, transparent);
+  --shadow-sm:
+    0 1px 3px color-mix(in srgb, var(--color-brand-primary-800) 7%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-800) 4%, transparent);
+  --shadow-md:
+    0 4px 16px color-mix(in srgb, var(--color-brand-primary-800) 9%, transparent),
+    0 1px 4px color-mix(in srgb, var(--color-brand-primary-800) 5%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-800) 3%, transparent);
+  --shadow-lg:
+    0 12px 40px color-mix(in srgb, var(--color-brand-primary-800) 11%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-brand-primary-800) 5%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-800) 3%, transparent);
+  --shadow-xl:
+    0 24px 60px color-mix(in srgb, var(--color-brand-primary-800) 14%, transparent),
+    0 4px 12px color-mix(in srgb, var(--color-brand-primary-800) 6%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-800) 3%, transparent);
+
+  /* Interactive States — brand-subtle overlays, never flat grey */
+  --color-hover: color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
+  --color-active: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+  --color-selected: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+  --color-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 35%, transparent);
+  --color-brand-subtle: color-mix(in srgb, var(--color-brand-primary) 9%, white);
+  --color-highlight: rgba(245, 190, 11, 0.18);
+
+  /* Button States — solid fill buttons (CTA / primary) */
+  --color-btn-primary-bg: var(--color-brand-primary);
+  --color-btn-primary-hover: var(--color-brand-primary-700);
+  --color-btn-primary-active: var(--color-brand-primary-800);
+  --color-btn-danger-hover: #b91c1c;
+  --color-btn-danger-active: #991b1b;
+
+  /* Chips — informational metadata labels */
+  --color-chip-bg: var(--color-surface-sunken);
+  --color-chip-text: var(--color-text-secondary);
+  --color-chip-border: transparent;
+  --chip-radius: var(--radius-sm);
+  --chip-padding-y: var(--spacing-0-5);
+  --chip-padding-x: var(--spacing-2);
+  --chip-font-size: var(--font-size-xs);
+  --chip-font-weight: var(--font-weight-medium);
+  --chip-gap: var(--spacing-1);
+
+  /* Inputs */
+  --color-input-bg: var(--color-surface);
+  --color-input-border: var(--color-border);
+  --color-input-border-focus: var(--color-brand-primary);
+  --color-input-placeholder: var(--color-text-muted);
+
+  /* Code */
+  --color-code-bg: #eef3fa;
+  --color-code-text: var(--color-brand-secondary);
+
+  /* Scrollbar */
+  --color-scrollbar-track: var(--color-surface-sunken);
+  --color-scrollbar-thumb: var(--color-border-strong);
+
+  /* Star / favourite */
+  --color-star: var(--color-brand-accent-yellow);
+
+  /* Status badges */
+  --color-status-active-bg: var(--color-brand-success-100);
+  --color-status-active-text: var(--color-brand-success-darker);
+  --color-status-draft-bg: #fef3c7;
+  --color-status-draft-text: #92400e;
+  /* In-progress wears the brand blue (Open = green, In Progress = blue,
+     Closed = grey); amber stays reserved for draft/warning states. */
+  --color-status-progress-bg: var(--color-brand-primary-100);
+  --color-status-progress-text: var(--color-brand-primary-800);
+  --color-status-closed-bg: #e0e4eb;
+  --color-status-closed-text: #5c6778;
+  --color-status-danger-bg: #fee2e2;
+  --color-status-danger-text: #991b1b;
+  --color-status-info-bg: var(--color-brand-primary-100);
+  --color-status-info-text: var(--color-brand-primary-800);
+  --color-status-warning-bg: var(--color-brand-warning);
+  --color-status-warning-text: var(--color-surface);
+  --color-status-special-bg: #d2f4ee;
+  --color-status-special-text: #006b5e;
+
+  /* ------------------------------------------------------------------
+     Dataviz categorical series — LIGHT
+     ------------------------------------------------------------------
+     DO NOT REORDER, and do not add a 7th step by eye.
+
+     This sequence is checked by the dataviz validator, which enforces an
+     OKLCH lightness band, a chroma floor, colour-vision-deficiency
+     separation between ADJACENT slots, an unsimulated normal-vision floor
+     (ΔE >= 15), and contrast against the surface. Adjacency is why order
+     matters: the previous order put viz blue next to viz ocean and failed
+     the normal-vision floor at ΔE 14.6 — two slots most people cannot
+     tell apart. Re-run before changing anything:
+
+       node scripts/validate-palette.mjs \
+         "#0092d1,#991e66,#e85c0e,#00a997,#cc8400,#4ec3e0" \
+         --mode light --surface "#fafbfe"
+
+     ...and for the two dark-family themes:
+
+       node scripts/validate-palette.mjs "<dark set>" --mode dark --surface "#0f1c2c"   # dark
+       node scripts/validate-palette.mjs "<dark set>" --mode dark --surface "#26292e"   # grey
+
+     Teal, amber and ocean sit under 3:1 against the light surface. That is
+     a WARN, not a FAIL, and it is discharged by VizFrame — every chart
+     ships a legend and a real table view, which is the relief the check
+     asks for. Do not use these as text colours; that is what -text is for. */
+  --color-brand-viz-1: #0092d1;
+  --color-brand-viz-1-text: #005379;
+  --color-brand-viz-2: #991e66;
+  --color-brand-viz-2-text: #8c005a;
+  --color-brand-viz-3: #e85c0e;
+  --color-brand-viz-3-text: #822e00;
+  --color-brand-viz-4: #00a997;
+  --color-brand-viz-4-text: #015a50;
+  --color-brand-viz-5: #cc8400;
+  --color-brand-viz-5-text: #6b4300;
+  --color-brand-viz-6: #4ec3e0;
+  --color-brand-viz-6-text: #005768;
+}
+
+
+/* ==========================================================================
+   5. DARK THEME
+
+   Dark is never black — deep navy tinted with brand hue.
+   Shadows become subtle glows. Hairline borders use luminance.
+   ========================================================================== */
+
+[data-theme="dark"],
+[data-theme="dark"] [data-brand-scope] {
+  color-scheme: dark;
+
+  /* Surfaces — deep navy, never pure black */
+  --color-bg: #0a1420;
+  --color-surface: #0f1c2c;
+  --color-surface-raised: #152638;
+  --color-surface-sunken: #070e18;
+  --color-surface-overlay: rgba(4, 8, 16, 0.7);
+
+  /* Borders — dark blue-grey */
+  --color-border: #1c2f46;
+  --color-border-strong: #2a4260;
+  --color-border-subtle: #132136;
+
+  /* Text — off-white, cool-leaning */
+  --color-text: #e2ebf5;
+  --color-text-secondary: #92aac4;
+  --color-text-muted: #5c7a96;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-dark: #e2ebf5;
+  --color-text-link: var(--color-brand-primary-300);
+  --color-text-link-hover: var(--color-brand-primary-200);
+
+  /* Shadows — brand-tinted navy depth (ring tints follow the accent ramp) */
+  --shadow-xs: 0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
+  --shadow-sm:
+    0 1px 4px rgba(5, 12, 24, 0.3),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 7%, transparent);
+  --shadow-md:
+    0 4px 20px rgba(5, 12, 24, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
+  --shadow-lg:
+    0 12px 48px rgba(5, 12, 24, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+  --shadow-xl:
+    0 24px 64px rgba(5, 12, 24, 0.6),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+
+  /* Interactive States */
+  --color-hover: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  --color-active: color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+  --color-selected: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
+  --color-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+  --color-brand-subtle: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+  --color-highlight: rgba(245, 190, 11, 0.24);
+
+  /* Button States */
+  --color-btn-primary-bg: var(--color-brand-primary);
+  --color-btn-primary-hover: var(--color-brand-primary-400);
+  --color-btn-primary-active: var(--color-brand-primary-300);
+  --color-btn-danger-hover: #f87171;
+  --color-btn-danger-active: #fca5a5;
+
+  /* Inputs */
+  --color-input-bg: var(--color-surface-sunken);
+  --color-input-border: var(--color-border);
+  --color-input-border-focus: var(--color-brand-primary-400);
+  --color-input-placeholder: var(--color-text-muted);
+
+  /* Code */
+  --color-code-bg: #0d1824;
+  --color-code-text: var(--color-brand-primary-300);
+
+  /* Scrollbar */
+  --color-scrollbar-track: var(--color-surface-sunken);
+  --color-scrollbar-thumb: var(--color-border-strong);
+
+  /* Star */
+  --color-star: var(--color-brand-accent-yellow-lighter);
+
+  /* Status badges */
+  --color-status-active-bg: #0a3024;
+  --color-status-active-text: var(--color-brand-success-lighter);
+  --color-status-draft-bg: #49300a;
+  --color-status-draft-text: #fcd34d;
+  --color-status-progress-bg: #0a2640;
+  --color-status-progress-text: var(--color-brand-primary-300);
+  --color-status-closed-bg: #1a2433;
+  --color-status-closed-text: #8a9cb4;
+  --color-status-danger-bg: #4c1020;
+  --color-status-danger-text: #fca5a5;
+  --color-status-info-bg: #0a2640;
+  --color-status-info-text: var(--color-brand-primary-300);
+  --color-status-warning-bg: var(--color-brand-warning);
+  --color-status-warning-text: var(--color-surface);
+  --color-status-special-bg: #04342e;
+  --color-status-special-text: #5fd9c6;
+
+  /* Dataviz categorical series — DARK. Same hues, re-stepped: the dark band
+     is L 0.48–0.67, narrower than light's 0.43–0.77, so the light values do
+     not simply carry over. Validated with --mode dark --surface "#0f1c2c";
+     all six clear 3:1 here, so there is no contrast WARN in dark. */
+  --color-brand-viz-1: #0190ce;
+  --color-brand-viz-1-text: #70c8ff;
+  --color-brand-viz-2: #d94a95;
+  --color-brand-viz-2-text: #ff98c7;
+  --color-brand-viz-3: #dc5401;
+  --color-brand-viz-3-text: #ffa37f;
+  --color-brand-viz-4: #029b8b;
+  --color-brand-viz-4-text: #02dbc5;
+  --color-brand-viz-5: #b77601;
+  --color-brand-viz-5-text: #ffa920;
+  --color-brand-viz-6: #0096b2;
+  --color-brand-viz-6-text: #01d3fa;
+}
+
+
+/* ==========================================================================
+   6. GREY THEME
+
+   Neutral charcoal grey with a subtle brand-blue undertone.
+   ========================================================================== */
+
+[data-theme="grey"],
+[data-theme="grey"] [data-brand-scope] {
+  color-scheme: dark;
+
+  /* Surfaces — neutral charcoal grey, subtle brand-blue undertone */
+  --color-bg: #1b1d21;
+  --color-surface: #26292e;
+  --color-surface-raised: #31353b;
+  --color-surface-sunken: #141618;
+  --color-surface-overlay: rgba(8, 12, 18, 0.6);
+
+  /* Borders */
+  --color-border: #383c43;
+  --color-border-strong: #484e56;
+  --color-border-subtle: #2d3137;
+
+  /* Text */
+  --color-text: #e6eaf0;
+  --color-text-secondary: #adb5c0;
+  --color-text-muted: #727b88;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-dark: #e6eaf0;
+  --color-text-link: var(--color-brand-primary-300);
+  --color-text-link-hover: var(--color-brand-primary-200);
+
+  /* Shadows (ring tints follow the accent ramp) */
+  --shadow-xs: 0 1px 2px rgba(0, 18, 35, 0.20);
+  --shadow-sm:
+    0 1px 4px rgba(0, 18, 35, 0.25),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-700) 8%, transparent);
+  --shadow-md:
+    0 4px 16px rgba(0, 14, 30, 0.32),
+    0 1px 4px rgba(0, 18, 35, 0.15),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-700) 7%, transparent);
+  --shadow-lg:
+    0 12px 40px rgba(0, 12, 26, 0.38),
+    0 2px 8px rgba(0, 18, 35, 0.15),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-700) 7%, transparent);
+  --shadow-xl:
+    0 24px 60px rgba(0, 10, 22, 0.44),
+    0 4px 12px rgba(0, 18, 35, 0.18),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-primary-700) 8%, transparent);
+
+  /* Interactive States */
+  --color-hover: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  --color-active: color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+  --color-selected: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
+  --color-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+  --color-brand-subtle: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface-sunken));
+  --color-highlight: rgba(245, 190, 11, 0.24);
+
+  /* Button States */
+  --color-btn-primary-bg: var(--color-brand-primary);
+  --color-btn-primary-hover: var(--color-brand-primary-400);
+  --color-btn-primary-active: var(--color-brand-primary-300);
+  --color-btn-danger-hover: #f87171;
+  --color-btn-danger-active: #fca5a5;
+
+  /* Inputs */
+  --color-input-bg: var(--color-surface-sunken);
+  --color-input-border: var(--color-border);
+  --color-input-border-focus: var(--color-brand-primary-400);
+  --color-input-placeholder: var(--color-text-muted);
+
+  /* Code */
+  --color-code-bg: #1e2126;
+  --color-code-text: var(--color-brand-primary-300);
+
+  /* Scrollbar */
+  --color-scrollbar-track: var(--color-surface-sunken);
+  --color-scrollbar-thumb: var(--color-border-strong);
+
+  /* Star */
+  --color-star: var(--color-brand-accent-yellow-lighter);
+
+  /* Status badges */
+  --color-status-active-bg: #0e3428;
+  --color-status-active-text: var(--color-brand-success-lighter);
+  --color-status-draft-bg: #49300a;
+  --color-status-draft-text: #fcd34d;
+  --color-status-progress-bg: #0e2a40;
+  --color-status-progress-text: var(--color-brand-primary-300);
+  --color-status-closed-bg: #2a2e34;
+  --color-status-closed-text: #949ca8;
+  --color-status-danger-bg: #4c1020;
+  --color-status-danger-text: #fca5a5;
+  --color-status-info-bg: #0e2a40;
+  --color-status-info-text: var(--color-brand-primary-300);
+  --color-status-warning-bg: var(--color-brand-warning);
+  --color-status-warning-text: var(--color-surface);
+  --color-status-special-bg: #16302b;
+  --color-status-special-text: #5fd9c6;
+
+  /* Dataviz categorical series — grey is a dark-family theme
+     (color-scheme: dark, surface #26292e), so it takes the dark steps.
+     Re-validated against #26292e: all six checks pass. */
+  --color-brand-viz-1: #0190ce;
+  --color-brand-viz-1-text: #70c8ff;
+  --color-brand-viz-2: #d94a95;
+  --color-brand-viz-2-text: #ff98c7;
+  --color-brand-viz-3: #dc5401;
+  --color-brand-viz-3-text: #ffa37f;
+  --color-brand-viz-4: #029b8b;
+  --color-brand-viz-4-text: #02dbc5;
+  --color-brand-viz-5: #b77601;
+  --color-brand-viz-5-text: #ffa920;
+  --color-brand-viz-6: #0096b2;
+  --color-brand-viz-6-text: #01d3fa;
+}
+
+
+/* ==========================================================================
+   7. AUTO DARK — Follows system preference when no [data-theme] is set
+   ========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]),
+  :root:not([data-theme]) [data-brand-scope] {
+    color-scheme: dark;
+
+    --color-bg: #0a1420;
+    --color-surface: #0f1c2c;
+    --color-surface-raised: #152638;
+    --color-surface-sunken: #070e18;
+    --color-surface-overlay: rgba(4, 8, 16, 0.7);
+
+    --color-border: #1c2f46;
+    --color-border-strong: #2a4260;
+    --color-border-subtle: #132136;
+
+    --color-text: #e2ebf5;
+    --color-text-secondary: #92aac4;
+    --color-text-muted: #5c7a96;
+    --color-text-link: var(--color-brand-primary-300);
+    --color-text-link-hover: var(--color-brand-primary-200);
+
+    --shadow-xs: 0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
+    --shadow-sm:
+      0 1px 4px rgba(5, 12, 24, 0.3),
+      0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 7%, transparent);
+    --shadow-md:
+      0 4px 20px rgba(5, 12, 24, 0.4),
+      0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
+    --shadow-lg:
+      0 12px 48px rgba(5, 12, 24, 0.5),
+      0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+    --shadow-xl:
+      0 24px 64px rgba(5, 12, 24, 0.6),
+      0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+
+    --color-hover: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+    --color-active: color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+    --color-selected: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
+    --color-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+    --color-brand-subtle: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+    --color-highlight: rgba(245, 190, 11, 0.24);
+
+    --color-btn-primary-bg: var(--color-brand-primary);
+    --color-btn-primary-hover: var(--color-brand-primary-400);
+    --color-btn-primary-active: var(--color-brand-primary-300);
+    --color-btn-danger-hover: #f87171;
+    --color-btn-danger-active: #fca5a5;
+
+    --color-input-bg: var(--color-surface-sunken);
+    --color-input-border: var(--color-border);
+    --color-input-border-focus: var(--color-brand-primary-400);
+    --color-input-placeholder: var(--color-text-muted);
+
+    --color-code-bg: #0d1824;
+    --color-code-text: var(--color-brand-primary-300);
+
+    --color-scrollbar-track: var(--color-surface-sunken);
+    --color-scrollbar-thumb: var(--color-border-strong);
+
+    --color-star: var(--color-brand-accent-yellow-lighter);
+
+    --color-status-active-bg: #0a3024;
+    --color-status-active-text: var(--color-brand-success-lighter);
+    --color-status-draft-bg: #49300a;
+    --color-status-draft-text: #fcd34d;
+    --color-status-progress-bg: #0a2640;
+    --color-status-progress-text: var(--color-brand-primary-300);
+    --color-status-closed-bg: #1a2433;
+    --color-status-closed-text: #8a9cb4;
+    --color-status-danger-bg: #4c1020;
+    --color-status-danger-text: #fca5a5;
+    --color-status-info-bg: #0a2640;
+    --color-status-info-text: var(--color-brand-primary-300);
+    --color-status-warning-bg: var(--color-brand-warning);
+    --color-status-warning-text: var(--color-surface);
+    --color-status-special-bg: #04342e;
+    --color-status-special-text: #5fd9c6;
+
+    /* Dataviz categorical series — auto dark. Mirrors [data-theme="dark"]. */
+    --color-brand-viz-1: #0190ce;
+    --color-brand-viz-1-text: #70c8ff;
+    --color-brand-viz-2: #d94a95;
+    --color-brand-viz-2-text: #ff98c7;
+    --color-brand-viz-3: #dc5401;
+    --color-brand-viz-3-text: #ffa37f;
+    --color-brand-viz-4: #029b8b;
+    --color-brand-viz-4-text: #02dbc5;
+    --color-brand-viz-5: #b77601;
+    --color-brand-viz-5-text: #ffa920;
+    --color-brand-viz-6: #0096b2;
+    --color-brand-viz-6-text: #01d3fa;
+  }
+}

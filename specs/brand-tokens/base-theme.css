@@ -1,0 +1,545 @@
+/* ==========================================================================
+   Base Theme — Tailwind v4 bridge + structural ops-* component primitives
+
+   Adapted from specs/brand-tokens/theme/agnostic/base-theme.scss for the
+   project's Tailwind v4 (CSS-first) setup.
+
+   Token layering:
+   - Runtime token values live in brand-tokens.css (:root + [data-theme]).
+   - INVARIANT design literals (ops shadows/radii, status palette) are
+     registered with a plain `@theme` block — they emit real values.
+   - The dataviz categorical palette (--color-brand-viz-*) is NOT invariant:
+     a hue that passes the CVD/lightness/contrast checks on a light surface
+     fails the dark-mode lightness band, so it needs per-theme steps and
+     therefore lives in brand-tokens.css + the `@theme inline` bridge below.
+   - REACTIVE + palette-bridge tokens are registered with `@theme inline` so
+     the generated utilities emit `var(--color-…)` references and therefore
+     flip automatically when [data-theme] changes — without overwriting the
+     runtime variables defined in brand-tokens.css.
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   Invariant design literals
+   -------------------------------------------------------------------------- */
+@theme {
+  --shadow-ops-sm: 0 0 0 1px rgba(0, 73, 118, 0.04), 0 1px 2px 0 rgba(0, 73, 118, 0.06);
+  --shadow-ops-md: 0 0 0 1px rgba(0, 73, 118, 0.04), 0 4px 6px -1px rgba(0, 73, 118, 0.08), 0 2px 4px -1px rgba(0, 73, 118, 0.05);
+  --shadow-ops-lg: 0 0 0 1px rgba(0, 73, 118, 0.04), 0 10px 15px -3px rgba(0, 73, 118, 0.08), 0 4px 6px -2px rgba(0, 73, 118, 0.04);
+  --shadow-ops-xl: 0 0 0 1px rgba(0, 73, 118, 0.04), 0 20px 25px -5px rgba(0, 73, 118, 0.08), 0 10px 10px -5px rgba(0, 73, 118, 0.03);
+
+  --radius-ops-sm: 6px;
+  --radius-ops-md: 8px;
+  --radius-ops-lg: 12px;
+  --radius-ops-xl: 16px;
+  --radius-ops-2xl: 20px;
+  --radius-ops-full: 9999px;
+
+  /* Migrated from the former tailwind.config.js (v3) */
+  --animate-fadeIn: fadeIn 0.3s ease-in-out;
+
+  --color-brand-status-active-bg: #ccf3e8;
+  --color-brand-status-active-text: #0a5c4a;
+  --color-brand-status-draft-bg: #fdf2c8;
+  --color-brand-status-draft-text: #7a3b0e;
+  --color-brand-status-closed-bg: #e8e9ea;
+  --color-brand-status-closed-text: #7a7c7e;
+  --color-brand-status-danger-bg: #fce0e4;
+  --color-brand-status-danger-text: #8c1e3a;
+  --color-brand-status-info-bg: #e3f2fd;
+  --color-brand-status-info-text: #004976;
+  --color-brand-status-error-text: #8c1e3a;
+  --color-brand-status-success-text: #047857;
+  --color-brand-status-warning-bg: #fef3c7;
+  --color-brand-status-warning-text: #92400e;
+  --color-brand-status-rejected-bg: #fce0e4;
+  --color-brand-status-rejected-text: #8c1e3a;
+}
+
+
+/* --------------------------------------------------------------------------
+   Reactive bridges — generated utilities reference runtime vars via var()
+   so they flip with [data-theme]. Plain `inline` => no :root emission, the
+   real values stay owned by brand-tokens.css.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  /* Brand palette (invariant values, but referenced via var to avoid
+     self-overwriting the brand-tokens.css definitions) */
+  --color-brand-primary-50: var(--color-brand-primary-50);
+  --color-brand-primary-100: var(--color-brand-primary-100);
+  --color-brand-primary-200: var(--color-brand-primary-200);
+  --color-brand-primary-300: var(--color-brand-primary-300);
+  --color-brand-primary-400: var(--color-brand-primary-400);
+  --color-brand-primary: var(--color-brand-primary);
+  --color-brand-primary-600: var(--color-brand-primary-600);
+  --color-brand-primary-700: var(--color-brand-primary-700);
+  --color-brand-primary-800: var(--color-brand-primary-800);
+  --color-brand-primary-900: var(--color-brand-primary-900);
+
+  --color-brand-secondary-50: var(--color-brand-secondary-50);
+  --color-brand-secondary-100: var(--color-brand-secondary-100);
+  --color-brand-secondary-200: var(--color-brand-secondary-200);
+  --color-brand-secondary-300: var(--color-brand-secondary-300);
+  --color-brand-secondary-400: var(--color-brand-secondary-400);
+  --color-brand-secondary: var(--color-brand-secondary);
+  --color-brand-secondary-600: var(--color-brand-secondary-600);
+  --color-brand-secondary-700: var(--color-brand-secondary-700);
+  --color-brand-secondary-800: var(--color-brand-secondary-800);
+  --color-brand-secondary-900: var(--color-brand-secondary-900);
+
+  --color-brand-accent-yellow: var(--color-brand-accent-yellow);
+  --color-brand-accent-orange: var(--color-brand-accent-orange);
+  --color-brand-accent-cherry: var(--color-brand-accent-cherry);
+  --color-brand-accent-lime: var(--color-brand-accent-lime);
+  --color-brand-accent-teal: var(--color-brand-accent-teal);
+  --color-brand-accent-ocean: var(--color-brand-accent-ocean);
+
+  --color-brand-success: var(--color-brand-success);
+  --color-brand-success-light: var(--color-brand-success-light);
+  --color-brand-warning: var(--color-brand-warning);
+  --color-brand-warning-light: var(--color-brand-warning-light);
+  --color-brand-error: var(--color-brand-error);
+  --color-brand-info: var(--color-brand-info);
+
+  --color-brand-category-1: var(--color-brand-category-1);
+  --color-brand-category-1-light: var(--color-brand-category-1-light);
+  --color-brand-category-1-text: var(--color-brand-category-1-text);
+  --color-brand-category-2: var(--color-brand-category-2);
+  --color-brand-category-2-light: var(--color-brand-category-2-light);
+  --color-brand-category-2-text: var(--color-brand-category-2-text);
+  --color-brand-category-3: var(--color-brand-category-3);
+  --color-brand-category-3-light: var(--color-brand-category-3-light);
+  --color-brand-category-3-text: var(--color-brand-category-3-text);
+  --color-brand-category-4: var(--color-brand-category-4);
+  --color-brand-category-4-light: var(--color-brand-category-4-light);
+  --color-brand-category-4-text: var(--color-brand-category-4-text);
+  --color-brand-category-5: var(--color-brand-category-5);
+  --color-brand-category-5-light: var(--color-brand-category-5-light);
+  --color-brand-category-5-text: var(--color-brand-category-5-text);
+
+  /* Dataviz categorical series — reactive, values in brand-tokens.css.
+     Order is validated, not decorative: see the note there before touching. */
+  --color-brand-viz-1: var(--color-brand-viz-1);
+  --color-brand-viz-1-text: var(--color-brand-viz-1-text);
+  --color-brand-viz-2: var(--color-brand-viz-2);
+  --color-brand-viz-2-text: var(--color-brand-viz-2-text);
+  --color-brand-viz-3: var(--color-brand-viz-3);
+  --color-brand-viz-3-text: var(--color-brand-viz-3-text);
+  --color-brand-viz-4: var(--color-brand-viz-4);
+  --color-brand-viz-4-text: var(--color-brand-viz-4-text);
+  --color-brand-viz-5: var(--color-brand-viz-5);
+  --color-brand-viz-5-text: var(--color-brand-viz-5-text);
+  --color-brand-viz-6: var(--color-brand-viz-6);
+  --color-brand-viz-6-text: var(--color-brand-viz-6-text);
+
+  --font-family-display: var(--font-family-display);
+  --font-family-body: var(--font-family-body);
+  --font-family-mono: var(--font-family-mono);
+
+  /* Legacy `primary` color utility (text-primary / bg-primary / ring-primary …)
+     migrated from the former tailwind.config.js */
+  --color-primary: var(--color-brand-primary);
+
+  /* Semantic surface/layout tokens — reactive per [data-theme] */
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-sunken: var(--color-surface-sunken);
+  --color-surface-dim: var(--color-bg);
+  --color-surface-nested: var(--color-surface-sunken);
+  --color-surface-overlay: var(--color-surface-overlay);
+  --color-on-primary: var(--color-text-on-primary);
+  --color-on-surface: var(--color-text);
+  --color-on-surface-muted: var(--color-text-secondary);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-border-subtle: var(--color-border-subtle);
+  --color-text: var(--color-text);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-on-primary: var(--color-text-on-primary);
+  --color-text-link: var(--color-text-link);
+  --color-hover: var(--color-hover);
+  --color-active: var(--color-active);
+  --color-selected: var(--color-selected);
+  --color-brand-subtle: var(--color-brand-subtle);
+  --color-input-bg: var(--color-input-bg);
+  --color-input-border: var(--color-input-border);
+
+  /* Button state tokens */
+  --color-btn-primary-bg: var(--color-btn-primary-bg);
+  --color-btn-primary-hover: var(--color-btn-primary-hover);
+  --color-btn-primary-active: var(--color-btn-primary-active);
+  --color-btn-danger-hover: var(--color-btn-danger-hover);
+  --color-btn-danger-active: var(--color-btn-danger-active);
+
+  /* Chip tokens */
+  --color-chip-bg: var(--color-chip-bg);
+  --color-chip-text: var(--color-chip-text);
+  --color-chip-border: var(--color-chip-border);
+
+  /* ----------------------------------------------------------------------
+     NEUTRAL + ACCENT REMAP
+
+     Re-points Tailwind's stock palette at the reactive semantic tokens so
+     existing utilities (bg-white, bg-gray-100, text-gray-700, border-gray-200,
+     bg-blue-500, …) become theme-aware with no component edits.
+
+     - `white` -> surface so cards + their (remapped) text flip together,
+       preserving contrast in dark/grey. `black` is left literal to keep
+       modal/backdrop overlays (bg-black/NN) dark in every theme.
+     - gray ramp maps light->dark positionally onto surface/border/text.
+     - blue & indigo map onto the brand-primary ramp (on-brand accents).
+     ---------------------------------------------------------------------- */
+  --color-white: var(--color-surface);
+
+  --color-gray-50: var(--color-surface-raised);
+  --color-gray-100: var(--color-surface-sunken);
+  --color-gray-200: var(--color-border);
+  --color-gray-300: var(--color-border-strong);
+  --color-gray-400: var(--color-text-muted);
+  --color-gray-500: var(--color-text-muted);
+  --color-gray-600: var(--color-text-secondary);
+  --color-gray-700: var(--color-text-secondary);
+  --color-gray-800: var(--color-text);
+  --color-gray-900: var(--color-text);
+
+  --color-slate-50: var(--color-surface-raised);
+  --color-slate-100: var(--color-surface-sunken);
+  --color-slate-200: var(--color-border);
+  --color-slate-300: var(--color-border-strong);
+  --color-slate-400: var(--color-text-muted);
+  --color-slate-500: var(--color-text-muted);
+  --color-slate-600: var(--color-text-secondary);
+  --color-slate-700: var(--color-text-secondary);
+  --color-slate-800: var(--color-text);
+  --color-slate-900: var(--color-text);
+
+  --color-blue-50: var(--color-brand-primary-50);
+  --color-blue-100: var(--color-brand-primary-100);
+  --color-blue-200: var(--color-brand-primary-200);
+  --color-blue-300: var(--color-brand-primary-300);
+  --color-blue-400: var(--color-brand-primary-400);
+  --color-blue-500: var(--color-brand-primary);
+  --color-blue-600: var(--color-brand-primary-600);
+  --color-blue-700: var(--color-brand-primary-700);
+  --color-blue-800: var(--color-brand-primary-800);
+  --color-blue-900: var(--color-brand-primary-900);
+
+  --color-indigo-50: var(--color-brand-primary-50);
+  --color-indigo-100: var(--color-brand-primary-100);
+  --color-indigo-200: var(--color-brand-primary-200);
+  --color-indigo-300: var(--color-brand-primary-300);
+  --color-indigo-400: var(--color-brand-primary-400);
+  --color-indigo-500: var(--color-brand-primary);
+  --color-indigo-600: var(--color-brand-primary-600);
+  --color-indigo-700: var(--color-brand-primary-700);
+  --color-indigo-800: var(--color-brand-primary-800);
+  --color-indigo-900: var(--color-brand-primary-900);
+}
+
+
+/* Keyframes referenced by --animate-fadeIn (migrated from tailwind.config.js) */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+/* --------------------------------------------------------------------------
+   Tailwind v4 compatibility — restore the v3 default border color so existing
+   `border`/`divide` utilities (which assumed gray-200) stay visible instead
+   of inheriting `currentColor`.
+   -------------------------------------------------------------------------- */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border);
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   Structural component primitives (ops-*)
+   -------------------------------------------------------------------------- */
+@layer components {
+  .ops-card {
+    @apply bg-surface rounded-ops-xl border border-[var(--color-border)] shadow-ops-sm transition-all overflow-hidden;
+  }
+
+  .ops-card-interactive {
+    @apply bg-surface rounded-ops-xl border border-[var(--color-border)] shadow-ops-sm transition-all
+           hover:shadow-ops-lg hover:border-brand-primary/30 cursor-pointer;
+  }
+
+  .ops-card-divided {
+    @apply bg-surface rounded-ops-xl border border-[var(--color-border)] shadow-ops-sm
+           divide-y divide-[var(--color-border-subtle)];
+  }
+
+  .ops-page-hero {
+    @apply bg-gradient-to-b from-brand-primary-50 via-surface to-surface-dim;
+  }
+
+  .ops-section-header {
+    @apply text-sm font-semibold uppercase tracking-wide;
+    color: var(--color-text-muted);
+  }
+
+  .ops-panel-heading {
+    @apply text-lg font-bold tracking-tight;
+    color: var(--color-text);
+    font-family: var(--font-family-display);
+  }
+
+  .ops-panel-subheading {
+    @apply text-[10px] font-bold uppercase tracking-wider;
+    color: var(--color-text-muted);
+  }
+
+  .ops-label {
+    @apply text-[11px];
+    color: var(--color-text-muted);
+  }
+
+  .ops-value {
+    @apply text-[11px] font-semibold;
+    color: var(--color-text);
+  }
+
+  .ops-table-wrap {
+    @apply bg-surface rounded-ops-xl border border-[var(--color-border)] shadow-ops-sm overflow-x-auto;
+  }
+
+  .ops-table-head {
+    @apply bg-brand-primary-700;
+  }
+
+  .ops-table-th {
+    @apply px-4 py-2.5 text-[10px] font-semibold text-brand-primary-100 uppercase tracking-wider text-left;
+  }
+
+  .ops-table-body {
+    @apply divide-y divide-[var(--color-border-subtle)];
+  }
+
+  .ops-table-row {
+    @apply hover:bg-[var(--color-hover)] transition-colors;
+  }
+
+  .ops-table-td {
+    @apply px-4 py-2.5 text-[11px];
+    color: var(--color-text-secondary);
+  }
+
+  .ops-scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-brand-neutral-300) transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+      transition: width 0.2s, height 0.2s;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-brand-neutral-300);
+      border-radius: var(--radius-full);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--color-brand-neutral-400);
+    }
+
+    &:hover::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    &:hover::-webkit-scrollbar-thumb {
+      background: var(--color-brand-neutral-400);
+    }
+  }
+
+  .ops-toggle-group {
+    @apply flex items-center bg-surface border border-[var(--color-border)] p-0.5;
+  }
+
+  .rich-text-ul {
+    @apply list-disc pl-5 space-y-1.5 text-[13px] mb-3 last:mb-0;
+    color: var(--color-text-secondary);
+  }
+
+  .rich-text-ol {
+    @apply list-decimal pl-5 space-y-1.5 text-[13px] mb-3 last:mb-0;
+    color: var(--color-text-secondary);
+  }
+
+  .rich-text-p {
+    @apply text-[13px] leading-relaxed mb-3 last:mb-0;
+    color: var(--color-text-secondary);
+  }
+
+  .rich-text-heading {
+    @apply text-[13px] font-semibold mb-1.5 mt-4 first:mt-0;
+    color: var(--color-text);
+  }
+
+  /* ─── Responsive Layout Utilities ─── */
+
+  .ops-page-container {
+    @apply max-w-6xl mx-auto px-4 sm:px-6;
+  }
+
+  .ops-page-container-wide {
+    @apply max-w-7xl mx-auto px-4 sm:px-6;
+  }
+
+  .ops-page-section {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8;
+  }
+
+  .ops-page-section-hero {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-6 sm:pb-8;
+  }
+
+  .ops-card-padded {
+    @apply p-4 sm:p-6;
+  }
+
+  .ops-card-padded-lg {
+    @apply p-4 sm:p-8;
+  }
+
+  .ops-toolbar {
+    @apply flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6;
+  }
+
+  .ops-page-header {
+    @apply flex flex-col sm:flex-row sm:items-center justify-between gap-4;
+  }
+
+  .ops-section-nav {
+    @apply flex items-center mb-4 sm:mb-6
+           sticky top-0 z-[20] -mx-1 px-1 overflow-x-auto;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .ops-section-nav-item {
+    @apply px-2 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-[13px] font-medium
+           border-b-2 transition-colors cursor-pointer -mb-px whitespace-nowrap;
+  }
+
+  .ops-modal-panel {
+    @apply w-full mx-4 max-h-[80vh] overflow-auto shadow-ops-xl;
+  }
+
+  .ops-drawer-panel {
+    @apply fixed top-0 right-0 bottom-0 w-full sm:w-[440px]
+           bg-surface border-l border-[var(--color-border)] shadow-ops-xl z-[100] flex flex-col;
+  }
+
+  .section-nav-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* ─── Button Primitives ─── */
+
+  .ops-btn-primary {
+    @apply bg-[var(--color-btn-primary-bg)] text-on-primary font-medium transition-colors cursor-pointer
+           hover:bg-[var(--color-btn-primary-hover)] active:bg-[var(--color-btn-primary-active)]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .ops-btn-outline {
+    @apply border border-[var(--color-border)] bg-transparent font-medium transition-colors cursor-pointer
+           hover:bg-[var(--color-hover)] active:bg-[var(--color-active)]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    color: var(--color-text);
+  }
+
+  .ops-btn-ghost {
+    @apply bg-transparent font-medium transition-colors cursor-pointer
+           hover:bg-[var(--color-hover)] active:bg-[var(--color-active)]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    color: var(--color-text-secondary);
+  }
+
+  .ops-btn-danger {
+    @apply bg-brand-error text-white font-medium transition-colors cursor-pointer
+           hover:bg-[var(--color-btn-danger-hover)] active:bg-[var(--color-btn-danger-active)]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* ─── Chip Primitives ─── */
+
+  .ops-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--chip-gap);
+    padding: var(--chip-padding-y) var(--chip-padding-x);
+    background: var(--color-chip-bg);
+    color: var(--color-chip-text);
+    border: 1px solid var(--color-chip-border);
+    border-radius: var(--chip-radius);
+    font-size: var(--chip-font-size);
+    font-weight: var(--chip-font-weight);
+    line-height: 1.4;
+  }
+
+  .ops-chip--mono {
+    font-family: var(--font-family-mono);
+  }
+
+  .ops-chip--pill {
+    border-radius: 9999px;
+  }
+
+  .ops-chip--bordered {
+    border-color: var(--color-border);
+  }
+
+  .ops-chip--branded {
+    background: var(--color-brand-subtle);
+    color: var(--color-brand-primary);
+    border-color: transparent;
+  }
+
+  /* Status variants use the theme-REACTIVE --color-status-* tokens so badges
+     flip correctly in light / grey / dark. */
+  .ops-chip[data-status="draft"]    { background: var(--color-status-draft-bg);   color: var(--color-status-draft-text);   border-color: transparent; }
+  .ops-chip[data-status="progress"] { background: var(--color-status-progress-bg); color: var(--color-status-progress-text); border-color: transparent; }
+  .ops-chip[data-status="active"]   { background: var(--color-status-active-bg);  color: var(--color-status-active-text);  border-color: transparent; }
+  .ops-chip[data-status="warning"]  { background: var(--color-status-warning-bg); color: var(--color-status-warning-text); border-color: transparent; }
+  .ops-chip[data-status="danger"]   { background: var(--color-status-danger-bg);  color: var(--color-status-danger-text);  border-color: transparent; }
+  .ops-chip[data-status="rejected"] { background: var(--color-status-danger-bg);  color: var(--color-status-danger-text);  border-color: transparent; }
+  .ops-chip[data-status="info"]     { background: var(--color-status-info-bg);    color: var(--color-status-info-text);    border-color: transparent; }
+  .ops-chip[data-status="closed"]   { background: var(--color-status-closed-bg);  color: var(--color-status-closed-text);  border-color: transparent; }
+  .ops-chip[data-status="special"]  { background: var(--color-status-special-bg); color: var(--color-status-special-text); border-color: transparent; }
+
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--chip-gap);
+  }
+}
