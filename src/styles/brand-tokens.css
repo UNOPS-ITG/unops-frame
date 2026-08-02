@@ -117,16 +117,18 @@
      2. TYPOGRAPHY
      -------------------------------------------------------------------------- */
 
-  /* Noto Sans Arabic and Noto Sans SC follow Inter for Arabic and Chinese glyph
-     coverage (Inter has neither); Inter itself covers Latin + Cyrillic. Latin
-     text still renders in Inter because it comes first — the fallbacks only
-     pick up the codepoints Inter is missing. */
-  --font-family-display: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
-  --font-family-body: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
+  /* Schibsted Grotesk: a working grotesk with genuine voice — tight apertures,
+     confident 400–900 variable range — self-hosted in index.html (latin subsets
+     only; the Noto fallbacks carry Arabic and CJK codepoints it lacks). The
+     previous value named Inter, which was never actually loaded anywhere, so
+     the entire product silently rendered in the OS default. The fitness suite
+     now asserts the declared families are preloaded, so a font cannot vanish
+     without a red build again. */
+  --font-family-display: 'Schibsted Grotesk', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
+  --font-family-body: 'Schibsted Grotesk', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace;
-  /* Display headings across the app render in Inter (weight/size carry the
-     prominence). Legacy name kept so existing usages restyle in one place. */
-  --font-family-display-serif: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
+  /* Legacy name kept so existing usages restyle in one place. */
+  --font-family-display-serif: 'Schibsted Grotesk', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
   /* Editorial serif reserved for hero moments only: Home greeting,
      welcome/consent primer. Fraunces covers Latin only — Georgia picks up
      Cyrillic, Noto Naskh Arabic picks up Arabic, Noto Sans SC picks up Chinese
@@ -221,6 +223,62 @@
   /* For dialogs launched OVER a legacy fixed popup (MarkdownPopup uses z 1000);
      keeps such a dialog above it without disturbing the normal scale. */
   --z-modal-elevated: 1100;
+
+  /* --------------------------------------------------------------------------
+     3a. THE SHELL — the ink frame around the content well
+
+     The application chrome (sidebar + header band) is permanently deep navy
+     ink in EVERY theme. This is the product's name made literal: a dark frame
+     around a bright well, so the data reads as the material and the chrome as
+     the frame. It is also where the brand cyan finally becomes an accent
+     instead of wallpaper — an active nav pill on ink pops in a way it never
+     could on white.
+
+     Theme-independent by design; the dark and grey themes override only the
+     base surface so the shell stays one step deeper than their content well.
+     -------------------------------------------------------------------------- */
+  --color-shell-bg: #0b1522;
+  --color-shell-surface: #13253c;
+  --color-shell-border: #1d3350;
+  --color-shell-text: #e4ecf5;
+  --color-shell-text-secondary: #8fa9c4;
+  --color-shell-text-muted: #5f7d9a;
+  --color-shell-hover: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
+  --color-shell-active: color-mix(in srgb, var(--color-brand-primary) 24%, transparent);
+  --color-shell-active-text: #ffffff;
+  --color-shell-focus-ring: var(--color-brand-primary-300);
+
+  /* --------------------------------------------------------------------------
+     3b. ROLE COLOURS — the palette put to work
+
+     Six accent families existed and none were used; the result was one cyan
+     spread evenly over everything, which is the same as no colour at all.
+     These tokens assign roles once so every surface agrees:
+
+     · select-option chips draw from a six-slot categorical ramp, assigned by
+       a stable hash of the option KEY (options are user-authored, so no
+       hardcoded "open is blue" is possible — but the same key always lands on
+       the same slot, everywhere, forever);
+     · governance (withheld, restricted, sensitivity) is the plum/cherry family;
+     · corporate data (PRD 14) is teal, with a key glyph.
+
+     The light values pair a 12-16% tint with a dark ink of the same hue; the
+     dark/grey themes override with deeper tints and lighter inks below.
+     -------------------------------------------------------------------------- */
+  --chipcat-1-bg: #dcf2f9;  --chipcat-1-text: #0e5a75;  /* ocean   */
+  --chipcat-2-bg: #fdeeda;  --chipcat-2-text: #8a4d04;  /* amber   */
+  --chipcat-3-bg: #d9f2ef;  --chipcat-3-text: #00695e;  /* teal    */
+  --chipcat-4-bg: #f7e3ee;  --chipcat-4-text: #7d1a54;  /* cherry  */
+  --chipcat-5-bg: #eef3d4;  --chipcat-5-text: #55611a;  /* lime    */
+  --chipcat-6-bg: #fce7da;  --chipcat-6-text: #9c3f0a;  /* orange  */
+
+  --color-governance-bg: #f7e3ee;
+  --color-governance-text: #7d1a54;
+  --color-governance-border: #eac4dc;
+
+  --color-corporate-bg: #d9f2ef;
+  --color-corporate-text: #00695e;
+  --color-corporate-border: #b5e3dd;
 }
 
 
@@ -453,6 +511,26 @@
   --color-btn-danger-hover: #f87171;
   --color-btn-danger-active: #fca5a5;
 
+  /* Shell: one step deeper than the well, so the frame still reads in dark. */
+  --color-shell-bg: #070e18;
+  --color-shell-surface: #0f1c2c;
+  --color-shell-border: #16273c;
+
+  /* Role colours — deep tints, light inks. */
+  --chipcat-1-bg: #123240;  --chipcat-1-text: #7fd4ea;
+  --chipcat-2-bg: #3a2a10;  --chipcat-2-text: #eeb35c;
+  --chipcat-3-bg: #0e332f;  --chipcat-3-text: #4bc9b9;
+  --chipcat-4-bg: #3b1430;  --chipcat-4-text: #e284bd;
+  --chipcat-5-bg: #2d3312;  --chipcat-5-text: #c3d45c;
+  --chipcat-6-bg: #3d1f0e;  --chipcat-6-text: #f09660;
+  --color-governance-bg: #3b1430;
+  --color-governance-text: #e284bd;
+  --color-governance-border: #5c2249;
+  --color-corporate-bg: #0e332f;
+  --color-corporate-text: #4bc9b9;
+  --color-corporate-border: #1a4f48;
+
+
   /* Inputs */
   --color-input-bg: var(--color-surface-sunken);
   --color-input-border: var(--color-border);
@@ -571,6 +649,27 @@
   --color-btn-danger-hover: #f87171;
   --color-btn-danger-active: #fca5a5;
 
+  /* Shell: charcoal-ink, one step deeper than the grey well — the navy shell
+     would clash against neutral charcoal, so grey gets its own ink. */
+  --color-shell-bg: #101216;
+  --color-shell-surface: #1d2025;
+  --color-shell-border: #2c3138;
+
+  /* Role colours — deep tints, light inks (same as dark). */
+  --chipcat-1-bg: #123240;  --chipcat-1-text: #7fd4ea;
+  --chipcat-2-bg: #3a2a10;  --chipcat-2-text: #eeb35c;
+  --chipcat-3-bg: #0e332f;  --chipcat-3-text: #4bc9b9;
+  --chipcat-4-bg: #3b1430;  --chipcat-4-text: #e284bd;
+  --chipcat-5-bg: #2d3312;  --chipcat-5-text: #c3d45c;
+  --chipcat-6-bg: #3d1f0e;  --chipcat-6-text: #f09660;
+  --color-governance-bg: #3b1430;
+  --color-governance-text: #e284bd;
+  --color-governance-border: #5c2249;
+  --color-corporate-bg: #0e332f;
+  --color-corporate-text: #4bc9b9;
+  --color-corporate-border: #1a4f48;
+
+
   /* Inputs */
   --color-input-bg: var(--color-surface-sunken);
   --color-input-border: var(--color-border);
@@ -675,6 +774,26 @@
     --color-btn-primary-active: var(--color-brand-primary-300);
     --color-btn-danger-hover: #f87171;
     --color-btn-danger-active: #fca5a5;
+
+    /* Shell: one step deeper than the well, so the frame still reads in dark. */
+    --color-shell-bg: #070e18;
+    --color-shell-surface: #0f1c2c;
+    --color-shell-border: #16273c;
+
+    /* Role colours — deep tints, light inks. */
+    --chipcat-1-bg: #123240;  --chipcat-1-text: #7fd4ea;
+    --chipcat-2-bg: #3a2a10;  --chipcat-2-text: #eeb35c;
+    --chipcat-3-bg: #0e332f;  --chipcat-3-text: #4bc9b9;
+    --chipcat-4-bg: #3b1430;  --chipcat-4-text: #e284bd;
+    --chipcat-5-bg: #2d3312;  --chipcat-5-text: #c3d45c;
+    --chipcat-6-bg: #3d1f0e;  --chipcat-6-text: #f09660;
+    --color-governance-bg: #3b1430;
+    --color-governance-text: #e284bd;
+    --color-governance-border: #5c2249;
+    --color-corporate-bg: #0e332f;
+    --color-corporate-text: #4bc9b9;
+    --color-corporate-border: #1a4f48;
+
 
     --color-input-bg: var(--color-surface-sunken);
     --color-input-border: var(--color-border);

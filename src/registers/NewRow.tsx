@@ -36,7 +36,10 @@ export interface NewRowProps {
   workspaceId: string
   blueprintId: string
   blueprint: Blueprint
-  onCreated: () => void
+  /** Carries the created row's id so the register can land on it — scroll,
+   * flash, done. A create whose result never appears on screen reads as a
+   * create that may not have happened. */
+  onCreated: (rowId: string) => void
   onClose: () => void
 }
 
@@ -105,8 +108,8 @@ export function NewRow({
       const payload = Object.fromEntries(
         Object.entries(values).filter(([, v]) => v !== '' && v !== undefined),
       )
-      await createRow(workspaceId, blueprintId, payload)
-      onCreated()
+      const created = await createRow(workspaceId, blueprintId, payload)
+      onCreated(created.id)
       onClose()
     } catch (e) {
       if (e instanceof ApiError && e.fieldErrors.length > 0) {

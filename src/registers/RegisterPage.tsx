@@ -75,6 +75,10 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
   // only navigating, which makes the grid worse at the thing it is for.
   const [detailOpen, setDetailOpen] = useState(false)
   const [adding, setAdding] = useState(false)
+  // The landing beat: after a create, the register scrolls to the new row and
+  // flashes it once. Without it the dialog closes and nothing on screen says
+  // where — or whether — the row landed.
+  const [flashRowId, setFlashRowId] = useState<string | null>(null)
 
   const { blueprint, page, loading, error, rejection, loadMore, editCell, dismissRejection } =
     useRegister(workspaceId, blueprintId, {
@@ -94,6 +98,14 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
   )
 
   const onImported = useCallback(() => setGeneration((g) => g + 1), [])
+
+  const flashRow = useMemo(() => {
+    if (flashRowId === null || page === null) return undefined
+    const index = page.rows.findIndex((r) => r.id === flashRowId)
+    return index >= 0 ? index : undefined
+  }, [flashRowId, page])
+
+  const onFlashDone = useCallback(() => setFlashRowId(null), [])
 
   const selectedRow = useMemo(
     () => page?.rows.find((r) => r.id === selectedRowId) ?? null,
@@ -256,6 +268,9 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
               onCellEdited={editCell}
               onRowSelected={setSelectedRowId}
               onOpenCell={onOpenCell}
+              onAppendRow={() => setAdding(true)}
+              flashRow={flashRow}
+              onFlashDone={onFlashDone}
               height="100%"
               width="100%"
             />
@@ -276,7 +291,10 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
           workspaceId={workspaceId}
           blueprintId={blueprintId}
           blueprint={blueprint}
-          onCreated={() => setGeneration((g) => g + 1)}
+          onCreated={(rowId) => {
+            setFlashRowId(rowId)
+            setGeneration((g) => g + 1)
+          }}
           onClose={() => setAdding(false)}
         />
       )}

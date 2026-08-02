@@ -57,7 +57,24 @@ const SURFACE_TOKENS = [
   'color-brand-primary',
 ] as const
 
-export type GridColourToken = (typeof GRID_TOKENS)[number] | (typeof SURFACE_TOKENS)[number]
+/** The role palette (3b in brand-tokens.css): select-option chips, governance,
+ * corporate data. Resolved here for the same reason as everything else — the
+ * canvas cannot evaluate a token, and an unparseable fillStyle fails silently. */
+const ROLE_TOKENS = [
+  'chipcat-1-bg', 'chipcat-1-text',
+  'chipcat-2-bg', 'chipcat-2-text',
+  'chipcat-3-bg', 'chipcat-3-text',
+  'chipcat-4-bg', 'chipcat-4-text',
+  'chipcat-5-bg', 'chipcat-5-text',
+  'chipcat-6-bg', 'chipcat-6-text',
+  'color-governance-bg', 'color-governance-text', 'color-governance-border',
+  'color-corporate-bg', 'color-corporate-text', 'color-corporate-border',
+] as const
+
+export type GridColourToken =
+  | (typeof GRID_TOKENS)[number]
+  | (typeof SURFACE_TOKENS)[number]
+  | (typeof ROLE_TOKENS)[number]
 export type GridPalette = Record<GridColourToken, string>
 
 /**
@@ -114,7 +131,7 @@ function resolvePalette(): GridPalette {
 
   const out = {} as GridPalette
   try {
-    for (const token of [...GRID_TOKENS, ...SURFACE_TOKENS]) {
+    for (const token of [...GRID_TOKENS, ...SURFACE_TOKENS, ...ROLE_TOKENS]) {
       probe.style.color = `var(--${token})`
       out[token] = toCanvasColour(getComputedStyle(probe).color)
     }

@@ -7,7 +7,8 @@
  * screen to a user: "it is broken".
  */
 
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Icon } from '@/app/icons'
 
 export function Loading({ label = 'Loading' }: { label?: string }) {
   return (
@@ -59,11 +60,14 @@ export function Failed({ title, detail, onRetry }: { title: string; detail: stri
 /**
  * PM-5's transparency annotation, rendered.
  *
- * The withheld count is a chip rather than prose because it has to be
- * noticeable: a reader who does not register that rows were withheld reports
- * the visible total as the truth. `certainty` is shown only when it is
- * `estimated`, because "exact" is the expectation and saying it every time
- * trains people to stop reading.
+ * The withheld count is the most interesting object in the product — it is the
+ * visible form of the whole governance claim — so it dresses in the governance
+ * role colour (the plum/cherry family), carries the lock, and explains itself
+ * on click. An inert grey number here converts the product's thesis into a
+ * caption nobody reads.
+ *
+ * `certainty` is shown only when it is `estimated`, because "exact" is the
+ * expectation and saying it every time trains people to stop reading.
  */
 export function Annotation({
   visible,
@@ -74,12 +78,42 @@ export function Annotation({
   withheld: number
   certainty: 'exact' | 'estimated'
 }) {
+  const [open, setOpen] = useState(false)
+  const popover = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent) => {
+      if (!popover.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
   return (
     <span className="annotation">
       <span>{visible.toLocaleString()} rows</span>
       {withheld > 0 && (
-        <span className="annotation__withheld" title="Rows you do not have permission to see">
-          {withheld.toLocaleString()} withheld
+        <span className="annotation__anchor" ref={popover}>
+          <button
+            type="button"
+            className="annotation__withheld"
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
+          >
+            <Icon.Lock className="annotation__lock" />
+            {withheld.toLocaleString()} withheld
+          </button>
+          {open && (
+            <div className="annotation__popover" role="note">
+              <strong>
+                {withheld.toLocaleString()} {withheld === 1 ? 'row is' : 'rows are'} beyond your
+                access.
+              </strong>{' '}
+              They are counted here and in every total, but not shown — so what you see is
+              honest about what it is not. Exports say the same thing in the file.
+            </div>
+          )}
         </span>
       )}
       {certainty === 'estimated' && (

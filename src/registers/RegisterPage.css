@@ -12,9 +12,11 @@
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-4);
-  border-block-end: 1px solid var(--color-border-subtle);
   background: var(--color-surface);
   flex-wrap: wrap;
+  box-shadow: var(--shadow-xs);
+  position: relative;
+  z-index: var(--z-sticky);
 }
 
 .register__toolbar-group {
@@ -210,17 +212,63 @@
   font-variant-numeric: tabular-nums;
 }
 
+.annotation__anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Governance colours, deliberately. This chip IS the product's thesis — an
+   inert grey number here converts "visible governance" into a caption. */
 .annotation__withheld {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-1);
   padding: var(--chip-padding-y) var(--chip-padding-x);
   border-radius: var(--chip-radius);
-  background: var(--color-chip-bg);
-  border: 1px solid var(--color-chip-border);
-  color: var(--color-chip-text);
+  background: var(--color-governance-bg);
+  border: 1px solid var(--color-governance-border);
+  color: var(--color-governance-text);
+  /* `font: inherit` first — it is a shorthand and resets weight and size. */
+  font: inherit;
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast);
+}
+
+.annotation__withheld:hover {
+  box-shadow: var(--shadow-xs);
+}
+
+.annotation__withheld:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.annotation__lock {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.annotation__popover {
+  position: absolute;
+  top: calc(100% + var(--spacing-2));
+  inset-inline-end: 0;
+  z-index: var(--z-popover);
+  width: 19rem;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  text-align: start;
+}
+
+.annotation__popover strong {
+  color: var(--color-text);
 }
 
 .annotation__estimate {

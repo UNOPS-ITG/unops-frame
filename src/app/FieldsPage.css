@@ -3,6 +3,13 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-6);
+  background:
+    radial-gradient(
+      80rem 40rem at 8% -12%,
+      color-mix(in srgb, var(--color-brand-primary) 6%, transparent),
+      transparent 62%
+    )
+    var(--color-bg);
 }
 
 .fields__inner {

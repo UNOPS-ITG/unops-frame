@@ -115,6 +115,39 @@ describe('brand tokens', () => {
     ).toBeLessThanOrEqual(MAX_BREAKPOINTS)
   })
 
+  it('every typeface the tokens name is actually loaded', () => {
+    // The failure this guards happened: the tokens named Inter for months,
+    // nothing loaded it, and the entire product silently rendered in the OS
+    // default. A missing font throws nothing and fails no test — the text
+    // just quietly isn't the brand — so a machine has to compare the two
+    // sides, exactly like the class-name check.
+    const tokens = walk('src', ['.css']).find((f) => f.path === 'src/styles/brand-tokens.css')
+    const boot = walk('.', ['index.html']).find((f) => f.path === 'index.html')
+    expect(tokens && boot, 'token file or index.html not found').toBeTruthy()
+
+    const families = new Set<string>()
+    for (const name of ['display', 'body', 'mono'] as const) {
+      const match = tokens!.text.match(
+        new RegExp(`--font-family-${name}:\\s*'([^']+)'`),
+      )
+      if (match?.[1]) families.add(match[1])
+    }
+    expect(families.size, 'no font families declared in tokens').toBeGreaterThan(0)
+
+    const missing = [...families].filter(
+      (family) => !boot!.text.includes(`font-family: '${family}'`),
+    )
+    expect(
+      missing,
+      'These families are named by the tokens but have no @font-face in\n' +
+        'index.html, so they silently fall through to the OS default:',
+    ).toEqual([])
+
+    // And the two families the first paint depends on are preloaded — a late
+    // swap re-measures every canvas-drawn grid column.
+    expect(boot!.text).toContain('rel="preload"')
+  })
+
   it('the theme contract is documented where it is easy to get wrong', () => {
     const boot = walk('.', ['index.html']).find((f) => f.path === 'index.html')
     expect(boot, 'index.html not found').toBeDefined()

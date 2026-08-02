@@ -24,6 +24,42 @@ import type { GridCell, TextCell } from '@glideapps/glide-data-grid'
 import type { BlueprintField, CorporateValue, FieldValue, Row } from './contract'
 import { isCorporateValue, isRestricted } from './contract'
 
+/**
+ * The custom-draw tag riding on a cell.
+ *
+ * Frame draws three cell families itself — select-option chips, corporate
+ * reference chips, and the withheld hatch — because they are the product's
+ * visual vocabulary and a plain text run cannot carry them. The tag travels ON
+ * the GridCell (Glide passes the object through untouched) and `FrameGrid`'s
+ * drawCell reads it; `displayData`/`copyData` still carry the plain text, so
+ * the accessibility mirror, search and the clipboard are unaffected by how the
+ * pixels are painted.
+ */
+export type FrameCellMeta =
+  | { kind: 'chip'; slot: 1 | 2 | 3 | 4 | 5 | 6; label: string }
+  | { kind: 'corporate'; label: string; state: 'snapshot' | 'resolved' | 'quarantined' | 'orphaned'; stale: boolean }
+  | { kind: 'withheld' }
+
+export type FrameCell = GridCell & { frame?: FrameCellMeta }
+
+/**
+ * Which chip slot a select option paints in.
+ *
+ * By declared index, not by hash: within one field the options must be
+ * DISTINCT, and six slots hashed over three options collide often enough to
+ * make two statuses the same colour — which reads as a data error. Index
+ * assignment is stable for a given Blueprint version, and an option not found
+ * in the declaration (retired, or free text) falls back to a hash so it still
+ * gets a stable colour rather than throwing away the treatment.
+ */
+export function chipSlot(value: string, field: BlueprintField): 1 | 2 | 3 | 4 | 5 | 6 {
+  const index = field.options?.findIndex((o) => o.key === value) ?? -1
+  if (index >= 0) return ((index % 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6
+  let hash = 5381
+  for (let i = 0; i < value.length; i += 1) hash = (hash * 33) ^ value.charCodeAt(i)
+  return (((hash >>> 0) % 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6
+}
+
 /** What a withheld cell shows. Not an empty string, and not a lock glyph
  * alone — screen readers get the words, sighted users get the styling. */
 export const WITHHELD_TEXT = '—'
@@ -77,16 +113,38 @@ export function toGridCell({ row, field, palette }: CellContext): GridCell {
     }
     // No palette means the default theme rather than a broken override:
     // degrading to the normal cell colours is legible, degrading to an
-    // unparseable colour is a black rectangle.
-    return palette
+    // unparseable colour is a black rectangle. The `frame` tag adds the
+    // diagonal hatch on top — withheld must read as MATERIAL, because an
+    // em-dash alone is indistinguishable from "no value recorded" at a
+    // glance, and that distinction is the product's headline claim.
+    const tagged: FrameCell = palette
       ? { ...withheld, themeOverride: { bgCell: palette.background, textDark: palette.text } }
       : withheld
+    return { ...tagged, frame: { kind: 'withheld' } } as GridCell
   }
 
   const editable = !field.readOnly
 
   if (field.storage === 'corporate_ref' && isCorporateValue(value)) {
-    return corporateCell(value, editable, palette)
+    return corporateCell(value, editable)
+  }
+
+  // A single-select value paints as a categorical chip: status is the
+  // most-scanned column in any register, and pre-attentive colour is the
+  // difference between scanning and reading. The chip slot comes from the
+  // option's declared index, so a register's statuses are distinct by
+  // construction.
+  if (field.options && typeof value === 'string' && value !== '' && !Array.isArray(value)) {
+    const label = labelFor(value, field)
+    const cell: TextCell = {
+      kind: GridCellKind.Text,
+      data: label,
+      displayData: label,
+      allowOverlay: editable,
+      readonly: !editable,
+      copyData: label,
+    }
+    return { ...cell, frame: { kind: 'chip', slot: chipSlot(value, field), label } } as GridCell
   }
 
   switch (field.storage) {
@@ -97,6 +155,9 @@ export function toGridCell({ row, field, palette }: CellContext): GridCell {
         displayData: formatValue(value, field),
         allowOverlay: editable,
         readonly: !editable,
+        // Right-aligned, always. Left-aligned numerals cannot be compared down
+        // a column, which is the only reason a register HAS a number column.
+        contentAlign: 'right',
       }
 
     case 'boolean':
@@ -126,6 +187,9 @@ export function toGridCell({ row, field, palette }: CellContext): GridCell {
         displayData: text,
         allowOverlay: editable,
         readonly: !editable,
+        // Dates are comparable values, and comparable values right-align so
+        // the column scans as a column rather than a ragged margin.
+        ...(field.storage === 'timestamp' ? { contentAlign: 'right' as const } : {}),
       }
     }
   }
@@ -154,11 +218,7 @@ export const ORPHAN_MARK = ' ⚠'
  * of hundreds of thousands of rows in the user's own entitlements; a text box
  * that accepted a typed key would store one nobody validated.
  */
-function corporateCell(
-  value: CorporateValue,
-  editable: boolean,
-  palette: RestrictedPalette | undefined,
-): GridCell {
+function corporateCell(value: CorporateValue, editable: boolean): GridCell {
   const label = value.label ?? value.key
   const orphaned = value.state === 'orphaned' || value.state === 'quarantined'
   const suffix = orphaned ? ORPHAN_MARK : value.stale ? STALE_MARK : ''
@@ -166,6 +226,8 @@ function corporateCell(
   const cell: TextCell = {
     kind: GridCellKind.Text,
     data: value.key,
+    // The marks stay in displayData for the accessibility mirror and search;
+    // the painted chip carries the same facts as a state dot instead.
     displayData: `${label}${suffix}`,
     // No overlay, ever — not even a read-only one. Activating the cell raises
     // `onCellActivated`, and the register opens the picker in response. A text
@@ -177,9 +239,15 @@ function corporateCell(
     copyData: value.key,
   }
 
-  return orphaned && palette
-    ? { ...cell, themeOverride: { bgCell: palette.background, textDark: palette.text } }
-    : cell
+  return {
+    ...cell,
+    frame: {
+      kind: 'corporate',
+      label,
+      state: value.state ?? 'snapshot',
+      stale: value.stale === true,
+    },
+  } as GridCell
 }
 
 /**
@@ -209,7 +277,14 @@ export function formatValue(value: FieldValue, field: BlueprintField): string {
     const parsed = new Date(value)
     // An unparseable date is shown as stored rather than as "Invalid Date":
     // the raw string is at least a clue about what went wrong upstream.
-    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString()
+    //
+    // dateStyle 'medium' names the month ("2 Jan 2026" / "Jan 2, 2026"), so
+    // the value is unambiguous in every locale. The previous all-numeric form
+    // produced "1/2/2026", which in an international organization is genuinely
+    // two different dates depending on who is reading.
+    return Number.isNaN(parsed.getTime())
+      ? value
+      : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(parsed)
   }
 
   if (typeof value === 'number') return new Intl.NumberFormat().format(value)

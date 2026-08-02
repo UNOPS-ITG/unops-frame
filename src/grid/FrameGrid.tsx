@@ -16,14 +16,15 @@
  * The grid decides nothing. It renders a page the server already trimmed.
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DataEditor, GridCellKind } from '@glideapps/glide-data-grid'
-import type { EditableGridCell, GridColumn, Item } from '@glideapps/glide-data-grid'
+import type { DataEditorRef, DrawCellCallback, EditableGridCell, GridColumn, Item, Theme } from '@glideapps/glide-data-grid'
 import '@glideapps/glide-data-grid/dist/index.css'
 
 import { useGridTheme } from '../styles/useGridTheme'
+import type { GridPalette } from '../styles/useGridTheme'
 import { toGlideTheme } from './glideTheme'
-import { toGridCell } from './cells'
+import { toGridCell, type FrameCell } from './cells'
 import type { Blueprint, BlueprintField, Row, RowPage } from './contract'
 
 export interface FrameGridProps {
@@ -47,8 +48,33 @@ export interface FrameGridProps {
    * text box would happily store a key nobody validated.
    */
   onOpenCell?: (rowId: string, field: BlueprintField) => boolean
+  /** The ghost "new row" affordance at the grid's bottom was activated. The
+   * parent decides what creating means (the demo register opens the guided
+   * dialog, because required fields and row-conditioned grants make a silent
+   * empty-row create refusable for reasons the user cannot see). */
+  onAppendRow?: () => void
+  /** Row index to scroll to and flash — the landing beat after a create. The
+   * parent sets it when the created row arrives in the page and clears it when
+   * the flash ends; the grid only performs it. */
+  flashRow?: number | undefined
+  onFlashDone?: () => void
   height?: number | string
   width?: number | string
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * ROW-CREATED STORYBOARD
+ *
+ *    0ms   the refreshed page lands containing the new row; grid scrolls to it
+ *   60ms   the whole row tints in the selection colour (one paint, no tween —
+ *          Glide's highlightRegions are atomic, and a canvas opacity ramp would
+ *          repaint the full grid per frame for a subliminal difference)
+ *  960ms   the tint clears; the row is just a row now, which is the point —
+ *          the moment says "it landed, here", then gets out of the way
+ * ──────────────────────────────────────────────────────────────────────────── */
+const FLASH = {
+  settle: 60, //  scroll finishes before the tint appears
+  hold: 900, //   long enough to find, short enough to never feel like state
 }
 
 /**
@@ -107,10 +133,112 @@ function widthFor(field: BlueprintField): number {
     case 'boolean':
       return 80
     case 'timestamp':
-      return 140
+      return 150
     default:
       return field.variant === 'long' ? 320 : 200
   }
+}
+
+/**
+ * Paints Frame's three custom cell families over the resolved palette.
+ *
+ * · **chip** — a select option as a tinted categorical chip with a leading dot.
+ *   Status is the most-scanned column in any register, and pre-attentive colour
+ *   is the difference between scanning and reading.
+ * · **corporate** — a teal chip (the corporate-data role colour) whose state
+ *   dot carries stale (amber) and orphaned/quarantined (cherry).
+ * · **withheld** — a diagonal hatch. Withheld must read as MATERIAL: an em-dash
+ *   alone is indistinguishable from "no value recorded", and that distinction
+ *   is the product's headline claim.
+ *
+ * Everything here draws with colours resolved by `useGridTheme`; a token
+ * reference given to canvas fillStyle fails silently, which is the whole reason
+ * the resolver exists.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- a pure canvas painter colocated with the one component that calls it; a separate file would split the grid's rendering in two for a lint preference
+export function paintFrameCell(
+  ctx: CanvasRenderingContext2D,
+  rect: { x: number; y: number; width: number; height: number },
+  meta: NonNullable<FrameCell['frame']>,
+  palette: GridPalette,
+  glide: { baseFontStyle: string; fontFamily: string },
+): void {
+  if (meta.kind === 'withheld') {
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(rect.x, rect.y, rect.width, rect.height)
+    ctx.clip()
+    ctx.fillStyle = palette['grid-cell-restricted-bg']
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height)
+    ctx.strokeStyle = palette['grid-cell-restricted-hatch']
+    ctx.lineWidth = 1
+    // 45° lines, 7px apart, drawn edge to edge of the clipped cell.
+    for (let x = rect.x - rect.height; x < rect.x + rect.width; x += 7) {
+      ctx.beginPath()
+      ctx.moveTo(x, rect.y + rect.height)
+      ctx.lineTo(x + rect.height, rect.y)
+      ctx.stroke()
+    }
+    ctx.restore()
+    return
+  }
+
+  const isCorporate = meta.kind === 'corporate'
+  const bg = isCorporate ? palette['color-corporate-bg'] : palette[`chipcat-${meta.slot}-bg`]
+  const fg = isCorporate ? palette['color-corporate-text'] : palette[`chipcat-${meta.slot}-text`]
+
+  const chipH = Math.min(22, rect.height - 8)
+  const padX = 8
+  const dotR = 3
+  const y = rect.y + (rect.height - chipH) / 2
+
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(rect.x, rect.y, rect.width, rect.height)
+  ctx.clip()
+
+  ctx.font = `500 ${glide.baseFontStyle} ${glide.fontFamily}`
+  const label = meta.label
+  const textW = ctx.measureText(label).width
+  const dotSpace = dotR * 2 + 5
+  const chipW = Math.min(rect.width - 12, textW + padX * 2 + dotSpace)
+  const x = rect.x + 6
+
+  ctx.beginPath()
+  ctx.roundRect(x, y, chipW, chipH, chipH / 2)
+  ctx.fillStyle = bg
+  ctx.fill()
+
+  // The dot: the option's own ink for a select chip; for a corporate chip it is
+  // the STATE — teal when healthy, amber when the snapshot is stale, cherry
+  // when the relation was withdrawn upstream.
+  ctx.beginPath()
+  ctx.arc(x + padX + dotR - 2, y + chipH / 2, dotR, 0, Math.PI * 2)
+  ctx.fillStyle = isCorporate
+    ? meta.state === 'orphaned' || meta.state === 'quarantined'
+      ? palette['color-governance-text']
+      : meta.stale
+        ? palette['chipcat-2-text']
+        : fg
+    : fg
+  ctx.fill()
+
+  ctx.fillStyle = fg
+  ctx.textBaseline = 'middle'
+  const textX = x + padX + dotR * 2 + 3
+  const maxTextW = chipW - padX * 2 - dotSpace + 2
+  if (textW > maxTextW) {
+    // Clip long labels inside the chip rather than painting past its edge.
+    ctx.save()
+    ctx.beginPath()
+    ctx.roundRect(x, y, chipW - padX / 2, chipH, chipH / 2)
+    ctx.clip()
+    ctx.fillText(label, textX, y + chipH / 2 + 0.5)
+    ctx.restore()
+  } else {
+    ctx.fillText(label, textX, y + chipH / 2 + 0.5)
+  }
+  ctx.restore()
 }
 
 export function FrameGrid({
@@ -120,6 +248,9 @@ export function FrameGrid({
   onCellEdited,
   onRowSelected,
   onOpenCell,
+  onAppendRow,
+  flashRow,
+  onFlashDone,
   height = '100%',
   width = '100%',
 }: FrameGridProps) {
@@ -195,6 +326,70 @@ export function FrameGrid({
     [blueprint.fields, rowsById, onOpenCell],
   )
 
+  const editor = useRef<DataEditorRef>(null)
+  const [flashOn, setFlashOn] = useState(false)
+
+  useEffect(() => {
+    if (flashRow === undefined) return
+    editor.current?.scrollTo(0, flashRow, 'vertical')
+    // Every state change rides a timer — nothing synchronous in the effect
+    // body, so there is no cascading render and the storyboard is the only
+    // thing that decides when paint happens.
+    const show = setTimeout(() => setFlashOn(true), FLASH.settle)
+    const hide = setTimeout(() => {
+      setFlashOn(false)
+      onFlashDone?.()
+    }, FLASH.settle + FLASH.hold)
+    return () => {
+      clearTimeout(show)
+      clearTimeout(hide)
+      setFlashOn(false)
+    }
+  }, [flashRow, onFlashDone])
+
+  const highlightRegions = useMemo(
+    () =>
+      flashOn && flashRow !== undefined
+        ? [
+            {
+              color: theme.palette['grid-row-selected'],
+              range: { x: 0, y: flashRow, width: blueprint.fields.length, height: 1 },
+            },
+          ]
+        : undefined,
+    [flashOn, flashRow, theme.palette, blueprint.fields.length],
+  )
+
+  // Row hover: the documented Glide pattern — track the hovered row from
+  // onItemHovered and tint it through getRowThemeOverride. A grid without row
+  // hover reads as a static table; the eye needs the row it is on.
+  const [hoverRow, setHoverRow] = useState<number | undefined>(undefined)
+
+  const onItemHovered = useCallback(
+    (args: { kind: string; location: Item }) => {
+      setHoverRow(args.kind === 'cell' ? args.location[1] : undefined)
+    },
+    [],
+  )
+
+  const getRowThemeOverride = useCallback(
+    (row: number): Partial<Theme> | undefined =>
+      row === hoverRow ? { bgCell: theme.palette['grid-row-hover'] } : undefined,
+    [hoverRow, theme.palette],
+  )
+
+  const drawCell: DrawCellCallback = useCallback(
+    (args, drawContent) => {
+      const meta = (args.cell as FrameCell).frame
+      if (meta === undefined) {
+        drawContent()
+        return
+      }
+      paintFrameCell(args.ctx, args.rect, meta, theme.palette, glideTheme)
+    },
+    [theme.palette, glideTheme],
+  )
+
   const handleGridSelectionChange = useCallback(
     (selection: { current?: { cell: Item } | undefined }) => {
       const cell = selection.current?.cell
@@ -211,6 +406,8 @@ export function FrameGrid({
   return (
     <div style={{ height, width, position: 'relative' }}>
       <DataEditor
+        ref={editor}
+        {...(highlightRegions ? { highlightRegions } : {})}
         columns={columns}
         rows={page.rows.length}
         getCellContent={getCellContent}
@@ -222,6 +419,23 @@ export function FrameGrid({
         theme={glideTheme}
         rowHeight={theme.metrics.rowHeight}
         headerHeight={theme.metrics.headerHeight}
+        drawCell={drawCell}
+        onItemHovered={onItemHovered}
+        getRowThemeOverride={getRowThemeOverride}
+        // The primary column never scrolls away. A row whose title is off
+        // screen is a row with no identity — "Closed / 64,352 / 1/9/2026"
+        // belongs to nobody. Row numbers give the row an address a person can
+        // say out loud ("look at row 14").
+        freezeColumns={1}
+        rowMarkers="number"
+        {...(onAppendRow
+          ? {
+              trailingRowOptions: { sticky: true, tint: true, hint: 'New row…' },
+              onRowAppended: () => {
+                onAppendRow()
+              },
+            }
+          : {})}
         smoothScrollX
         smoothScrollY
         width={width}

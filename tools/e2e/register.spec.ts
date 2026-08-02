@@ -120,8 +120,9 @@ test.describe('import', () => {
     await expect(preview).toContainText('1 valid')
     // 1-based including the header, so it matches what the user sees in Excel.
     await expect(preview).toContainText('Line 3')
-    // Nothing is written while any row is invalid.
-    await expect(page.getByRole('button', { name: /^Import 1 rows$/ })).toBeDisabled()
+    // Nothing is written while any row is invalid. Singular, because it is one
+    // row — the button used to say "Import 1 rows" and this test asserted it.
+    await expect(page.getByRole('button', { name: /^Import 1 row$/ })).toBeDisabled()
   })
 
   test('names the columns it could not match', async ({ page }) => {

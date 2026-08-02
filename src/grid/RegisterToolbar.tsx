@@ -330,7 +330,7 @@ function ImportPreview({
           disabled={busy || blocked || result.validRows === 0}
           onClick={onCommit}
         >
-          Import {result.validRows.toLocaleString()} rows
+          Import {result.validRows.toLocaleString()} {result.validRows === 1 ? 'row' : 'rows'}
         </button>
         <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel} disabled={busy}>
           Cancel
