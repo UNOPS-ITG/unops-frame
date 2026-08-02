@@ -2,7 +2,12 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "ES2023",
-    "lib": ["ES2023"],
+    // DOM is here for the Playwright specs only. Their `page.evaluate`
+    // callbacks are serialised and run INSIDE the browser, so they legitimately
+    // reference `document` and `HTMLCanvasElement` from a file that otherwise
+    // runs in Node. Without it the canvas assertions cannot be written at all —
+    // and those are the only proof the grid paints anything.
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "types": ["node"],

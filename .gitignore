@@ -86,3 +86,8 @@ Thumbs.db
 
 # ---- Backend local config (contains the dev auth bypass secret) ----
 functions/config/.env
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
