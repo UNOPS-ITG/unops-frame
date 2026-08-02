@@ -124,4 +124,29 @@ export const Icon = {
       <path d="m6 4 4 4-4 4" />
     </Svg>
   ),
+  Home: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M2.5 7.4 8 2.8l5.5 4.6V13a.6.6 0 0 1-.6.6H9.8V9.8H6.2v3.8H3.1a.6.6 0 0 1-.6-.6z" />
+    </Svg>
+  ),
+  /**
+   * The sidebar collapse toggle — Bob's exact glyph (a panel icon, filled),
+   * copied rather than redrawn so the two products' chrome reads as one
+   * family. It is the single fill-based icon in the set, which is why it does
+   * not go through the stroke-based `Svg` wrapper.
+   */
+  Panel: (p: IconProps) => (
+    <svg
+      className={p.className}
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M16.5 4A1.5 1.5 0 0 1 18 5.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 2 14.5v-9A1.5 1.5 0 0 1 3.5 4zM7 15h9.5a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5H7zM3.5 5a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5H6V5z" />
+    </svg>
+  ),
 }

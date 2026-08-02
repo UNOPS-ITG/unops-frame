@@ -84,6 +84,8 @@ function useRegisters(workspaceId: string): BlueprintSummary[] | null {
   return registers
 }
 
+const COLLAPSE_KEY = 'frame-sidebar-collapsed'
+
 function Sidebar({
   route,
   workspaceId,
@@ -94,25 +96,92 @@ function Sidebar({
   registers: BlueprintSummary[] | null
 }) {
   const activeBlueprint = 'blueprintId' in route ? route.blueprintId : undefined
+  const homeHref = href.workspace(workspaceId)
+
+  // Collapse follows Bob's shell: a persisted preference, toggled by the same
+  // panel glyph, collapsing to an icon rail rather than disappearing — the
+  // rail keeps every destination one click away, which is what makes
+  // collapsing feel like reclaiming space instead of losing the map.
+  const [collapsed, setCollapsed] = useState(
+    () => globalThis.localStorage?.getItem(COLLAPSE_KEY) === '1',
+  )
+
+  const toggle = () => {
+    setCollapsed((current) => {
+      const next = !current
+      try {
+        globalThis.localStorage?.setItem(COLLAPSE_KEY, next ? '1' : '0')
+      } catch {
+        /* private mode: the preference just does not persist */
+      }
+      return next
+    })
+  }
+
+  /** A nav entry that renders as icon+label expanded and icon-with-tooltip in
+   * the rail. One function so the two modes cannot drift. */
+  const item = (
+    key: string,
+    to: string,
+    active: boolean,
+    label: string,
+    icon: ReactNode,
+  ) => (
+    <a
+      key={key}
+      className={`sidebar__link${active ? ' sidebar__link--active' : ''}`}
+      href={to}
+      {...(collapsed ? { title: label, 'aria-label': label } : {})}
+    >
+      {icon}
+      {!collapsed && <span className="sidebar__label">{label}</span>}
+    </a>
+  )
 
   return (
-    <nav className="sidebar" aria-label="Workspace">
-      <div className="sidebar__brand">
-        <span className="sidebar__mark" aria-hidden="true">
-          F
-        </span>
-        <span className="sidebar__wordmark">Frame</span>
+    <nav className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`} aria-label="Workspace">
+      <div className="sidebar__header">
+        {/* The brand is a way home, like Bob's. In the rail the logo yields its
+            spot to the toggle (also Bob's behaviour) and Home stays reachable
+            through the nav item below. */}
+        {!collapsed && (
+          <a className="sidebar__brand" href={homeHref} aria-label="Home">
+            <span className="sidebar__mark" aria-hidden="true">
+              F
+            </span>
+            <span className="sidebar__wordmark">Frame</span>
+          </a>
+        )}
+        <button
+          type="button"
+          className="sidebar__toggle"
+          onClick={toggle}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <Icon.Panel />
+        </button>
       </div>
 
       <div className="sidebar__scroll scrollable">
+        {item(
+          'home',
+          homeHref,
+          route.kind === 'workspace',
+          'Home',
+          <Icon.Home className="sidebar__icon" />,
+        )}
+
         <section className="sidebar__section">
-          <h2 className="sidebar__heading">
-            <span>Registers</span>
-          </h2>
+          {!collapsed && (
+            <h2 className="sidebar__heading">
+              <span>Registers</span>
+            </h2>
+          )}
 
-          {registers === null && <p className="sidebar__empty">Loading…</p>}
+          {!collapsed && registers === null && <p className="sidebar__empty">Loading…</p>}
 
-          {registers?.length === 0 && (
+          {!collapsed && registers?.length === 0 && (
             // Not a blank space. A workspace with no Blueprints is a normal
             // starting state, and saying so is the difference between "new" and
             // "broken".
@@ -122,53 +191,48 @@ function Sidebar({
             </p>
           )}
 
-          {registers?.map((register) => (
-            <a
-              key={register.id}
-              className={`sidebar__link${
-                register.id === activeBlueprint && route.kind !== 'fields'
-                  ? ' sidebar__link--active'
-                  : ''
-              }`}
-              href={href.register(workspaceId, register.id)}
-            >
-              <Icon.Table className="sidebar__icon" />
-              <span className="sidebar__label">{register.name}</span>
-            </a>
-          ))}
+          {registers?.map((register) =>
+            item(
+              register.id,
+              href.register(workspaceId, register.id),
+              register.id === activeBlueprint && route.kind !== 'fields',
+              register.name,
+              <Icon.Table className="sidebar__icon" />,
+            ),
+          )}
         </section>
 
         <section className="sidebar__section">
-          <h2 className="sidebar__heading">
-            <span>Data</span>
-          </h2>
-          <a
-            className={`sidebar__link${
-              route.kind === 'corporate' ? ' sidebar__link--active' : ''
-            }`}
-            href={href.corporate(workspaceId)}
-          >
-            <Icon.Warehouse className="sidebar__icon" />
-            <span className="sidebar__label">Corporate data</span>
-          </a>
+          {!collapsed && (
+            <h2 className="sidebar__heading">
+              <span>Data</span>
+            </h2>
+          )}
+          {item(
+            'corporate',
+            href.corporate(workspaceId),
+            route.kind === 'corporate',
+            'Corporate data',
+            <Icon.Warehouse className="sidebar__icon" />,
+          )}
         </section>
       </div>
 
       <div className="sidebar__footer">
-        <a
-          className={`sidebar__link${route.kind === 'harness' ? ' sidebar__link--active' : ''}`}
-          href={href.harness()}
-        >
-          <Icon.Grid className="sidebar__icon" />
-          <span className="sidebar__label">Grid harness</span>
-        </a>
-        <a
-          className={`sidebar__link${route.kind === 'tokens' ? ' sidebar__link--active' : ''}`}
-          href={href.tokens()}
-        >
-          <Icon.Fields className="sidebar__icon" />
-          <span className="sidebar__label">Design tokens</span>
-        </a>
+        {item(
+          'harness',
+          href.harness(),
+          route.kind === 'harness',
+          'Grid harness',
+          <Icon.Grid className="sidebar__icon" />,
+        )}
+        {item(
+          'tokens',
+          href.tokens(),
+          route.kind === 'tokens',
+          'Design tokens',
+          <Icon.Fields className="sidebar__icon" />,
+        )}
       </div>
     </nav>
   )

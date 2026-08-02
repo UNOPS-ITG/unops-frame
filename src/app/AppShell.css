@@ -55,16 +55,94 @@
   transition: width var(--transition-base);
 }
 
-.sidebar--collapsed {
-  width: 3.5rem;
+/* Bob's header row: brand left, panel toggle right; in the rail the brand
+   yields and the toggle centres. */
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-3);
+  min-height: 2.75rem;
+  flex-shrink: 0;
 }
 
 .sidebar__brand {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-1) var(--spacing-2) var(--spacing-3);
-  min-height: 2.75rem;
+  padding: 0 var(--spacing-1);
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-md);
+}
+
+.sidebar__brand:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.sidebar__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebar__toggle:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.sidebar__toggle:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* --- the rail (Bob's 56px collapsed mode) --------------------------------- */
+
+.sidebar--collapsed {
+  width: 3.5rem;
+  padding-inline: var(--spacing-2);
+  align-items: center;
+}
+
+.sidebar--collapsed .sidebar__header {
+  justify-content: center;
+  padding-inline: 0;
+  width: 100%;
+}
+
+.sidebar--collapsed .sidebar__scroll {
+  padding: 0;
+  width: 100%;
+}
+
+.sidebar--collapsed .sidebar__section {
+  margin-block-end: var(--spacing-2);
+}
+
+.sidebar--collapsed .sidebar__link {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+  margin-inline: auto;
+}
+
+.sidebar--collapsed .sidebar__footer {
+  align-items: center;
+  width: 100%;
 }
 
 .sidebar__mark {
@@ -304,17 +382,39 @@
 /* --- narrow screens -------------------------------------------------------- */
 
 @media (max-width: 60rem) {
+  /* Forced rail on narrow screens: the same treatment the collapsed class
+     applies, imposed by the viewport. */
   .sidebar {
     width: 3.5rem;
+    padding-inline: var(--spacing-2);
+    align-items: center;
   }
-  .sidebar__wordmark,
+  .sidebar__brand,
   .sidebar__label,
   .sidebar__count,
   .sidebar__heading,
   .sidebar__empty {
     display: none;
   }
-  .sidebar__link {
+  .sidebar__header {
     justify-content: center;
+    padding-inline: 0;
+    width: 100%;
+  }
+  .sidebar__scroll {
+    padding: 0;
+    width: 100%;
+  }
+  .sidebar__link {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    margin-inline: auto;
+  }
+  .sidebar__footer {
+    align-items: center;
+    width: 100%;
   }
 }

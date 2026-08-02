@@ -46,6 +46,39 @@ test.describe('the shell', () => {
     await expect(page.getByRole('heading', { name: 'Risk register' })).toBeVisible()
   })
 
+  test('collapses to an icon rail and remembers it', async ({ page }) => {
+    // Bob's pattern, deliberately: the same panel glyph, a 56px rail that
+    // keeps every destination one click away, and a persisted preference.
+    await as(page, 'dev@unops.org', WORKSPACE)
+    const sidebar = page.getByRole('navigation', { name: 'Workspace' })
+    await expect(sidebar.getByText('Registers')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Collapse sidebar' }).click()
+    await expect(sidebar.getByText('Registers')).toBeHidden()
+    // Destinations survive as labelled icons, not disappear.
+    await expect(sidebar.getByRole('link', { name: 'Corporate data' })).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Expand sidebar' }).click()
+    await expect(sidebar.getByText('Registers')).toBeVisible()
+  })
+
+  test('the brand and the Home item both lead home', async ({ page }) => {
+    await as(page, 'dev@unops.org', REGISTER)
+    await page.waitForSelector('canvas', { timeout: 20_000 })
+
+    // Two ways home, both labelled "Home": the nav item and the brand.
+    await page.locator('.sidebar__scroll').getByRole('link', { name: 'Home', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Your registers' })).toBeVisible()
+
+    await page.goto(REGISTER)
+    await page.waitForSelector('canvas', { timeout: 20_000 })
+    await page.locator('.sidebar__brand').click()
+    await expect(page.getByRole('heading', { name: 'Your registers' })).toBeVisible()
+  })
+
   test('an unrecognised route lands one level up rather than on an error', async ({ page }) => {
     await as(page, 'dev@unops.org', '/#/nonsense/here')
     await expect(page.getByRole('heading', { name: 'Workspace' })).toBeVisible()
