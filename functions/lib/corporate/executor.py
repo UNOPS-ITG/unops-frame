@@ -96,6 +96,16 @@ class JobConfig:
     is billed regardless of where the data lives, which is what makes a
     Frame-owned ceiling both possible and necessary."""
 
+    location: str = ""
+    """The BigQuery region the data lives in — `EU` for `unops-datahub`.
+
+    Required, not optional, once short-query mode is requested: BigQuery cannot
+    infer a region for a job it may not create, and the failure is
+    "Cannot parse  as CloudRegion", which names neither the field nor the
+    feature that made it necessary. Carried on the Source so a second warehouse
+    in another region needs configuration rather than code.
+    """
+
     max_bytes_billed: int = 2_000_000_000
     timeout_ms: int = DEFAULT_TIMEOUT_MS
     workspace_id: str | None = None

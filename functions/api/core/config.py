@@ -115,6 +115,33 @@ class Settings(BaseSettings):
     # the same audit log shape as everything else.
     dev_auth_bypass_allowed_emails: list[str] = Field(default_factory=list)
 
+    # --- The BigQuery connector (PRD 14) ---------------------------------
+    # Corporate data is read in the user's own context, so Frame holds a
+    # per-person OAuth grant. The client is Frame's; the consent and the
+    # entitlements are theirs.
+    oauth_client_id: str = ""
+    oauth_client_secret: str = ""
+    corporate_oauth_redirect_uri: str = ""
+    """Left empty to derive from the request origin, so a local run and a
+    deployment need no different configuration. Set it only where the public
+    origin differs from what the app sees — behind a proxy that rewrites Host."""
+
+    corporate_kms_key: str = ""
+    """The KMS key refresh tokens are encrypted with. Absent is permitted ONLY
+    on a local, non-deployed process; `build_cipher` refuses otherwise rather
+    than storing credentials in the clear."""
+
+    corporate_kms_service_account: str = ""
+    """A dedicated principal to impersonate for decryption, so the ability to
+    read a user's refresh token is a grant that can be reviewed and revoked on
+    its own rather than being implied by running the API."""
+
+    corporate_billing_project: str = ""
+    """The project that SUBMITS corporate-data queries and therefore pays for
+    them. Separate from `gcp_project_id` because the two genuinely differ: the
+    submitting project is billed regardless of where the data lives, which is
+    what makes a Frame-owned ceiling both possible and necessary."""
+
     # --- Runtime tuning --------------------------------------------------
     # Two separate pools, and sizing one does not size the other. anyio's
     # limiter backs FastAPI's sync handlers; asyncio.to_thread uses the loop's

@@ -241,6 +241,14 @@ class Source(_Strict):
     than inclusion, so a dataset added upstream is swept in rather than silently
     missing."""
 
+    location: str = "EU"
+    """The BigQuery region the source's datasets live in.
+
+    A property of the warehouse rather than of any one query, so it is declared
+    once here. `unops-datahub` is EU; a second warehouse elsewhere is
+    configuration rather than code.
+    """
+
     metadata_dataset: str = "Metadata_Api"
     """Where the data team's catalogue lives. Frame points at the published
     `_Api` interface layer, not the base tables — `ai-bob` points at the base

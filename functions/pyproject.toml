@@ -34,7 +34,7 @@ build-backend = "setuptools.build_meta"
 # what is a package and what is not. `config/` holds .env files rather than
 # Python, and `tests/` is not shipped.
 [tool.setuptools]
-packages = ["api", "lib", "fn_impl", "consumers", "migrations"]
+packages = ["api", "lib", "fn_impl", "consumers", "jobs", "migrations"]
 
 [tool.ruff]
 line-length = 100

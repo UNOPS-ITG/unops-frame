@@ -96,8 +96,20 @@ found only here.
 | **Master-detail** | PM-3 composition, parent ceiling applied last |
 | **Import / export** | callers of the single write path; withheld counts travel with the file |
 | **The grid** | `FrameGrid` over Glide Data Grid, brand-tokened, withheld cells legible |
-| **Corporate data** | the discovery sweep, the disclosure classifier, four SQL templates, the stored reference |
+| **Corporate data** | the scheduled sweep, the disclosure classifier, four SQL templates, the BigQuery connector |
 
 Not yet built: forms, automations, document generation, the AI layer, reporting, notifications,
-search. Corporate data has its catalogue, classifier and query layer but not yet the scheduled sweep
-job or the OAuth connector, so nothing reads the warehouse at runtime.
+search. Corporate data has everything except the disclosure *probe* — the sweep records every
+relation as `entitled` until a probe with IAM read access classifies it, which is the safe default
+and means the fast `open` path is not yet exercised.
+
+### Sweeping the corporate catalogue
+
+```bash
+python -m jobs.sweep_corporate_catalogue --workspace ws-demo --source datahub
+```
+
+Reads `Metadata_Api` and writes Frame's catalogue: against `unops-datahub` that is 555 dimensions,
+388 facts and 3,629 declared relationship edges, of which 398 and 248 are bindable. It runs as a
+service identity, is bounded by the Source's byte ceiling, and writes a `governance` audit entry —
+a sweep changes what a whole workspace may bind to.

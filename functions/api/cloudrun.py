@@ -64,7 +64,7 @@ def main() -> None:
             # `lib` matters as much as `api`: the permission library, the row
             # writer and the compiler live there, and leaving it unwatched means
             # the dev server serves stale logic while the source says otherwise.
-            reload_dirs=["api", "lib", "consumers", "migrations"],
+            reload_dirs=["api", "lib", "consumers", "jobs", "migrations"],
             log_level=settings.log_level.lower(),
         )
     else:

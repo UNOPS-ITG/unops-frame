@@ -28,6 +28,16 @@ CHILDREN = "children"
 CATALOG = "catalog"
 AUDIT = "audit"
 OUTBOX = "outbox"
+USERS = "users"
+CONNECTORS = "connectors"
+"""Per-principal connector grants, keyed on the stable SUBJECT.
+
+Not the email, and not under a workspace. An address is mutable and
+reassignable, so keying a credential that reads corporate data as its owner on
+one means a renamed or recycled address inherits it. And a person's consent is
+theirs, not a workspace's — they grant Frame access to *their* BigQuery, once,
+for every workspace they work in.
+"""
 
 
 def workspace(db: Any, workspace_id: str) -> Any:

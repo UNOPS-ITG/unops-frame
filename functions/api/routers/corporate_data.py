@@ -27,9 +27,8 @@ from fastapi import APIRouter, Depends, Query, Request
 from api.core.exceptions import AuthorizationError, NotFoundError, RequestValidationError
 from api.dependencies.auth import CurrentUser
 from api.schemas.base import RequestSchema, ResponseSchema
-from lib.corporate.classify import Probe, classify_relation
 from lib.corporate.model import Dimension, Fact, Source
-from lib.corporate.sweep import Catalogue, sweep
+from lib.corporate.sweep import Catalogue
 
 router = APIRouter(tags=["corporate-data"])
 
@@ -122,6 +121,215 @@ class FactOut(ResponseSchema):
     bindable: bool
     reasons: list[str] = []
     measures: list[MeasureOut] = []
+
+
+class ConnectionOut(ResponseSchema):
+    connected: bool
+    email: str | None = None
+    granted_at: str | None = None
+    scopes: list[str] = []
+
+
+# --- the connector --------------------------------------------------------
+
+
+@router.get("/corporate/connection")
+def get_connection(user: CurrentUser, db: Db) -> ConnectionOut:
+    """Whether this person has connected their BigQuery access.
+
+    Not workspace-scoped: a person's consent is theirs, granted once, and used
+    in every workspace they work in. Scoping it per workspace would mean
+    consenting again for each one, which is both worse for them and a stronger
+    claim than Frame needs to make.
+    """
+    store = _tokens(db)
+    grant = store.get(user.subject)
+    return ConnectionOut(
+        connected=store.is_connected(user.subject),
+        email=grant.email if grant else None,
+        granted_at=grant.granted_at if grant else None,
+        scopes=list(grant.scopes) if grant else [],
+    )
+
+
+@router.get("/corporate/connection/start")
+def start_connection(request: Request, user: CurrentUser, db: Db) -> Any:
+    """Begin consent. Redirects to Google."""
+    from fastapi.responses import RedirectResponse
+
+    from lib.corporate.consent import (
+        STATE_COOKIE,
+        STATE_MAX_AGE_SECONDS,
+        build_consent_url,
+        new_state,
+    )
+    from lib.corporate.tokens import BIGQUERY_SCOPE
+
+    settings = request.app.state.settings
+    if not settings.oauth_client_id or not settings.oauth_client_secret:
+        raise RequestValidationError(
+            "The BigQuery connector is not configured on this deployment: no OAuth "
+            "client. Corporate data cannot be connected until it is."
+        )
+
+    store = _tokens(db)
+    if store.is_connected(user.subject):
+        # Already granted. Sending them through consent again would produce a
+        # screen that offers nothing and, with prompt=consent, a pointless
+        # re-grant.
+        raise RequestValidationError("BigQuery is already connected for this account")
+
+    state = new_state(user.subject)
+    consent = build_consent_url(
+        client_id=settings.oauth_client_id,
+        redirect_uri=_redirect_uri(request, settings),
+        required_scopes=[BIGQUERY_SCOPE],
+        granted_scopes=store.granted_scopes(user.subject),
+        state=state,
+    )
+
+    response = RedirectResponse(url=consent.url, status_code=302)
+    response.set_cookie(
+        STATE_COOKIE,
+        consent.state_cookie_value,
+        httponly=True,
+        secure=settings.environment != "local",
+        # Lax rather than Strict: the cookie has to survive Google's top-level
+        # redirect back. Strict would drop it and every consent would fail with
+        # "no flow in progress".
+        samesite="lax",
+        max_age=STATE_MAX_AGE_SECONDS,
+        path="/",
+    )
+    return response
+
+
+@router.get("/corporate/connection/callback")
+def finish_connection(
+    request: Request, user: CurrentUser, db: Db, code: str = "", state: str = ""
+) -> Any:
+    """Google's callback. Authenticated, because it returns through IAP.
+
+    That is what lets the state be checked against the *authenticated* subject
+    rather than against a session resolved afterwards — closing a replay where
+    one person's consent lands on another's account.
+    """
+    from lib.corporate.consent import STATE_COOKIE, ConsentRejected, verify_state
+
+    settings = request.app.state.settings
+
+    try:
+        verify_state(
+            returned_state=state,
+            cookie_state=request.cookies.get(STATE_COOKIE),
+            authenticated_subject=user.subject,
+        )
+    except ConsentRejected as exc:
+        return _popup_close(str(exc), ok=False)
+
+    if not code:
+        return _popup_close("Google did not return an authorisation code.", ok=False)
+
+    import httpx
+
+    exchange = httpx.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "client_id": settings.oauth_client_id,
+            "client_secret": settings.oauth_client_secret,
+            "code": code,
+            "redirect_uri": _redirect_uri(request, settings),
+            "grant_type": "authorization_code",
+        },
+        timeout=15.0,
+    )
+    if exchange.status_code != 200:
+        return _popup_close("Google refused the authorisation code.", ok=False)
+
+    payload = exchange.json()
+    refresh_token = payload.get("refresh_token")
+    if not refresh_token:
+        # Google omits it on a repeat grant it considers already given. Without
+        # one the connector works for an hour and then stops, which is the
+        # hardest kind of failure to attribute.
+        return _popup_close(
+            "Google did not issue a refresh token. Remove Frame from your Google "
+            "account permissions and connect again.",
+            ok=False,
+        )
+
+    store = _tokens(db)
+    granted = list(payload.get("scope", "").split()) or list(store.granted_scopes(user.subject))
+    store.store(user.subject, refresh_token, granted, email=user.email)
+
+    return _popup_close("BigQuery connected.")
+
+
+@router.delete("/corporate/connection", status_code=200)
+def disconnect(user: CurrentUser, db: Db) -> ConnectionOut:
+    """Revoke at Google, then forget locally.
+
+    Both, and in that order. Deleting the local record alone leaves a live grant
+    the user believes is gone and Frame can no longer see.
+    """
+    _tokens(db).disconnect(user.subject)
+    return ConnectionOut(connected=False)
+
+
+def _redirect_uri(request: Request, settings: Any) -> str:
+    configured = getattr(settings, "corporate_oauth_redirect_uri", "")
+    if configured:
+        return str(configured)
+    # Same origin the request arrived on, so a local run and a deployment do not
+    # need different configuration to work.
+    return str(request.url_for("finish_connection"))
+
+
+def _tokens(db: Any) -> Any:
+    from api.core.config import get_settings
+    from lib.corporate.crypto import build_cipher
+    from lib.corporate.tokens import TokenStore
+
+    settings = get_settings()
+    cipher = build_cipher(
+        environment=str(settings.environment),
+        kms_key_name=getattr(settings, "corporate_kms_key", None),
+        impersonate=getattr(settings, "corporate_kms_service_account", None),
+    )
+    return TokenStore(
+        db,
+        cipher,
+        client_id=getattr(settings, "oauth_client_id", "") or "",
+        client_secret=getattr(settings, "oauth_client_secret", "") or "",
+    )
+
+
+def _popup_close(message: str, *, ok: bool = True) -> Any:
+    """A page that reports and closes itself.
+
+    The consent flow runs in a popup so the user does not lose the register they
+    were editing. Escaped, because the message can carry text from an error path
+    and a connector page is a poor place to learn about injection.
+    """
+    from html import escape
+
+    from fastapi.responses import HTMLResponse
+
+    from lib.corporate.consent import STATE_COOKIE
+
+    colour = "#0F9D58" if ok else "#d93025"
+    body = (
+        "<!doctype html><html><head><meta charset='utf-8'><title>Frame</title>"
+        "<style>body{font:16px/1.5 system-ui,sans-serif;display:grid;place-items:center;"
+        "height:100vh;margin:0;background:#f7f8fa}div{max-width:34rem;padding:2rem;"
+        "border-radius:12px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);"
+        f"text-align:center}}p{{margin:0;color:{colour}}}</style></head>"
+        f"<body><div><p>{escape(message)}</p></div>"
+        "<script>setTimeout(function(){window.close()},2500)</script></body></html>"
+    )
+    response = HTMLResponse(content=body)
+    response.delete_cookie(STATE_COOKIE, path="/")
+    return response
 
 
 # --- sources --------------------------------------------------------------
@@ -255,30 +463,24 @@ def _load_catalogue(db: Any, workspace_id: str) -> Catalogue:
     Read from Frame's own record rather than swept on demand: a sweep is a
     scheduled job against the warehouse, and running one per page load would
     make browsing the catalogue the most expensive thing in the product.
+
+    Stored one document per relation, because the real warehouse — ~960
+    relations, ~15,700 columns — is roughly 12 MB and does not fit in a
+    Firestore document.
     """
-    from lib.paths import workspace
+    from lib.corporate.sweep_job import load_catalogue
 
-    document = workspace(db, workspace_id).collection(CATALOGUE).document("current").get()
-    if not document.exists:
-        return Catalogue()
-
-    data = document.to_dict() or {}
-    return sweep(
-        Source.model_validate(data.get("source", {"id": "unknown", "project": "unknown"})),
-        data.get("dictionary", []),
-        data.get("tables", []),
-        data.get("relations", []),
-    )
-
-
-# The probe results are stored per relation by the sweep job; until it has run,
-# nothing is open. That default is the safe one and it is deliberate: an
-# unclassified relation is not a public one.
-UNPROBED = Probe()
+    return load_catalogue(db, workspace_id)
 
 
 def _dimension_out(dimension: Dimension) -> DimensionOut:
-    disclosure, reasons = classify_relation(dimension, UNPROBED)
+    """Rendered from the stored classification.
+
+    Not re-classified here. The sweep ran the probe with credentials this
+    request does not have, and re-running the classifier against an empty probe
+    would report every relation as entitled with a reason about a probe that in
+    fact succeeded — turning a stored fact into a misleading one.
+    """
     return DimensionOut(
         id=dimension.id,
         label=dimension.label,
@@ -286,9 +488,9 @@ def _dimension_out(dimension: Dimension) -> DimensionOut:
         business_domain=dimension.business_domain,
         data_steward=dimension.data_steward,
         business_key=dimension.business_key,
-        disclosure=disclosure.value,
+        disclosure=dimension.disclosure.value,
         bindable=dimension.bindable,
-        reasons=reasons,
+        reasons=dimension.classification_reasons,
         attributes=[
             AttributeOut(
                 name=a.name,
@@ -304,7 +506,6 @@ def _dimension_out(dimension: Dimension) -> DimensionOut:
 
 
 def _fact_out(fact: Fact) -> FactOut:
-    disclosure, reasons = classify_relation(fact, UNPROBED)
     restricted = set(fact.restricted_columns)
     return FactOut(
         id=fact.id,
@@ -313,9 +514,9 @@ def _fact_out(fact: Fact) -> FactOut:
         business_domain=fact.business_domain,
         data_steward=fact.data_steward,
         grain=fact.grain,
-        disclosure=disclosure.value,
+        disclosure=fact.disclosure.value,
         bindable=fact.bindable,
-        reasons=reasons,
+        reasons=fact.classification_reasons,
         measures=[
             MeasureOut(
                 name=m.name,

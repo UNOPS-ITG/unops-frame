@@ -35,15 +35,30 @@ def db() -> FakeFirestore:
     store = FakeFirestore()
     store.seed(f"workspaces/{WS}/members/dev-bypass:{ADMIN}", {"roles": ["manager"]})
     store.seed(f"workspaces/{WS}/members/dev-bypass:{AUTHOR}", {"roles": ["editor"]})
-    store.seed(
-        f"workspaces/{WS}/corporateCatalogue/current",
-        {
-            "source": {"id": "datahub", "project": "unops-datahub"},
-            "dictionary": fixture("dictionary"),
-            "tables": fixture("tables"),
-            "relations": fixture("relations"),
-        },
+    # Seeded by running a real sweep and persisting it, rather than by
+    # hand-writing documents. A fixture shaped by hand drifts from what the
+    # sweep actually writes, and the first symptom is an API test that passes
+    # against a shape nothing produces.
+    from lib.corporate.executor import Credential
+    from lib.corporate.model import Source
+    from lib.corporate.sweep_job import persist, run_sweep
+
+    class Reader:
+        def read(self, sql: str, config: Any, credential: Any) -> list[dict[str, Any]]:
+            if "Datahub_Data_Dictionary" in sql:
+                return fixture("dictionary")
+            if "Datahub_Table_Reference" in sql:
+                return fixture("relations")
+            return fixture("tables")
+
+    source = Source(id="datahub", project="unops-datahub")
+    catalogue, result = run_sweep(
+        source,
+        Reader(),
+        Credential(access_token="t", subject="sa", is_service=True),
+        billing_project="frame-billing",
     )
+    persist(store, WS, source, catalogue, result)
     return store
 
 
@@ -186,7 +201,11 @@ def test_an_empty_catalogue_is_an_empty_list_not_an_error(
 ) -> None:
     """A workspace with no source registered has no corporate data. That is a
     state, not a failure."""
-    db.docs.pop(f"workspaces/{WS}/corporateCatalogue/current", None)
+    # The relations, not just the root: the catalogue lives one document per
+    # relation, and removing only the root would leave the list populated from
+    # a catalogue whose summary is gone.
+    for path in db.paths_under(f"workspaces/{WS}/corporateCatalogue/"):
+        db.docs.pop(path, None)
     assert author.get(f"{BASE}/dimensions").json() == []
 
 
