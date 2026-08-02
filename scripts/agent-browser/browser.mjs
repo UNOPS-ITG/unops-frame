@@ -122,7 +122,8 @@ async function installGcsUploadProxy(context) {
           headers: { 'access-control-allow-origin': '*' },
           body: Buffer.from(await resp.arrayBuffer()),
         });
-      } catch (e) {
+      } catch {
+        // The upstream fetch failed; failing the route is the whole handling.
         await route.abort('failed');
       }
     }

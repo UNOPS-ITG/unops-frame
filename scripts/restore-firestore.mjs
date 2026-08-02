@@ -128,7 +128,7 @@ async function getAccessToken() {
   try {
     const result = await fbGetToken();
     return result.access_token;
-  } catch (error) {
+  } catch {
     // Try alternative method - read from configstore directly
     const os = await import('os');
     const configPath = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');

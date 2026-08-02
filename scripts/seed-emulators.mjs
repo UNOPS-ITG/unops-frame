@@ -52,7 +52,7 @@ async function clearAuthUsers() {
     if (response.ok) {
       console.log('   ✅ Auth users cleared');
     }
-  } catch (error) {
+  } catch {
     console.log('   ℹ️  No existing auth users to clear');
   }
 }
@@ -165,7 +165,7 @@ async function clearFirestoreData() {
     if (response.ok) {
       console.log('   ✅ Firestore data cleared');
     }
-  } catch (error) {
+  } catch {
     console.log('   ℹ️  No existing Firestore data to clear');
   }
 }
@@ -230,7 +230,7 @@ async function seedEmulators() {
     await clearFirestoreData();
 
     // Step 2: Load Auth users
-    const { users, uidMapping } = await loadAuthUsers();
+    const { users } = await loadAuthUsers();
 
     // Step 3: Load Firestore data
     const docCount = await loadFirestoreData();
