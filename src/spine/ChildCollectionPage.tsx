@@ -14,8 +14,8 @@ import { getBlueprint, queryRows } from '@/api/client'
 import { href } from '@/app/routes'
 import { formatValue } from '@/grid/cells'
 import { isRestricted, type Blueprint, type Row } from '@/grid/contract'
-import type { SpineDef } from '@/fixtures/spine/contracts'
-import { mitigationsFor, type FixtureChildRow } from '@/fixtures/spine/risk'
+import type { ChildRow, SpineDef } from '@/fixtures/spine/contracts'
+import { childRowsFor } from '@/fixtures/spine/store'
 import { PreviewPill } from './bits'
 import './spine.css'
 
@@ -56,20 +56,20 @@ export function ChildCollectionPage({
   }, [workspaceId, blueprintId])
 
   const flat = useMemo(() => {
-    if (rows === null || blueprint === null) return null
+    if (rows === null || blueprint === null || table === undefined) return null
     const titleFieldId = blueprint.titleField ?? 'title'
     const titleField = blueprint.fields.find((f) => f.id === titleFieldId)
-    const out: { parentId: string; parentTitle: string; child: FixtureChildRow }[] = []
+    const out: { parentId: string; parentTitle: string; child: ChildRow }[] = []
     for (const row of rows) {
       const tv = row.values[titleFieldId]
       const parentTitle =
         titleField !== undefined && !isRestricted(tv) ? formatValue(tv, titleField) || row.id : row.id
-      for (const child of mitigationsFor(row.id, row.values)) {
+      for (const child of childRowsFor(spine.blueprintId, table.id, row.id, row.values)) {
         out.push({ parentId: row.id, parentTitle, child })
       }
     }
     return out
-  }, [rows, blueprint])
+  }, [rows, blueprint, table, spine])
 
   if (table === undefined) {
     return (
@@ -96,31 +96,39 @@ export function ChildCollectionPage({
         {flat === null ? (
           <p className="panel__empty">Loading…</p>
         ) : (
+          (() => {
+            const rest = table.columns.slice(1)
+            const template = `2.2fr 1.4fr ${rest.map(() => '1fr').join(' ')}`
+            return (
           <div className="rtable rtable--page">
-            <div className="rtable__head" style={{ gridTemplateColumns: '2.2fr 1.4fr 1fr 1fr 1fr' }}>
+            <div className="rtable__head" style={{ gridTemplateColumns: template }}>
               <span>{table.columns[0]?.label ?? 'Item'}</span>
               <span>Belongs to</span>
-              <span>Due</span>
-              <span>Assignee</span>
-              <span>State</span>
+              {rest.map((c) => (
+                <span key={c.id}>{c.label}</span>
+              ))}
             </div>
             {flat.slice(0, CAP).map(({ parentId, parentTitle, child }, i) => (
-              <div key={i} className="rtable__row" style={{ gridTemplateColumns: '2.2fr 1.4fr 1fr 1fr 1fr' }}>
-                <span>{child.action}</span>
+              <div key={i} className="rtable__row" style={{ gridTemplateColumns: template }}>
+                <span>{child.values[table.columns[0]?.id ?? ''] ?? ''}</span>
                 <span>
                   <a className="rtable__parent" href={href.record(workspaceId, blueprintId, parentId)}>
                     {parentTitle}
                   </a>
                 </span>
-                <span>{child.due}</span>
-                <span>{child.assignee}</span>
-                <span>
-                  <span
-                    className={`state-chip state-chip--${child.state === 'Done' ? 'closed' : child.state === 'In progress' ? 'progress' : 'draft'}`}
-                  >
-                    {child.state}
-                  </span>
-                </span>
+                {rest.map((c) =>
+                  c.id === 'state' ? (
+                    <span key={c.id}>
+                      {child.stateLabel !== undefined && (
+                        <span className={`state-chip state-chip--${child.stateRole ?? 'draft'}`}>
+                          {child.stateLabel}
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span key={c.id}>{child.values[c.id] ?? ''}</span>
+                  ),
+                )}
               </div>
             ))}
             {flat.length > CAP && (
@@ -130,6 +138,8 @@ export function ChildCollectionPage({
               </p>
             )}
           </div>
+            )
+          })()
         )}
       </div>
     </div>

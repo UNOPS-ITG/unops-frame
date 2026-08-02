@@ -183,6 +183,14 @@ export interface ActivityEntry {
   }[]
 }
 
+/** One derived child row: column values keyed by the child table's column
+ * ids, plus an optional state chip where a `state` column exists. */
+export interface ChildRow {
+  readonly values: Readonly<Record<string, string>>
+  readonly stateLabel?: string
+  readonly stateRole?: WorkflowState['role']
+}
+
 /** BP-28: a locked base plus workspace additions. One-to-one fields render
  * as columns that feel native and disclose their home on inspection;
  * one-to-many collections render as child grids in the detail panel. */
@@ -274,6 +282,21 @@ export interface SpineDef {
     readonly label: string
     readonly columns: readonly { readonly id: string; readonly label: string }[]
   }[]
+  /** What the Overview's attention lists sort by, per app — "longest
+   * unreviewed" is a risk concept; a contract app worries about "ending
+   * soonest". Drafts the BP-1a view-default territory. */
+  readonly overview: {
+    readonly staleField: string
+    readonly staleTitle: string
+    readonly bigField: string
+    readonly bigTitle: string
+  }
+  /** Which fields a board card shows under its title. */
+  readonly card: { readonly metaField: string; readonly valueField: string }
+  /** What the scripted activity narrates for THIS app: which recipe acted,
+   * and which restricted field's delta renders withheld (null where the
+   * app has no restricted field in its story). */
+  readonly activity: { readonly recipe: string; readonly restrictedLabel: string | null }
   readonly workflow: WorkflowDef
   readonly forms: readonly FormDef[]
   readonly recipes: readonly RecipeDef[]

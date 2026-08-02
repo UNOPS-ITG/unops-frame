@@ -121,7 +121,7 @@ export function RowDetail({ workspaceId, blueprint, row, onClose }: RowDetailPro
       )}
 
       {tab === 'activity' && spine !== null ? (
-        <ActivityFeed entries={activityFeed(row.id, row.values, appended)} />
+        <ActivityFeed entries={activityFeed(row.id, row.values, appended, spine ?? undefined)} />
       ) : (
         <div className="detail__fields scrollable">
           {blueprint.fields.map((field) => {

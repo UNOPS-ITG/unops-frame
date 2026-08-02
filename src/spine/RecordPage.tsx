@@ -20,8 +20,7 @@ import { href } from '@/app/routes'
 import { formatValue, WITHHELD_LABEL } from '@/grid/cells'
 import { isCorporateValue, isRestricted, type Blueprint, type Row } from '@/grid/contract'
 import type { SpineDef } from '@/fixtures/spine/contracts'
-import { mitigationsFor } from '@/fixtures/spine/risk'
-import { activityFeed, useSpineStore } from '@/fixtures/spine/store'
+import { activityFeed, childRowsFor, useSpineStore } from '@/fixtures/spine/store'
 import { ActivityFeed } from './ActivityFeed'
 import { WorkflowPanel } from './WorkflowPanel'
 import { PreviewPill } from './bits'
@@ -112,7 +111,6 @@ export function RecordPage({
     (f) => f.id !== titleFieldId && f.id !== spine.workflow.stateField,
   )
 
-  const fixtureChildren = mitigationsFor(row.id, row.values)
   const intakeChildren = draftChildren[row.id] ?? []
 
   return (
@@ -160,47 +158,63 @@ export function RecordPage({
           </section>
 
           {/* The child collections, inline — the page's reason to exist. */}
-          {spine.childTables.map((table) => (
-            <section key={table.id} className="record__card" aria-label={table.label}>
-              <div className="panel__head">
-                <h3 className="panel__title">{table.label}</h3>
-                <a className="panel__more" href={href.collection(workspaceId, blueprintId, table.id)}>
-                  All {table.label.toLowerCase()}
-                  <Icon.Chevron />
-                </a>
-                <PreviewPill what="Child rows" />
-              </div>
-              <div className="rtable">
-                <div className="rtable__head" style={{ gridTemplateColumns: `2.2fr 1fr 1fr 1fr` }}>
-                  {table.columns.map((c) => (
-                    <span key={c.id}>{c.label}</span>
+          {spine.childTables.map((table) => {
+            const template = `2.2fr ${table.columns
+              .slice(1)
+              .map(() => '1fr')
+              .join(' ')}`
+            const children = childRowsFor(spine.blueprintId, table.id, row.id, row.values)
+            const intake = intakeChildren.filter((d) => d.collectionId === table.id)
+            return (
+              <section key={table.id} className="record__card" aria-label={table.label}>
+                <div className="panel__head">
+                  <h3 className="panel__title">{table.label}</h3>
+                  <a className="panel__more" href={href.collection(workspaceId, blueprintId, table.id)}>
+                    All {table.label.toLowerCase()}
+                    <Icon.Chevron />
+                  </a>
+                  <PreviewPill what="Child rows" />
+                </div>
+                <div className="rtable">
+                  <div className="rtable__head" style={{ gridTemplateColumns: template }}>
+                    {table.columns.map((c) => (
+                      <span key={c.id}>{c.label}</span>
+                    ))}
+                  </div>
+                  {intake.map((d, i) => (
+                    <div key={`intake-${i}`} className="rtable__row" style={{ gridTemplateColumns: template }}>
+                      {table.columns.map((c, x) =>
+                        c.id === 'state' ? (
+                          <span key={c.id} className="slot slot--value">
+                            from intake
+                          </span>
+                        ) : (
+                          <span key={c.id}>{d.values[c.id] ?? (x === 0 ? '' : '')}</span>
+                        ),
+                      )}
+                    </div>
+                  ))}
+                  {children.map((c, i) => (
+                    <div key={i} className="rtable__row" style={{ gridTemplateColumns: template }}>
+                      {table.columns.map((col) =>
+                        col.id === 'state' ? (
+                          <span key={col.id}>
+                            {c.stateLabel !== undefined && (
+                              <span className={`state-chip state-chip--${c.stateRole ?? 'draft'}`}>
+                                {c.stateLabel}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span key={col.id}>{c.values[col.id] ?? ''}</span>
+                        ),
+                      )}
+                    </div>
                   ))}
                 </div>
-                {intakeChildren.map((d, i) => (
-                  <div key={`intake-${i}`} className="rtable__row" style={{ gridTemplateColumns: `2.2fr 1fr 1fr 1fr` }}>
-                    <span>{d.values['action'] ?? ''}</span>
-                    <span>{d.values['due'] ?? ''}</span>
-                    <span>{d.values['assignee'] ?? ''}</span>
-                    <span className="slot slot--value">from intake</span>
-                  </div>
-                ))}
-                {fixtureChildren.map((c, i) => (
-                  <div key={i} className="rtable__row" style={{ gridTemplateColumns: `2.2fr 1fr 1fr 1fr` }}>
-                    <span>{c.action}</span>
-                    <span>{c.due}</span>
-                    <span>{c.assignee}</span>
-                    <span>
-                      <span
-                        className={`state-chip state-chip--${c.state === 'Done' ? 'closed' : c.state === 'In progress' ? 'progress' : 'draft'}`}
-                      >
-                        {c.state}
-                      </span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
+              </section>
+            )
+          })}
 
           {spine.extension !== undefined &&
             spine.extension.collections.map((c) => (
@@ -240,7 +254,7 @@ export function RecordPage({
                 <Icon.History className="detail__glyph" /> Activity
               </h3>
             </div>
-            <ActivityFeed entries={activityFeed(row.id, row.values, appended)} />
+            <ActivityFeed entries={activityFeed(row.id, row.values, appended, spine)} />
           </section>
         </aside>
       </div>

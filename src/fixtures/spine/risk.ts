@@ -13,7 +13,7 @@
  * product, not a demo bolted beside one.
  */
 
-import type { ActivityEntry, PendingTask, SpineDef } from './contracts'
+import type { ActivityEntry, ChildRow, PendingTask, SpineDef } from './contracts'
 
 export const RISK_SPINE: SpineDef = {
   blueprintId: 'risk',
@@ -35,6 +35,17 @@ export const RISK_SPINE: SpineDef = {
       ],
     },
   ],
+
+  overview: {
+    staleField: 'reviewed',
+    staleTitle: 'Longest unreviewed',
+    bigField: 'exposure',
+    bigTitle: 'Largest exposure',
+  },
+
+  card: { metaField: 'owner', valueField: 'exposure' },
+
+  activity: { recipe: 'High exposure approval', restrictedLabel: 'Owner rationale' },
 
   workflow: {
     stateField: 'status',
@@ -314,13 +325,6 @@ export const SEED_TASKS: readonly PendingTask[] = [
  * seeded parents read believably and the same parent always shows the same
  * children. Dies when FM-3/BP-5 children are served for real.
  */
-export interface FixtureChildRow {
-  readonly action: string
-  readonly due: string
-  readonly assignee: string
-  readonly state: 'Planned' | 'In progress' | 'Done'
-}
-
 const ACTION_VERBS = [
   'Renegotiate the coverage clause with',
   'Run the contingency drill owned by',
@@ -332,7 +336,7 @@ const ACTION_VERBS = [
 export function mitigationsFor(
   rowId: string,
   rowValues: Readonly<Record<string, unknown>>,
-): FixtureChildRow[] {
+): ChildRow[] {
   const rawOwner = rowValues['owner']
   const owner = typeof rawOwner === 'string' ? rawOwner : 'M. Okafor'
   const status = rowValues['status']
@@ -344,26 +348,44 @@ export function mitigationsFor(
   const count = status === 'closed' ? 2 : 1 + (seed % 2)
   return Array.from({ length: count }, (_, i) => {
     const verb = ACTION_VERBS[(seed + i) % ACTION_VERBS.length]!
+    const state = status === 'closed' ? 'Done' : i === 0 ? 'In progress' : 'Planned'
     return {
-      action: `${verb} ${owner}`,
-      due: dueLabel,
-      assignee: owner,
-      state: status === 'closed' ? 'Done' : i === 0 ? 'In progress' : 'Planned',
+      values: { action: `${verb} ${owner}`, due: dueLabel, assignee: owner },
+      stateLabel: state,
+      stateRole: state === 'Done' ? 'closed' : state === 'In progress' ? 'progress' : 'draft',
     }
   })
 }
 
 /**
- * Scripted history behind whichever row the drawer opens on.
+ * Scripted history behind whichever row a drawer or record page opens on.
  *
- * Templated from the row's real values so all 500 seeded rows read
- * believably; the withheld delta and the automation attribution are fixed,
- * because those two treatments are what the drawer exists to show.
+ * Templated from the row's real values and the app's own vocabulary (its
+ * state labels, its recipe, its restricted field) so all five seeded apps
+ * read believably; the withheld delta and the automation attribution are
+ * the two treatments this history exists to show.
  */
-export function activityFor(rowValues: Readonly<Record<string, unknown>>): ActivityEntry[] {
-  const raw = rowValues['owner']
+export interface ActivityVoice {
+  readonly recipe: string
+  readonly restrictedLabel: string | null
+  readonly fromState: string
+  readonly toState: string
+  readonly ownerField: string
+}
+
+export function activityFor(
+  rowValues: Readonly<Record<string, unknown>>,
+  voice: ActivityVoice = {
+    recipe: 'High exposure approval',
+    restrictedLabel: 'Owner rationale',
+    fromState: 'Open',
+    toState: 'Mitigating',
+    ownerField: 'owner',
+  },
+): ActivityEntry[] {
+  const raw = rowValues[voice.ownerField]
   const owner = typeof raw === 'string' ? raw : 'M. Okafor'
-  return [
+  const entries: ActivityEntry[] = [
     {
       id: 'act-1',
       cls: 'change',
@@ -371,44 +393,46 @@ export function activityFor(rowValues: Readonly<Record<string, unknown>>): Activ
       actor: owner,
       channel: 'grid',
       summary: 'edited the row',
-      deltas: [
-        { fieldLabel: 'Status', before: 'Open', after: 'Mitigating' },
-        { fieldLabel: 'Last reviewed', before: '2026-05-04', after: '2026-08-02' },
-      ],
+      deltas: [{ fieldLabel: 'State', before: voice.fromState, after: voice.toState }],
     },
     {
       id: 'act-2',
       cls: 'change',
       at: '2026-07-28T14:12:00Z',
-      actor: 'recipe: High exposure approval',
+      actor: `recipe: ${voice.recipe}`,
       channel: 'automation',
-      summary: 'requested approval and set the state',
-      deltas: [{ fieldLabel: 'Status', before: 'Open', after: 'Mitigating' }],
-    },
-    {
-      id: 'act-3',
-      cls: 'change',
-      at: '2026-07-25T11:02:00Z',
-      actor: owner,
-      channel: 'grid',
-      summary: 'edited a restricted field',
-      deltas: [{ fieldLabel: 'Owner rationale', withheld: true }],
-    },
-    {
-      id: 'act-4',
-      cls: 'governance',
-      at: '2026-07-20T10:15:00Z',
-      actor: 'risk@unops.org',
-      channel: 'system',
-      summary: 'tightened the read rule on Owner rationale (band 2)',
-    },
-    {
-      id: 'act-5',
-      cls: 'change',
-      at: '2026-07-14T08:30:00Z',
-      actor: 'import started by ' + owner,
-      channel: 'import',
-      summary: 'row created by CSV import',
+      summary: 'acted on the row',
+      deltas: [{ fieldLabel: 'State', before: voice.fromState, after: voice.toState }],
     },
   ]
+  if (voice.restrictedLabel !== null) {
+    entries.push(
+      {
+        id: 'act-3',
+        cls: 'change',
+        at: '2026-07-25T11:02:00Z',
+        actor: owner,
+        channel: 'grid',
+        summary: 'edited a restricted field',
+        deltas: [{ fieldLabel: voice.restrictedLabel, withheld: true }],
+      },
+      {
+        id: 'act-4',
+        cls: 'governance',
+        at: '2026-07-20T10:15:00Z',
+        actor: 'risk@unops.org',
+        channel: 'system',
+        summary: `tightened the read rule on ${voice.restrictedLabel} (band 2)`,
+      },
+    )
+  }
+  entries.push({
+    id: 'act-5',
+    cls: 'change',
+    at: '2026-07-14T08:30:00Z',
+    actor: 'import started by ' + owner,
+    channel: 'import',
+    summary: 'row created by CSV import',
+  })
+  return entries
 }

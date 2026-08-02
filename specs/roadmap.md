@@ -91,7 +91,20 @@ fixture JSON → vision verification → then engines and APIs.
 
 Nothing in Now or Next is GCP-blocked; the spine is entirely local work.
 
-## Changes this update (2026-08-02, sixth edition — the composition correction)
+## Changes this update (2026-08-02, seventh edition — the portfolio seed)
+
+- **The four pilot apps are seeded for real** (owner: "needs a whole lot
+  more to have a full app feel"): contract (120 rows), asset (260),
+  project (48) and fleet (45) management now exist as real Blueprints in
+  the emulator with their own states, permission rules (one band-2 field
+  each) and slot projections — every count, trim and sort on their pages
+  is a server answer. Each carries a full spine: workflow doors, forms,
+  recipes, view maps, child tables (projects: risks + issues + tasks),
+  per-app attention axes and board cards, and scripted activity in the
+  app's own voice. The workspace launcher reads as a portfolio of five
+  working apps plus "New app".
+
+## Prior update (2026-08-02, sixth edition — the composition correction)
 
 - **Owner correction #3, absorbed**: a single table with chrome still
   reads as grid-first — an app is *multiple tables joined*, records as

@@ -1128,44 +1128,44 @@
   gap: var(--spacing-3);
 }
 
-/* The fused band: three state tiles (they ARE the legend), the inbox card
-   holding the right column across both rows, and the bar as connective
-   tissue beneath exactly the tiles it summarises. */
+/* The fused band: the state tiles (they ARE the legend — any number of
+   states) with the bar as connective tissue beneath them, and the inbox
+   card holding the right edge at full height. */
 .overview__stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(15rem, 17rem);
-  grid-template-rows: auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 17rem);
   gap: var(--spacing-3);
   align-items: stretch;
 }
 
-.overview__stats-grid .inboxcard {
-  grid-column: 4;
-  grid-row: 1 / span 2;
+.overview__statsmain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
 }
 
-.overview__stats-grid .dist {
-  grid-column: 1 / 4;
-  grid-row: 2;
+.overview__statsmain-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--spacing-3);
+  flex: 1;
+}
+
+.overview__statsmain .dist {
   margin: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
 }
 
-.overview__stats-grid .dist__bar {
+.overview__statsmain .dist__bar {
   flex: 1;
 }
 
 @media (max-width: 64rem) {
   .overview__stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  }
-
-  .overview__stats-grid .inboxcard,
-  .overview__stats-grid .dist {
-    grid-column: 1 / -1;
-    grid-row: auto;
+    grid-template-columns: 1fr;
   }
 }
 

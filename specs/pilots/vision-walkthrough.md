@@ -1,8 +1,14 @@
 # Vision walkthrough: the application spine on fixtures
 
 The checkpoint script (frontend-first method, step c). Walk it in order;
-every step works today against the seeded demo register at
-`http://localhost:6300/#/w/ws-demo/b/risk`. What is real: every row write
+every step works today against the seeded workspace at
+`http://localhost:6300/#/w/ws-demo` — which now holds **five working
+apps**: the risk register plus the four pilots (contract, asset, project
+and fleet management), each with its own seeded rows, states, permission
+rules, child tables, automations and views. The steps below use the risk
+app; every one of them works identically in the other four — Project
+management is the richest composition (three child tables), and Asset
+management shows the honest Gantt gate (no date pair declared). What is real: every row write
 (form submit, transition, approval effect) goes through the actual API and
 permission evaluator. What is fixture: the workflow/form/recipe
 *definitions*, pending tasks, and activity history — every surface showing

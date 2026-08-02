@@ -23,8 +23,7 @@ import { href, navigate } from '@/app/routes'
 import type { Blueprint, Row } from '@/grid/contract'
 import { formatValue } from '@/grid/cells'
 import type { SpineDef, WorkflowState } from '@/fixtures/spine/contracts'
-import { activityFor } from '@/fixtures/spine/risk'
-import { useSpineStore } from '@/fixtures/spine/store'
+import { scriptedActivity, useSpineStore } from '@/fixtures/spine/store'
 import { ActivityFeed } from './ActivityFeed'
 import { GeneratedForm } from './GeneratedForm'
 import { PreviewPill, StateChip } from './bits'
@@ -99,9 +98,10 @@ export function OverviewPage({
           } satisfies StateCount
         }),
       ),
-      // Longest-unreviewed first: the queue a review cadence exists to empty.
-      queryRows(workspaceId, blueprintId, { sort: sortBy('reviewed', 'asc'), limit: 4 }),
-      queryRows(workspaceId, blueprintId, { sort: sortBy('exposure', 'desc'), limit: 4 }),
+      // The app's own attention axes (spine.overview): what is oldest on
+      // the clock that matters here, and what is biggest.
+      queryRows(workspaceId, blueprintId, { sort: sortBy(spine.overview.staleField, 'asc'), limit: 4 }),
+      queryRows(workspaceId, blueprintId, { sort: sortBy(spine.overview.bigField, 'desc'), limit: 4 }),
     ])
       .then(([bp, stateCounts, staleRows, topRows]) => {
         if (cancelled) return
@@ -127,7 +127,10 @@ export function OverviewPage({
   // The register-level pulse reuses the row-level scripted history — enough
   // to judge the feel of an app that tells you what happened while you were
   // away; the real feed is PM-7's change stream scoped to the Blueprint.
-  const pulse = useMemo(() => activityFor({ owner: 'M. Osei' }).slice(0, 3), [])
+  const pulse = useMemo(
+    () => scriptedActivity(spine, { [spine.card.metaField]: 'M. Osei' }).slice(0, 3),
+    [spine],
+  )
 
   if (error !== null) {
     return (
@@ -177,19 +180,50 @@ export function OverviewPage({
             three numbers as proportion, so nothing on this band repeats. */}
         <section className="overview__stats" aria-label="State of the work">
           <div className="overview__stats-grid">
-            {(counts ?? spine.workflow.states.map((state) => ({ state, total: null }))).map((c) => (
-              <a
-                key={c.state.key}
-                className="tile"
-                href={href.table(workspaceId, blueprintId)}
-                aria-label={`${c.state.label} rows`}
-              >
-                <span className="tile__value">
-                  {'total' in c && c.total !== null ? c.total.toLocaleString() : '—'}
-                </span>
-                <StateChip state={c.state} />
-              </a>
-            ))}
+            <div className="overview__statsmain">
+              <div className="overview__statsmain-tiles">
+                {(counts ?? spine.workflow.states.map((state) => ({ state, total: null }))).map((c) => (
+                  <a
+                    key={c.state.key}
+                    className="tile"
+                    href={href.table(workspaceId, blueprintId)}
+                    aria-label={`${c.state.label} rows`}
+                  >
+                    <span className="tile__value">
+                      {'total' in c && c.total !== null ? c.total.toLocaleString() : '—'}
+                    </span>
+                    <StateChip state={c.state} />
+                  </a>
+                ))}
+              </div>
+
+              {counts !== null && distribution !== null && distribution.sum > 0 && (
+                <figure className="dist" aria-label="Distribution by state">
+                  <div className="dist__bar">
+                    {counts.map(
+                      (c) =>
+                        c.total > 0 && (
+                          <span
+                            key={c.state.key}
+                            className={`dist__seg dist__seg--${c.state.role}`}
+                            style={{ flexGrow: c.total }}
+                            title={`${c.state.label}: ${c.total.toLocaleString()}`}
+                          />
+                        ),
+                    )}
+                  </div>
+                  {distribution.withheld > 0 && (
+                    <span
+                      className="dist__withheld"
+                      title="Counted in every total above, not shown to you — the numbers are honest about what they include."
+                    >
+                      <Icon.Lock className="tile__glyph" />
+                      includes {distribution.withheld.toLocaleString()} withheld
+                    </span>
+                  )}
+                </figure>
+              )}
+            </div>
 
             {/* The one tile that is about YOU, given the room to act like it. */}
             <a
@@ -212,33 +246,6 @@ export function OverviewPage({
                 <Icon.Chevron />
               </span>
             </a>
-
-            {counts !== null && distribution !== null && distribution.sum > 0 && (
-              <figure className="dist" aria-label="Distribution by state">
-                <div className="dist__bar">
-                  {counts.map(
-                    (c) =>
-                      c.total > 0 && (
-                        <span
-                          key={c.state.key}
-                          className={`dist__seg dist__seg--${c.state.role}`}
-                          style={{ flexGrow: c.total }}
-                          title={`${c.state.label}: ${c.total.toLocaleString()}`}
-                        />
-                      ),
-                  )}
-                </div>
-                {distribution.withheld > 0 && (
-                  <span
-                    className="dist__withheld"
-                    title="Counted in every total above, not shown to you — the numbers are honest about what they include."
-                  >
-                    <Icon.Lock className="tile__glyph" />
-                    includes {distribution.withheld.toLocaleString()} withheld
-                  </span>
-                )}
-              </figure>
-            )}
           </div>
         </section>
 
@@ -253,24 +260,28 @@ export function OverviewPage({
               </a>
             </div>
             <AttentionList
-              title="Longest unreviewed"
+              title={spine.overview.staleTitle}
               rows={stale}
               blueprint={blueprint}
               reason={(row) => {
-                const raw = row.values['reviewed']
+                const raw = row.values[spine.overview.staleField]
                 const d = typeof raw === 'string' ? new Date(raw) : null
                 if (d === null || Number.isNaN(d.getTime())) return ''
-                return `${Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000))} days`
+                const days = Math.floor((Date.now() - d.getTime()) / 86_400_000)
+                // Past dates read as age; future dates as runway.
+                return days >= 0 ? `${days} days` : `in ${-days} days`
               }}
               onOpen={(rowId) => navigate(href.record(workspaceId, blueprintId, rowId))}
             />
             <AttentionList
-              title="Largest exposure"
+              title={spine.overview.bigTitle}
               rows={largest}
               blueprint={blueprint}
               reason={(row) => {
-                const field = blueprint?.fields.find((f) => f.id === 'exposure')
-                return field !== undefined ? formatValue(row.values['exposure'], field) : ''
+                const field = blueprint?.fields.find((f) => f.id === spine.overview.bigField)
+                return field !== undefined
+                  ? formatValue(row.values[spine.overview.bigField], field)
+                  : ''
               }}
               onOpen={(rowId) => navigate(href.record(workspaceId, blueprintId, rowId))}
             />

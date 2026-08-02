@@ -358,11 +358,313 @@ async function main() {
     blueprint_version: 1,
   })
 
+  await seedPilotApps()
+
   const base = `http://localhost:${ports.frontend}`
   console.log('done.')
   console.log(`  register:  ${base}/#/w/${WORKSPACE}/b/${BLUEPRINT}`)
   console.log(`  saved view: ${base}/#/w/${WORKSPACE}/b/${BLUEPRINT}/v/open-risks`)
+  console.log(`  pilots:    contracts · assets · projects · fleet (same workspace)`)
   console.log('  personas:  risk@unops.org (risk-team) · dev@unops.org (staff)')
+}
+
+/* ---------------------------------------------------------------------------
+ * The pilot apps: contract, asset, project and fleet management — the four
+ * registers of specs/pilots/paper-catalog.md, seeded as REAL Blueprints with
+ * real rows so the workspace reads as a portfolio of working apps rather
+ * than one demo and a wizard gallery.
+ *
+ * Slot projections follow the compiler's assignment order exactly as the
+ * risk seed does: indexed text/select fields take txt0..N in declaration
+ * order, numbers num0.., dates date0... Getting this wrong is silent (rows
+ * vanish under sort — PRD 02 open question 4), which is why each app keeps
+ * its indexed set small and stated.
+ * ------------------------------------------------------------------------ */
+
+const MANAGERS = ['A. Haddad', 'M. Osei', 'L. Fernández', 'R. Nakamura', 'T. Bergström']
+const HOLDERS = ['J. Mwangi', 'P. Silva', 'A. Rahman', 'C. Dubois', 'S. Petrov']
+const SUPPLIERS = [
+  'Nordwind Logistics', 'Sahel Power Co', 'Meridian Prefab', 'AquaPure Systems',
+  'HighPoint Engineering', 'Crescent Freight', 'Terra Survey Ltd', 'Baltic Gensets',
+]
+const day = (y, m, d) => new Date(y, m, d).toISOString()
+
+const APPS = [
+  {
+    id: 'contracts',
+    name: 'Contract management',
+    titleField: 'title',
+    count: 120,
+    fields: [
+      { id: 'title', label: 'Contract', type: 'text', variant: 'single', required: true, indexed: true },
+      {
+        id: 'status', label: 'Status', type: 'single_select', indexed: true,
+        options: [
+          { key: 'active', label: 'Active' },
+          { key: 'review', label: 'Under review' },
+          { key: 'closed', label: 'Closed' },
+        ],
+      },
+      { id: 'manager', label: 'Contract manager', type: 'text', variant: 'single', indexed: true },
+      { id: 'contract_value', label: 'Value (USD)', type: 'number', variant: 'decimal', indexed: true },
+      { id: 'end', label: 'End', type: 'date', indexed: true },
+      { id: 'start', label: 'Start', type: 'date' },
+      { id: 'supplier', label: 'Supplier', type: 'text', variant: 'single' },
+      {
+        id: 'performance', label: 'Performance', type: 'single_select',
+        options: [
+          { key: 'good', label: 'Good' },
+          { key: 'watch', label: 'Watch' },
+          { key: 'poor', label: 'Poor' },
+        ],
+      },
+      { id: 'negotiation_notes', label: 'Negotiation notes', type: 'text', variant: 'long', sensitivity: 2 },
+    ],
+    row(i) {
+      const supplier = SUPPLIERS[i % SUPPLIERS.length]
+      const item = ['Generator supply', 'Prefab offices', 'Road rehabilitation', 'Water systems', 'Freight services'][i % 5]
+      const status = i % 20 < 12 ? 'active' : i % 20 < 17 ? 'review' : 'closed'
+      const startD = new Date(2025, i % 12, 1 + (i % 27))
+      const months = 6 + ((i * 5) % 19)
+      const endD = new Date(startD.getFullYear(), startD.getMonth() + months, startD.getDate())
+      const contract_value = 50_000 + ((i * 37561) % 4_500_000) + (i % 13 === 0 ? 5_500_000 : 0)
+      return {
+        values: {
+          title: `CON-2026-${String(i + 1).padStart(3, '0')} · ${item} — ${supplier}`,
+          status,
+          manager: MANAGERS[i % MANAGERS.length],
+          contract_value,
+          end: endD.toISOString(),
+          start: startD.toISOString(),
+          supplier,
+          performance: i % 9 === 0 ? 'poor' : i % 4 === 0 ? 'watch' : 'good',
+          negotiation_notes: `Payment terms concessions agreed in round ${1 + (i % 3)}.`,
+        },
+        eq: [
+          `fld_status=${status}`,
+          `fld_manager=${MANAGERS[i % MANAGERS.length]}`,
+          `fld_contract_value=${contract_value}`,
+        ],
+        slots: {
+          txt0: `CON-2026-${String(i + 1).padStart(3, '0')} · ${item} — ${supplier}`,
+          txt1: status,
+          txt2: MANAGERS[i % MANAGERS.length],
+          num0: contract_value,
+          date0: endD.toISOString(),
+        },
+      }
+    },
+  },
+  {
+    id: 'assets',
+    name: 'Asset management',
+    titleField: 'description',
+    count: 260,
+    fields: [
+      { id: 'description', label: 'Asset', type: 'text', variant: 'single', required: true, indexed: true },
+      {
+        id: 'status', label: 'Status', type: 'single_select', indexed: true,
+        options: [
+          { key: 'in_transit', label: 'In transit' },
+          { key: 'in_storage', label: 'In storage' },
+          { key: 'issued', label: 'Issued' },
+          { key: 'under_repair', label: 'Under repair' },
+          { key: 'disposed', label: 'Disposed' },
+        ],
+      },
+      { id: 'custodian', label: 'Custodian', type: 'text', variant: 'single', indexed: true },
+      { id: 'value_usd', label: 'Value (USD)', type: 'number', variant: 'decimal', indexed: true },
+      { id: 'last_verified', label: 'Last verified', type: 'date', indexed: true },
+      { id: 'asset_tag', label: 'Asset tag', type: 'text', variant: 'single' },
+      {
+        id: 'condition', label: 'Condition', type: 'single_select',
+        options: [
+          { key: 'good', label: 'Good' },
+          { key: 'fair', label: 'Fair' },
+          { key: 'damaged', label: 'Damaged' },
+        ],
+      },
+      { id: 'warranty_until', label: 'Warranty until', type: 'date' },
+      { id: 'disposal_notes', label: 'Disposal justification', type: 'text', variant: 'long', sensitivity: 2 },
+    ],
+    row(i) {
+      const kind = ['Laptop — Dell Latitude 5440', 'Generator — 50kVA silent', 'Printer — HP M479',
+        'Satellite phone — Iridium 9575', 'Field tent — 6-person', 'Water pump — submersible 3kW'][i % 6]
+      const description = `${kind} #${String(1 + (i % 60)).padStart(2, '0')}`
+      const status = ['in_storage', 'issued', 'issued', 'issued', 'in_transit', 'in_storage', 'under_repair',
+        'issued', 'in_storage', 'issued'][i % 10] ?? 'issued'
+      const finalStatus = i % 47 === 0 ? 'disposed' : status
+      const custodian = HOLDERS[i % HOLDERS.length]
+      const value_usd = 300 + ((i * 977) % 24_000)
+      const verified = day(2025, i % 12, 1 + (i % 27))
+      return {
+        values: {
+          description,
+          status: finalStatus,
+          custodian,
+          value_usd,
+          last_verified: verified,
+          asset_tag: `UN-AST-${1000 + i}`,
+          condition: i % 17 === 0 ? 'damaged' : i % 5 === 0 ? 'fair' : 'good',
+          warranty_until: day(2026 + (i % 3), i % 12, 15),
+          disposal_notes: 'Board case reference pending.',
+        },
+        eq: [`fld_status=${finalStatus}`, `fld_custodian=${custodian}`, `fld_value_usd=${value_usd}`],
+        slots: { txt0: description, txt1: finalStatus, txt2: custodian, num0: value_usd, date0: verified },
+      }
+    },
+  },
+  {
+    id: 'projects',
+    name: 'Project management',
+    titleField: 'title',
+    count: 48,
+    fields: [
+      { id: 'title', label: 'Project', type: 'text', variant: 'single', required: true, indexed: true },
+      {
+        id: 'status', label: 'Phase', type: 'single_select', indexed: true,
+        options: [
+          { key: 'inception', label: 'Inception' },
+          { key: 'delivery', label: 'Delivery' },
+          { key: 'closure', label: 'Closure' },
+        ],
+      },
+      { id: 'manager', label: 'Project manager', type: 'text', variant: 'single', indexed: true },
+      { id: 'budget_usd', label: 'Budget (USD)', type: 'number', variant: 'decimal', indexed: true },
+      { id: 'end', label: 'End', type: 'date', indexed: true },
+      { id: 'start', label: 'Start', type: 'date' },
+      { id: 'spent_usd', label: 'Spent (USD)', type: 'number', variant: 'decimal' },
+      { id: 'country', label: 'Country', type: 'text', variant: 'single' },
+      { id: 'commentary', label: 'Board commentary', type: 'text', variant: 'long', sensitivity: 2 },
+    ],
+    row(i) {
+      const sector = ['Solar electrification', 'Feeder roads rehabilitation', 'Health post construction',
+        'Flood protection works', 'School WASH upgrade', 'Cold-chain expansion'][i % 6]
+      const place = ['Kakuma', 'Karamoja', 'Bay Region', 'Sittwe', 'Nord-Kivu', 'Chocó', 'Sindh', 'Timbuktu'][i % 8]
+      const title = `${sector} — ${place}`
+      const status = i % 10 < 2 ? 'inception' : i % 10 < 8 ? 'delivery' : 'closure'
+      const startD = new Date(2024 + (i % 2), i % 12, 1)
+      const endD = new Date(2026 + (i % 3), (i * 5) % 12, 28)
+      const budget_usd = 800_000 + ((i * 613_777) % 29_000_000)
+      const country = ['Kenya', 'Uganda', 'Somalia', 'Myanmar', 'DR Congo', 'Colombia', 'Pakistan', 'Mali'][i % 8]
+      return {
+        values: {
+          title,
+          status,
+          manager: MANAGERS[i % MANAGERS.length],
+          budget_usd,
+          end: endD.toISOString(),
+          start: startD.toISOString(),
+          spent_usd: Math.round(budget_usd * (status === 'closure' ? 0.96 : status === 'delivery' ? 0.55 : 0.08)),
+          country,
+          commentary: 'Sensitivities discussed at the last portfolio board.',
+        },
+        eq: [`fld_status=${status}`, `fld_manager=${MANAGERS[i % MANAGERS.length]}`, `fld_country=${country}`],
+        slots: {
+          txt0: title,
+          txt1: status,
+          txt2: MANAGERS[i % MANAGERS.length],
+          num0: budget_usd,
+          date0: endD.toISOString(),
+        },
+      }
+    },
+  },
+  {
+    id: 'fleet',
+    name: 'Fleet management',
+    titleField: 'plate',
+    count: 45,
+    fields: [
+      { id: 'plate', label: 'Plate', type: 'text', variant: 'single', required: true, indexed: true },
+      { id: 'model', label: 'Model', type: 'text', variant: 'single', indexed: true },
+      {
+        id: 'status', label: 'Status', type: 'single_select', indexed: true,
+        options: [
+          { key: 'in_service', label: 'In service' },
+          { key: 'maintenance', label: 'In maintenance' },
+          { key: 'retired', label: 'Retired' },
+        ],
+      },
+      { id: 'odometer', label: 'Odometer (km)', type: 'number', variant: 'decimal', indexed: true },
+      { id: 'insurance_expiry', label: 'Insurance expiry', type: 'date', indexed: true },
+      { id: 'driver', label: 'Driver', type: 'text', variant: 'single' },
+      { id: 'next_service_km', label: 'Next service (km)', type: 'number', variant: 'decimal' },
+      { id: 'acquisition', label: 'Acquired', type: 'date' },
+    ],
+    row(i) {
+      const model = ['Toyota Land Cruiser 79', 'Toyota Hilux', 'Nissan Patrol', 'Ford Ranger'][i % 4]
+      const plate = `UN-${4200 + i}`
+      const status = i % 10 < 7 ? 'in_service' : i % 10 < 9 ? 'maintenance' : 'retired'
+      const odometer = 15_000 + ((i * 6553) % 205_000)
+      const insurance = day(2026, 7 + (i % 12), 1 + (i % 27))
+      return {
+        values: {
+          plate,
+          model,
+          status,
+          odometer,
+          insurance_expiry: insurance,
+          driver: HOLDERS[i % HOLDERS.length],
+          next_service_km: odometer + (10_000 - (odometer % 10_000)),
+          acquisition: day(2019 + (i % 6), i % 12, 10),
+        },
+        eq: [`fld_status=${status}`, `fld_model=${model}`, `fld_plate=${plate}`],
+        slots: { txt0: plate, txt1: model, txt2: status, num0: odometer, date0: insurance },
+      }
+    },
+  },
+]
+
+async function seedPilotApps() {
+  for (const app of APPS) {
+    await put(`workspaces/${WORKSPACE}/blueprints/${app.id}`, {
+      id: app.id,
+      name: app.name,
+      workspace_id: WORKSPACE,
+      tier: 'team',
+      version: 1,
+      view_defaults: { title_field: app.titleField },
+      fields: app.fields,
+      // Everyone reads and writes the working fields; the one band-2 field
+      // per app renders as a stub for both local personas, so governance is
+      // visible in every app, and the risk-team persona keeps its full view.
+      permissions: [
+        { principals: ['*'], actions: ['read', 'create', 'update'], effect: 'allow', max_band: 1 },
+        { principals: ['group:risk-team'], actions: ['read', 'create', 'update'], effect: 'allow' },
+      ],
+    })
+
+    // The seed owns each app's rows: clear anything it did not write.
+    const listed = await fetch(
+      `${BASE}/workspaces/${WORKSPACE}/rows/${app.id}/items?pageSize=1000&mask.fieldPaths=__name__`,
+      { headers: ADMIN },
+    ).then((r) => (r.ok ? r.json() : {}))
+    for (const d of listed.documents ?? []) {
+      const id = d.name.split('/').pop()
+      if (!/^r\d{5}$/.test(id)) {
+        await fetch(`${BASE}/workspaces/${WORKSPACE}/rows/${app.id}/items/${id}`, {
+          method: 'DELETE',
+          headers: ADMIN,
+        })
+      }
+    }
+
+    for (let i = 0; i < app.count; i++) {
+      const { values, eq, slots } = app.row(i)
+      await put(`workspaces/${WORKSPACE}/rows/${app.id}/items/r${String(i).padStart(5, '0')}`, {
+        id: `r${String(i).padStart(5, '0')}`,
+        blueprintId: app.id,
+        workspaceId: WORKSPACE,
+        lifecycleStatus: 'active',
+        values,
+        fieldVersions: Object.fromEntries(Object.keys(values).map((k) => [k, 1])),
+        eq,
+        ...slots,
+      })
+    }
+    console.log(`  ${app.id}: ${app.count} rows`)
+  }
 }
 
 main().catch((error) => {

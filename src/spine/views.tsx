@@ -88,7 +88,7 @@ export function BoardView({ blueprint, spine, rows, onSelect }: ViewProps) {
           </header>
           <div className="board__cards">
             {laneRows.slice(0, LANE_CAP).map((row) => (
-              <BoardCard key={row.id} blueprint={blueprint} row={row} onSelect={onSelect} />
+              <BoardCard key={row.id} blueprint={blueprint} spine={spine} row={row} onSelect={onSelect} />
             ))}
             {laneRows.length > LANE_CAP && (
               <p className="board__more">
@@ -105,22 +105,25 @@ export function BoardView({ blueprint, spine, rows, onSelect }: ViewProps) {
 
 function BoardCard({
   blueprint,
+  spine,
   row,
   onSelect,
 }: {
   blueprint: Blueprint
+  spine: SpineDef
   row: Row
   onSelect: (id: string) => void
 }) {
-  const owner = row.values['owner']
-  const exposure = blueprint.fields.find((f) => f.id === 'exposure')
+  const meta = row.values[spine.card.metaField]
+  const valueField = blueprint.fields.find((f) => f.id === spine.card.valueField)
+  const value = row.values[spine.card.valueField]
   return (
     <button type="button" className="card" onClick={() => onSelect(row.id)}>
       <span className="card__title">{rowTitle(blueprint, row)}</span>
       <span className="card__meta">
-        {typeof owner === 'string' && <span>{owner}</span>}
-        {exposure !== undefined && !isRestricted(row.values['exposure']) && (
-          <span className="card__value">{formatValue(row.values['exposure'], exposure)}</span>
+        {typeof meta === 'string' && <span>{meta}</span>}
+        {valueField !== undefined && !isRestricted(value) && (
+          <span className="card__value">{formatValue(value, valueField)}</span>
         )}
       </span>
     </button>

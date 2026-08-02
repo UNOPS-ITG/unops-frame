@@ -16,8 +16,17 @@
 
 import { create } from 'zustand'
 import { updateRow } from '@/api/client'
-import type { ActivityEntry, AppDraft, PendingTask, TransitionDef, WorkflowDef } from './contracts'
-import { RISK_SPINE, SEED_TASKS, activityFor } from './risk'
+import { PILOT_SPINES, pilotChildren } from './apps'
+import type {
+  ActivityEntry,
+  AppDraft,
+  ChildRow,
+  PendingTask,
+  SpineDef,
+  TransitionDef,
+  WorkflowDef,
+} from './contracts'
+import { RISK_SPINE, SEED_TASKS, activityFor, mitigationsFor } from './risk'
 
 /** The acting identity — the dev persona the whole client already uses.
  * AU-15's self-approval check compares against it. */
@@ -25,8 +34,22 @@ export function actingPersona(): string {
   return globalThis.sessionStorage?.getItem('frame-dev-persona') ?? 'risk@unops.org'
 }
 
-export function spineFor(blueprintId: string) {
-  return blueprintId === RISK_SPINE.blueprintId ? RISK_SPINE : null
+const SPINES: readonly SpineDef[] = [RISK_SPINE, ...PILOT_SPINES]
+
+export function spineFor(blueprintId: string): SpineDef | null {
+  return SPINES.find((s) => s.blueprintId === blueprintId) ?? null
+}
+
+/** Derived child rows for any app's child table — one entry point, so the
+ * record page and the flat collection page can never disagree. */
+export function childRowsFor(
+  blueprintId: string,
+  tableId: string,
+  rowId: string,
+  values: Readonly<Record<string, unknown>>,
+): ChildRow[] {
+  if (blueprintId === RISK_SPINE.blueprintId) return mitigationsFor(rowId, values)
+  return pilotChildren(blueprintId, tableId, rowId, values)
 }
 
 export function stateOf(workflow: WorkflowDef, key: unknown) {
@@ -253,14 +276,31 @@ export const useSpineStore = create<SpineStore>((set, get) => ({
     })),
 }))
 
+/** The scripted history in an app's own voice — its states, its recipe,
+ * its restricted field. */
+export function scriptedActivity(
+  spine: SpineDef,
+  rowValues: Readonly<Record<string, unknown>>,
+): ActivityEntry[] {
+  return activityFor(rowValues, {
+    recipe: spine.activity.recipe,
+    restrictedLabel: spine.activity.restrictedLabel,
+    fromState: spine.workflow.states[0]?.label ?? 'New',
+    toState: spine.workflow.states[1]?.label ?? 'Active',
+    ownerField: spine.card.metaField,
+  })
+}
+
 /** The full drawer feed for a row: what this session did, then the scripted
  * history. One array so the drawer renders one timeline. */
 export function activityFeed(
   rowId: string,
   rowValues: Readonly<Record<string, unknown>>,
   appended: Record<string, ActivityEntry[]>,
+  spine?: SpineDef,
 ): ActivityEntry[] {
-  return [...(appended[rowId] ?? []), ...activityFor(rowValues)]
+  const scripted = spine !== undefined ? scriptedActivity(spine, rowValues) : activityFor(rowValues)
+  return [...(appended[rowId] ?? []), ...scripted]
 }
 
 /** How many tasks wait on the sidebar badge. Update requests count when they
