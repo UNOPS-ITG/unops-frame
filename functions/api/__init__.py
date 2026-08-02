@@ -158,7 +158,7 @@ def _include_routers(app: FastAPI, settings: Settings) -> None:
     rather than aspirational.
     """
     from api.dependencies.auth import require_auth
-    from api.routers import blueprints, docs, health, rows
+    from api.routers import blueprints, docs, health, rows, views
 
     prefix = settings.api_prefix
     app.include_router(health.router, prefix=prefix)
@@ -168,6 +168,9 @@ def _include_routers(app: FastAPI, settings: Settings) -> None:
     # emits them: one missed decorator is a silently public endpoint.
     guarded: list[Any] = [Depends(require_auth)]
     app.include_router(blueprints.router, prefix=prefix, dependencies=guarded)
+    # Views before rows: `/views/{id}/rows` must not be captured by the row
+    # route's `/rows/{row_id}` pattern, which would resolve a view id as a row.
+    app.include_router(views.router, prefix=prefix, dependencies=guarded)
     app.include_router(rows.router, prefix=prefix, dependencies=guarded)
     app.include_router(docs.router, prefix=prefix, dependencies=guarded)
 

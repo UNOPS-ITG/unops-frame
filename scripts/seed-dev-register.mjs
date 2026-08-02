@@ -108,11 +108,19 @@ async function main() {
   await put(`workspaces/${WORKSPACE}`, { name: 'Demo workspace' })
   await put(`workspaces/${WORKSPACE}/blueprints/${BLUEPRINT}`, blueprint)
 
+  // Membership is keyed on the SUBJECT, never the email: an address is mutable
+  // and reassignable, so keying grants on one means a recycled address silently
+  // inherits them. The dev bypass prefixes its subject so a bypassed identity
+  // is distinguishable downstream from a real session (PM-7), which means a
+  // local seed needs BOTH keys — seeding only the email is a silent no-op that
+  // makes every group-scoped rule quietly stop matching.
   for (const email of ['dev@unops.org', process.env.FRAME_DEV_EMAIL].filter(Boolean)) {
-    await put(`workspaces/${WORKSPACE}/members/${email}`, {
-      groups: ['staff'],
-      roles: ['editor'],
-    })
+    for (const subject of [email, `dev-bypass:${email}`]) {
+      await put(`workspaces/${WORKSPACE}/members/${subject}`, {
+        groups: ['staff'],
+        roles: ['editor'],
+      })
+    }
   }
 
   const total = Number(process.env.FRAME_SEED_ROWS ?? 500)
