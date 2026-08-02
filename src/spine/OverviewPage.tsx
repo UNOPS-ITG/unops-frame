@@ -172,11 +172,11 @@ export function OverviewPage({
           </div>
         </header>
 
-        {/* State of the work: real annotated totals. Tiles, then the same
-            numbers as one thin segmented bar — identity is carried by the
-            state chip AND the label, never colour alone. */}
+        {/* State of the work: real annotated totals, said once. The tiles ARE
+            the legend — chip + number — and the bar beneath them is the same
+            three numbers as proportion, so nothing on this band repeats. */}
         <section className="overview__stats" aria-label="State of the work">
-          <div className="overview__tiles">
+          <div className="overview__stats-grid">
             {(counts ?? spine.workflow.states.map((state) => ({ state, total: null }))).map((c) => (
               <a
                 key={c.state.key}
@@ -190,68 +190,88 @@ export function OverviewPage({
                 <StateChip state={c.state} />
               </a>
             ))}
+
+            {/* The one tile that is about YOU, given the room to act like it. */}
             <a
-              className={`tile${waiting.length > 0 ? ' tile--attention' : ''}`}
+              className={`inboxcard${waiting.length > 0 ? ' inboxcard--live' : ''}`}
               href={href.inbox(workspaceId)}
               aria-label="Tasks waiting on you"
             >
-              <span className="tile__value">{waiting.length}</span>
-              <span className="tile__label">
-                <Icon.Inbox className="tile__glyph" />
-                waiting on you
+              <span className="inboxcard__top">
+                <span className="tile__value">{waiting.length}</span>
+                <Icon.Inbox className="inboxcard__glyph" />
+              </span>
+              <span className="inboxcard__label">waiting on you</span>
+              {waiting.slice(0, 2).map((t) => (
+                <span key={t.id} className="inboxcard__task">
+                  {t.title}
+                </span>
+              ))}
+              <span className="inboxcard__go">
+                {waiting.length > 0 ? 'Open the inbox' : 'The good kind of empty'}
+                <Icon.Chevron />
               </span>
             </a>
-          </div>
 
-          {counts !== null && distribution !== null && distribution.sum > 0 && (
-            <figure className="dist" aria-label="Distribution by state">
-              <div className="dist__bar">
-                {counts.map(
-                  (c) =>
-                    c.total > 0 && (
-                      <span
-                        key={c.state.key}
-                        className={`dist__seg dist__seg--${c.state.role}`}
-                        style={{ flexGrow: c.total }}
-                        title={`${c.state.label}: ${c.total.toLocaleString()}`}
-                      />
-                    ),
-                )}
-              </div>
-              <figcaption className="dist__legend">
-                {counts.map((c) => (
-                  <span key={c.state.key} className="dist__key">
-                    <span className={`dist__dot dist__seg--${c.state.role}`} aria-hidden="true" />
-                    {c.state.label} {c.total.toLocaleString()}
-                  </span>
-                ))}
+            {counts !== null && distribution !== null && distribution.sum > 0 && (
+              <figure className="dist" aria-label="Distribution by state">
+                <div className="dist__bar">
+                  {counts.map(
+                    (c) =>
+                      c.total > 0 && (
+                        <span
+                          key={c.state.key}
+                          className={`dist__seg dist__seg--${c.state.role}`}
+                          style={{ flexGrow: c.total }}
+                          title={`${c.state.label}: ${c.total.toLocaleString()}`}
+                        />
+                      ),
+                  )}
+                </div>
                 {distribution.withheld > 0 && (
-                  <span className="dist__withheld" title="Counted in every total above, not shown to you — the numbers are honest about what they include.">
+                  <span
+                    className="dist__withheld"
+                    title="Counted in every total above, not shown to you — the numbers are honest about what they include."
+                  >
                     <Icon.Lock className="tile__glyph" />
                     includes {distribution.withheld.toLocaleString()} withheld
                   </span>
                 )}
-              </figcaption>
-            </figure>
-          )}
+              </figure>
+            )}
+          </div>
         </section>
 
         <div className="overview__panels">
           {/* What needs YOU — the reason an app beats a spreadsheet. */}
           <section className="panel" aria-label="Needs attention">
-            <h3 className="panel__title">Needs attention</h3>
+            <div className="panel__head">
+              <h3 className="panel__title">Needs attention</h3>
+              <a className="panel__more" href={href.table(workspaceId, blueprintId)}>
+                Table
+                <Icon.Chevron />
+              </a>
+            </div>
             <AttentionList
               title="Longest unreviewed"
               rows={stale}
               blueprint={blueprint}
-              valueField="reviewed"
+              reason={(row) => {
+                const raw = row.values['reviewed']
+                const d = typeof raw === 'string' ? new Date(raw) : null
+                if (d === null || Number.isNaN(d.getTime())) return ''
+                return `${Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000))} days`
+              }}
               onOpen={() => navigate(href.table(workspaceId, blueprintId))}
             />
             <AttentionList
               title="Largest exposure"
               rows={largest}
               blueprint={blueprint}
-              valueField="exposure"
+              reason={(row) => {
+                const field = blueprint?.fields.find((f) => f.id === 'exposure')
+                return field !== undefined ? formatValue(row.values['exposure'], field) : ''
+              }}
               onOpen={() => navigate(href.table(workspaceId, blueprintId))}
             />
           </section>
@@ -282,8 +302,11 @@ export function OverviewPage({
           <section className="panel" aria-label="While you were away">
             <div className="panel__head">
               <h3 className="panel__title">While you were away</h3>
-              <span className="panel__more panel__more--static">
-                {runs30d.toLocaleString()} automation runs · 30d
+              <span
+                className="panel__more panel__more--static"
+                title={`${runs30d.toLocaleString()} automation runs in the last 30 days`}
+              >
+                {runs30d.toLocaleString()} runs · 30d
               </span>
             </div>
             <ActivityFeed entries={pulse} />
@@ -309,20 +332,21 @@ function AttentionList({
   title,
   rows,
   blueprint,
-  valueField,
+  reason,
   onOpen,
 }: {
   title: string
   rows: readonly Row[] | null
   blueprint: Blueprint | null
-  valueField: string
+  /** WHY this row is on the list, worn as a chip — "213 days", "5,000,495".
+   * A bare number column makes the reader reconstruct the argument. */
+  reason: (row: Row) => string
   onOpen: () => void
 }) {
   if (rows === null || blueprint === null) {
     return <p className="panel__empty">Loading…</p>
   }
   const titleField = blueprint.titleField ?? 'title'
-  const field = blueprint.fields.find((f) => f.id === valueField)
   return (
     <div className="panel__group">
       <h4 className="panel__subtitle">{title}</h4>
@@ -331,9 +355,7 @@ function AttentionList({
           <span className="panel__row-title">
             {formatValue(row.values[titleField], blueprint.fields.find((f) => f.id === titleField) ?? blueprint.fields[0]!) || row.id}
           </span>
-          <span className="panel__row-value">
-            {field !== undefined ? formatValue(row.values[valueField], field) : ''}
-          </span>
+          <span className="slot slot--value panel__row-why">{reason(row)}</span>
         </button>
       ))}
     </div>

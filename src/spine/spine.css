@@ -319,6 +319,18 @@
 .feed__actor {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The timestamp holds the right edge and never wraps — a meta line that
+   folds onto two lines reads as two entries. */
+.feed__when {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .feed__channel {
@@ -995,7 +1007,7 @@
   margin-inline: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
+  gap: var(--spacing-5);
 }
 
 @keyframes overview-rise {
@@ -1033,6 +1045,36 @@
   }
 }
 
+/* The hero is a BAND, not a billboard: the identity moment compressed so
+   today's facts start above the fold. Its signature is the keyline — brand
+   cyan flowing into governance plum, the product's two meanings as one
+   line — over a whisper of brand atmosphere. Both are tokens through
+   color-mix; no literal anywhere. */
+.overview__hero {
+  position: relative;
+  padding: var(--spacing-4) var(--spacing-5) var(--spacing-5);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(
+      110% 160% at 0% 0%,
+      color-mix(in srgb, var(--color-brand-primary) 7%, transparent),
+      transparent 55%
+    ),
+    var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+.overview__hero::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-brand-primary), var(--color-governance-text));
+}
+
 .overview__eyebrow {
   display: flex;
   align-items: center;
@@ -1045,17 +1087,16 @@
   color: var(--color-text-muted);
 }
 
-/* The purpose IS the hero. The shell header already names the register;
-   repeating the name here would be furniture, and what the user needs to
-   feel is what this app is FOR. */
+/* The purpose IS the hero — but at briefing scale, not billboard scale:
+   two lines at most, then the day's numbers take over. */
 .overview__purpose {
   font-family: var(--font-family-display);
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-tight);
   line-height: var(--line-height-snug);
   margin: 0;
-  max-width: 26ch;
+  max-width: 52ch;
   text-wrap: balance;
 }
 
@@ -1063,16 +1104,59 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  margin-block-start: var(--spacing-4);
+  margin-block-start: var(--spacing-3);
   flex-wrap: wrap;
 }
 
 /* --- stat tiles (a headline number is a tile, not a chart) --------------- */
 
+/* The plain tile row — used where there is no inbox card or bar to fuse
+   with (a just-created app's zero-state band). */
 .overview__tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   gap: var(--spacing-3);
+}
+
+/* The fused band: three state tiles (they ARE the legend), the inbox card
+   holding the right column across both rows, and the bar as connective
+   tissue beneath exactly the tiles it summarises. */
+.overview__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(15rem, 17rem);
+  grid-template-rows: auto auto;
+  gap: var(--spacing-3);
+  align-items: stretch;
+}
+
+.overview__stats-grid .inboxcard {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+}
+
+.overview__stats-grid .dist {
+  grid-column: 1 / 4;
+  grid-row: 2;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.overview__stats-grid .dist__bar {
+  flex: 1;
+}
+
+@media (max-width: 64rem) {
+  .overview__stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  }
+
+  .overview__stats-grid .inboxcard,
+  .overview__stats-grid .dist {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
 }
 
 .tile {
@@ -1135,18 +1219,85 @@
   color: var(--color-text-secondary);
 }
 
-.tile--attention {
-  border-color: var(--color-governance-border);
-  background: var(--color-governance-bg);
-}
-
-.tile--attention .tile__label {
-  color: var(--color-governance-text);
-}
-
 .tile__glyph {
   width: 0.8rem;
   height: 0.8rem;
+}
+
+/* --- the inbox card: the one tile that is about YOU ----------------------- */
+
+.inboxcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  text-decoration: none;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  animation: overview-rise 0.4s 260ms ease-out both;
+}
+
+.inboxcard--live {
+  border-color: var(--color-governance-border);
+  background:
+    radial-gradient(
+      120% 130% at 100% 0%,
+      color-mix(in srgb, var(--color-governance-text) 8%, transparent),
+      transparent 60%
+    ),
+    var(--color-governance-bg);
+}
+
+.inboxcard:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.inboxcard:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.inboxcard__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inboxcard__glyph {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--color-governance-text);
+}
+
+.inboxcard__label {
+  font-size: var(--chip-font-size);
+  font-weight: var(--chip-font-weight);
+  color: var(--color-governance-text);
+}
+
+.inboxcard__task {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block-start: var(--spacing-1);
+  border-block-start: 1px solid var(--color-governance-border);
+  margin-block-start: var(--spacing-1);
+}
+
+.inboxcard__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-block-start: auto;
+  padding-block-start: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-governance-text);
 }
 
 /* --- the distribution bar (one thin mark, 2px surface gaps) -------------- */
@@ -1213,35 +1364,11 @@
   background: var(--color-text-muted);
 }
 
-.dist__legend {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-  margin-block-start: var(--spacing-2);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-  flex-wrap: wrap;
-}
-
-.dist__key {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-}
-
-.dist__dot {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: var(--radius-full);
-  display: inline-block;
-}
-
 .dist__withheld {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-1);
-  margin-inline-start: auto;
+  flex-shrink: 0;
   padding: var(--chip-padding-y) var(--chip-padding-x);
   border-radius: var(--chip-radius);
   background: var(--color-governance-bg);
@@ -1253,11 +1380,19 @@
 
 /* --- overview panels ----------------------------------------------------- */
 
+/* Asymmetric on purpose: the attention panel is the page's argument and
+   gets the widest column; the streams flank it. */
 .overview__panels {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.1fr);
   gap: var(--spacing-4);
   align-items: start;
+}
+
+@media (max-width: 64rem) {
+  .overview__panels {
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  }
 }
 
 .panel {
@@ -1269,7 +1404,7 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
-  min-height: 12rem;
+  min-height: 10rem;
 }
 
 .panel__head {
@@ -1283,6 +1418,7 @@
   font-weight: var(--font-weight-semibold);
   margin: 0;
   flex: 1;
+  white-space: nowrap;
 }
 
 .panel__subtitle {
@@ -1363,6 +1499,12 @@
   font-variant-numeric: tabular-nums;
   font-size: var(--font-size-xs);
   flex-shrink: 0;
+}
+
+/* The WHY chip: what put this row on the list, legible at a glance. */
+.panel__row-why {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .panel__task {

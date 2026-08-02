@@ -33,11 +33,13 @@ export function ActivityFeed({ entries }: { entries: readonly ActivityEntry[] })
         <article key={e.id} className="feed__entry">
           <span className={`feed__dot feed__dot--${e.cls}`} aria-hidden="true" />
           <div className="feed__meta">
-            <span className="feed__actor">{e.actor}</span>
+            <span className="feed__actor" title={e.actor}>
+              {e.actor}
+            </span>
             <span className={`feed__channel${e.channel === 'automation' ? ' feed__channel--automation' : ''}`}>
               {e.channel}
             </span>
-            <span>{when(e.at)}</span>
+            <span className="feed__when">{when(e.at)}</span>
           </div>
           <p className="feed__summary">{e.summary}</p>
           {e.deltas !== undefined && e.deltas.length > 0 && (
