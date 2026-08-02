@@ -1,10 +1,13 @@
-/* The application frame: an ink shell around a bright content well.
+/* The application frame, on the estate rubric.
  *
- * The layout metaphor is the product's name made literal. The sidebar and the
- * header band are permanently deep navy ink — in every theme — and the content
- * area is the bright well inside them. The data reads as the material, the
- * chrome reads as the frame, and the brand cyan finally works as an accent
- * (an active pill on ink) instead of drowning on white.
+ * This deliberately mirrors ai-bob's shell (`features/shell/AppShell.css`
+ * there): a light `--color-surface` sidebar with a 1px border against a
+ * `--color-bg` well, hover = `--color-hover`, active = `--color-selected`,
+ * one solid-cyan primary action. Frame briefly wore a permanent dark "ink"
+ * shell; it photographed well and it was off-rubric — the estate's chrome is
+ * bright and airy in light theme, and the THEME decides darkness, not the
+ * component. Everything here follows the theme tokens, so dark mode still
+ * gets its navy for free.
  *
  * `grid-template-rows: auto 1fr` with `min-height: 0` on the content row is
  * load-bearing rather than incidental. A grid child defaults to `min-height:
@@ -19,7 +22,7 @@
   grid-template-columns: auto 1fr;
   height: 100vh;
   height: 100dvh; /* mobile browser chrome; falls back above */
-  background: var(--color-shell-bg);
+  background: var(--color-bg);
   color: var(--color-text);
   overflow: hidden;
 }
@@ -38,21 +41,17 @@
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
-  color: var(--color-text);
-  /* The well sits INSIDE the frame: a soft top-left rounding where it meets
-     the ink, so the metaphor is visible rather than implied. */
-  border-start-start-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
 }
 
-/* --- sidebar (ink) ------------------------------------------------------- */
+/* --- sidebar -------------------------------------------------------------- */
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  width: 16rem;
-  background: var(--color-shell-bg);
-  color: var(--color-shell-text);
+  width: 16.25rem; /* Bob's 260px */
+  background: var(--color-surface);
+  border-inline-end: 1px solid var(--color-border);
+  padding: var(--spacing-3) var(--spacing-3) var(--spacing-2);
   transition: width var(--transition-base);
 }
 
@@ -64,8 +63,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-4);
-  min-height: 3.5rem;
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-3);
+  min-height: 2.75rem;
 }
 
 .sidebar__mark {
@@ -85,46 +84,53 @@
 .sidebar__wordmark {
   font-family: var(--font-family-display);
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
   letter-spacing: var(--letter-spacing-tight);
-  color: var(--color-shell-text);
+  color: var(--color-text);
 }
 
 .sidebar__scroll {
   flex: 1;
   min-height: 0;
-  padding: var(--spacing-3) var(--spacing-2);
+  padding: 0 var(--spacing-1);
 }
 
 .sidebar__section {
-  margin-block-end: var(--spacing-5);
+  margin-block-end: var(--spacing-4);
 }
 
+/* Bob's labelled divider: tiny uppercase label with a hairline rule. */
 .sidebar__heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-2) var(--spacing-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-2);
+  font-size: 0.6875rem;
+  font-weight: var(--font-weight-medium);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: var(--color-shell-text-muted);
+  color: var(--color-text-muted);
+}
+
+.sidebar__heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border-subtle);
 }
 
 .sidebar__link {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: var(--spacing-3);
   width: 100%;
-  padding: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
   border: 0;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--color-shell-text-secondary);
+  color: var(--color-text-secondary);
   font: inherit;
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
   text-align: start;
   text-decoration: none;
   cursor: pointer;
@@ -132,20 +138,19 @@
 }
 
 .sidebar__link:hover {
-  background: var(--color-shell-hover);
-  color: var(--color-shell-text);
+  background: var(--color-hover);
+  color: var(--color-text);
 }
 
 .sidebar__link:focus-visible {
-  outline: 2px solid var(--color-shell-focus-ring);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
 }
 
-/* The one place cyan gets to be loud. */
 .sidebar__link--active {
-  background: var(--color-shell-active);
-  color: var(--color-shell-active-text);
-  font-weight: var(--font-weight-semibold);
+  background: var(--color-selected);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
 }
 
 .sidebar__icon {
@@ -165,26 +170,26 @@
 .sidebar__count {
   margin-inline-start: auto;
   font-size: var(--font-size-xs);
-  color: var(--color-shell-text-muted);
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .sidebar__empty {
-  padding: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--font-size-xs);
-  color: var(--color-shell-text-muted);
+  color: var(--color-text-muted);
   line-height: var(--line-height-normal);
 }
 
 .sidebar__footer {
-  padding: var(--spacing-3);
-  border-block-start: 1px solid var(--color-shell-border);
+  padding-block-start: var(--spacing-3);
+  border-block-start: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
+  gap: var(--spacing-0-5);
 }
 
-/* --- header band (ink) --------------------------------------------------- */
+/* --- header --------------------------------------------------------------- */
 
 .topbar {
   display: flex;
@@ -192,8 +197,8 @@
   gap: var(--spacing-3);
   padding: var(--spacing-3) var(--spacing-5);
   min-height: 3.5rem;
-  background: var(--color-shell-bg);
-  color: var(--color-shell-text);
+  background: var(--color-surface);
+  border-block-end: 1px solid var(--color-border);
 }
 
 .topbar__title {
@@ -201,7 +206,7 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-tight);
-  color: var(--color-shell-text);
+  color: var(--color-text);
   margin: 0;
   min-width: 0;
   overflow: hidden;
@@ -214,7 +219,7 @@
   align-items: center;
   gap: var(--spacing-2);
   font-size: var(--font-size-sm);
-  color: var(--color-shell-text-secondary);
+  color: var(--color-text-secondary);
   min-width: 0;
 }
 
@@ -229,30 +234,16 @@
   flex-shrink: 0;
 }
 
-/* Buttons that land in the ink band restyle for it: quiet outline, light ink
-   text. Scoped here rather than in buttons.css because the shell is the only
-   dark-on-any-theme context in the product. */
-.topbar .btn--secondary {
-  background: transparent;
-  color: var(--color-shell-text-secondary);
-  border: 1px solid var(--color-shell-border);
-}
+/* --- the persona switch, development only --------------------------------- */
 
-.topbar .btn--secondary:hover:not(:disabled) {
-  background: var(--color-shell-hover);
-  color: var(--color-shell-text);
-}
-
-/* --- the persona switch, development only ------------------------------- */
-
-/* Deliberately quarantined: dashed amber border says "dev scaffolding", so a
-   screenshot can never pass as production chrome. */
+/* Quarantined: dashed amber border says "dev scaffolding", so a screenshot can
+   never pass as production chrome. */
 .persona {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-1) var(--spacing-2);
-  border: 1px dashed var(--color-brand-warning-light);
+  border: 1px dashed var(--color-brand-warning);
   border-radius: var(--radius-md);
 }
 
@@ -261,31 +252,32 @@
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: var(--color-brand-warning-light);
+  color: var(--color-warning-strong);
   white-space: nowrap;
 }
 
 .persona .ops-select {
   background: transparent;
   border: 0;
-  color: var(--color-shell-text-secondary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   padding-block: var(--spacing-0-5);
 }
 
-/* --- theme switch -------------------------------------------------------- */
+/* --- theme switch ---------------------------------------------------------- */
 
 .theme-switch {
   display: inline-flex;
   padding: 2px;
   border-radius: var(--radius-full);
-  background: var(--color-shell-surface);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .theme-switch__option {
   border: 0;
   background: transparent;
-  color: var(--color-shell-text-muted);
+  color: var(--color-text-muted);
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-full);
   font: inherit;
@@ -295,20 +287,21 @@
 }
 
 .theme-switch__option:hover {
-  color: var(--color-shell-text);
+  color: var(--color-text);
 }
 
 .theme-switch__option[aria-pressed='true'] {
-  background: var(--color-shell-active);
-  color: var(--color-shell-active-text);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
 }
 
 .theme-switch__option:focus-visible {
-  outline: 2px solid var(--color-shell-focus-ring);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 1px;
 }
 
-/* --- narrow screens ------------------------------------------------------ */
+/* --- narrow screens -------------------------------------------------------- */
 
 @media (max-width: 60rem) {
   .sidebar {
@@ -317,7 +310,7 @@
   .sidebar__wordmark,
   .sidebar__label,
   .sidebar__count,
-  .sidebar__heading span,
+  .sidebar__heading,
   .sidebar__empty {
     display: none;
   }

@@ -8,10 +8,9 @@
   display: grid;
   place-items: start center;
   padding-block-start: 10vh;
-  /* Brand navy rather than black, for the same reason the shadows are: a pure
-     black wash reads as a different product's dialog sitting on top of this
-     one. Composed from the token so it holds in all three themes. */
-  background: color-mix(in srgb, var(--color-brand-primary-900) 55%, transparent);
+  /* The estate's own scrim token — brand-tinted, never pure black, and already
+     theme-aware. */
+  background: var(--color-surface-overlay);
 }
 
 .picker {
@@ -31,17 +30,7 @@
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-3) var(--spacing-4);
-  background: var(--color-shell-bg);
-  color: var(--color-shell-text);
-}
-
-.picker__header .btn--ghost {
-  color: var(--color-shell-text-secondary);
-}
-
-.picker__header .btn--ghost:hover:not(:disabled) {
-  background: var(--color-shell-hover);
-  color: var(--color-shell-text);
+  border-block-end: 1px solid var(--color-border-subtle);
 }
 
 .picker__title {

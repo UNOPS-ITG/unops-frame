@@ -140,8 +140,24 @@ open); **U15** the dev-persona quarantine (theme switch still three words);
 **U16** pluralisation + fixture label; **U19** the font-loading fitness check.
 
 Still open: U11 (register header stat strip and toolbar intent-grouping),
-U9's remaining two moments, U15's theme menu, U17 (needs a row delete/archive
-endpoint before e2e rows can clean up after themselves), U18 (focus-visible
-audit over the new components), and the inline select editor the chips now make
-more visible (editing a status cell still opens a free-text overlay whose value
-is the label rather than the option key — pre-existing, now more noticeable).
+U9's remaining two moments, U15's theme menu, U18 (focus-visible audit over
+the new components), and the inline select editor the chips now make more
+visible (editing a status cell still opens a free-text overlay whose value is
+the label rather than the option key — pre-existing, now more noticeable).
+
+### Rubric realignment (same day, after review against ai-bob)
+
+The ink shell (U2) is **withdrawn**: the estate rubric — read from ai-bob's
+`features/shell/AppShell.css` — is bright chrome. Sidebar is `--color-surface`
+with a 1px border, hover is `--color-hover`, active is `--color-selected`, the
+primary action is solid cyan, and darkness is the THEME's decision, never the
+component's. Frame's shell now mirrors that vocabulary exactly; the dialogs'
+ink header bands and the custom scrim went with it (`--color-surface-overlay`
+is the estate scrim). The display face is **Inter** — the family the estate's
+tokens have always declared (ai-bob names it too, and loads it nowhere; the
+same latent bug Frame had) — self-hosted and preloaded, with the fitness check
+keeping it honest. Everything else from the refresh stands: role colours,
+chips, hatch, the grid signals, the launcher, the grouped catalogue.
+
+U17 is now real: the seed clears rows it did not write, so e2e litter no
+longer accumulates at the top of the demo register.

@@ -245,6 +245,28 @@ async function main() {
     }
   }
 
+  // Rows the seed did not write — e2e creates, manual experiments — are
+  // cleared first. The seed OWNS the demo register: without this, every test
+  // run leaves "E2E 1785…" litter at the top of the grid forever, because the
+  // API deliberately has no delete yet (lifecycle archival is a real feature,
+  // not a dev-seed workaround).
+  const listed = await fetch(
+    `${BASE}/workspaces/${WORKSPACE}/rows/${BLUEPRINT}/items?pageSize=1000&mask.fieldPaths=__name__`,
+    { headers: ADMIN },
+  ).then((r) => (r.ok ? r.json() : {}))
+  let cleared = 0
+  for (const doc of listed.documents ?? []) {
+    const id = doc.name.split('/').pop()
+    if (!/^r\d{5}$/.test(id)) {
+      await fetch(`${BASE}/workspaces/${WORKSPACE}/rows/${BLUEPRINT}/items/${id}`, {
+        method: 'DELETE',
+        headers: ADMIN,
+      })
+      cleared += 1
+    }
+  }
+  if (cleared > 0) console.log(`  cleared ${cleared} non-seed rows`)
+
   const total = Number(process.env.FRAME_SEED_ROWS ?? 500)
   for (let i = 0; i < total; i++) {
     // Every eleventh row is above the deny threshold, so roughly 9% of the

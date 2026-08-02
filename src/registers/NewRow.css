@@ -13,15 +13,12 @@
   overflow: hidden;
 }
 
-/* The ink band: dialogs wear the same frame as the app, so a modal reads as
-   part of the product rather than a system prompt. */
 .new-row__header {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-3) var(--spacing-4);
-  background: var(--color-shell-bg);
-  color: var(--color-shell-text);
+  border-block-end: 1px solid var(--color-border-subtle);
 }
 
 .new-row__title {
@@ -34,12 +31,6 @@
 
 .new-row__close {
   margin-inline-start: auto;
-  color: var(--color-shell-text-secondary);
-}
-
-.new-row__close:hover:not(:disabled) {
-  background: var(--color-shell-hover);
-  color: var(--color-shell-text);
 }
 
 .new-row__fields {

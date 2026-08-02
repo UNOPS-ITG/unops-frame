@@ -53,7 +53,7 @@ export interface GlideTheme {
  * subtly too narrow — and canvas gives no reflow to reveal it.
  */
 function fontFamily(): string {
-  if (typeof document === 'undefined') return "'Schibsted Grotesk', system-ui, sans-serif"
+  if (typeof document === 'undefined') return "'Inter', system-ui, sans-serif"
   // --font-family-body, not a Tailwind alias: this read used --font-sans for a
   // while, which does not exist, so the fallback applied — and the fallback
   // named Inter, which was never loaded, so the canvas silently measured and
@@ -62,7 +62,7 @@ function fontFamily(): string {
   const declared = getComputedStyle(document.documentElement)
     .getPropertyValue('--font-family-body')
     .trim()
-  return declared || "'Schibsted Grotesk', system-ui, sans-serif"
+  return declared || "'Inter', system-ui, sans-serif"
 }
 
 export function toGlideTheme(theme: GridTheme): GlideTheme {
