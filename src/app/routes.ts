@@ -25,6 +25,13 @@ export type Route =
       section: 'overview' | 'table' | 'board' | 'calendar' | 'gantt'
       viewId?: string
     }
+  /** One row opened as a PAGE — the master-detail document (GR-17, AC-2's
+   * record page): header fields, workflow, child tables inline. The drawer
+   * is for glancing; this is for working. */
+  | { kind: 'record'; workspaceId: string; blueprintId: string; rowId: string }
+  /** A child collection rendered flat across parents (BP-8) — its own page
+   * in the app, because an app is multiple tables joined. */
+  | { kind: 'collection'; workspaceId: string; blueprintId: string; collectionId: string }
   | { kind: 'fields'; workspaceId: string; blueprintId: string }
   | { kind: 'recipes'; workspaceId: string; blueprintId: string }
   | { kind: 'inbox'; workspaceId: string }
@@ -62,6 +69,12 @@ export function parseRoute(hash: string): Route {
       const blueprintId = segments[3]
       if (segments[4] === 'fields') return { kind: 'fields', workspaceId, blueprintId }
       if (segments[4] === 'recipes') return { kind: 'recipes', workspaceId, blueprintId }
+      if (segments[4] === 'r' && segments[5]) {
+        return { kind: 'record', workspaceId, blueprintId, rowId: segments[5] }
+      }
+      if (segments[4] === 'c' && segments[5]) {
+        return { kind: 'collection', workspaceId, blueprintId, collectionId: segments[5] }
+      }
       if (
         segments[4] === 'table' ||
         segments[4] === 'board' ||
@@ -117,6 +130,8 @@ export const href = {
   table: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/table`,
   dataView: (ws: string, bp: string, view: 'table' | 'board' | 'calendar' | 'gantt') =>
     `#/w/${ws}/b/${bp}/${view}`,
+  record: (ws: string, bp: string, row: string) => `#/w/${ws}/b/${bp}/r/${row}`,
+  collection: (ws: string, bp: string, col: string) => `#/w/${ws}/b/${bp}/c/${col}`,
   view: (ws: string, bp: string, view: string) => `#/w/${ws}/b/${bp}/v/${view}`,
   fields: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/fields`,
   recipes: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/recipes`,

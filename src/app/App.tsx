@@ -16,10 +16,12 @@ import { useThemeStore } from '@/styles/theme'
 import { GridDemo } from '@/grid/GridDemo'
 import { CorporatePage } from '@/corporate/CorporatePage'
 import { RegisterPage } from '@/registers/RegisterPage'
+import { ChildCollectionPage } from '@/spine/ChildCollectionPage'
 import { CreatedAppPage } from '@/spine/CreatedAppPage'
 import { InboxPage } from '@/spine/InboxPage'
 import { OverviewPage } from '@/spine/OverviewPage'
 import { RecipesPage } from '@/spine/RecipesPage'
+import { RecordPage } from '@/spine/RecordPage'
 import { spineFor, useSpineStore } from '@/fixtures/spine/store'
 import { AppShell } from './AppShell'
 import { FieldsPage } from './FieldsPage'
@@ -71,18 +73,31 @@ export function App() {
  */
 function RegisterTabs({ route }: { route: Route }) {
   const createdApps = useSpineStore((s) => s.createdApps)
-  if (route.kind !== 'register' && route.kind !== 'recipes' && route.kind !== 'fields') return null
+  if (
+    route.kind !== 'register' &&
+    route.kind !== 'recipes' &&
+    route.kind !== 'fields' &&
+    route.kind !== 'record' &&
+    route.kind !== 'collection'
+  ) {
+    return null
+  }
   const { workspaceId, blueprintId } = route
-  if (spineFor(blueprintId) === null && createdApps[blueprintId] === undefined) return null
+  const spine = spineFor(blueprintId)
+  if (spine === null && createdApps[blueprintId] === undefined) return null
 
   const active =
     route.kind === 'recipes'
       ? 'recipes'
       : route.kind === 'fields'
         ? 'fields'
-        : route.section === 'overview'
-          ? 'overview'
-          : 'table' // every data view — table, board, calendar, gantt — is the Table tab
+        : route.kind === 'collection'
+          ? `c:${route.collectionId}`
+          : route.kind === 'record'
+            ? 'entity' // a record belongs to its collection
+            : route.section === 'overview'
+              ? 'overview'
+              : 'entity' // every data view — table, board, calendar, gantt
 
   const tab = (key: string, to: string, label: string, icon: React.ReactNode) => (
     <a key={key} className={`appnav__tab${active === key ? ' appnav__tab--active' : ''}`} href={to}>
@@ -91,10 +106,17 @@ function RegisterTabs({ route }: { route: Route }) {
     </a>
   )
 
+  // An app navigates its ENTITIES — "Risks", "Mitigation actions" — never
+  // "Table". The child collections are pages of their own (BP-8): multiple
+  // tables joined is what makes this an app rather than a grid with chrome.
   return (
-    <nav className="appnav" aria-label="Register views">
+    <nav className="appnav" aria-label="App navigation">
       {tab('overview', href.register(workspaceId, blueprintId), 'Overview', <Icon.Home />)}
-      {tab('table', href.table(workspaceId, blueprintId), 'Table', <Icon.Table />)}
+      {tab('entity', href.table(workspaceId, blueprintId), spine?.entityLabel ?? 'Rows', <Icon.Table />)}
+      {spine?.childTables.map((t) =>
+        tab(`c:${t.id}`, href.collection(workspaceId, blueprintId, t.id), t.label, <Icon.Fields />),
+      )}
+      <span className="appnav__spacer" aria-hidden="true" />
       {tab('recipes', href.recipes(workspaceId, blueprintId), 'Automations', <Icon.Bolt />)}
       {tab('fields', href.fields(workspaceId, blueprintId), 'Fields', <Icon.Fields />)}
     </nav>
@@ -143,6 +165,32 @@ function Page({ route }: { route: Route }) {
     }
     case 'fields':
       return <FieldsPage workspaceId={route.workspaceId} blueprintId={route.blueprintId} />
+    case 'record': {
+      const spine = spineFor(route.blueprintId)
+      if (spine === null) return null
+      return (
+        <RecordPage
+          key={`${route.workspaceId}/${route.blueprintId}/${route.rowId}`}
+          workspaceId={route.workspaceId}
+          blueprintId={route.blueprintId}
+          rowId={route.rowId}
+          spine={spine}
+        />
+      )
+    }
+    case 'collection': {
+      const spine = spineFor(route.blueprintId)
+      if (spine === null) return null
+      return (
+        <ChildCollectionPage
+          key={`${route.workspaceId}/${route.blueprintId}/${route.collectionId}`}
+          workspaceId={route.workspaceId}
+          blueprintId={route.blueprintId}
+          collectionId={route.collectionId}
+          spine={spine}
+        />
+      )
+    }
     case 'recipes':
       return (
         <RecipesPage
@@ -176,6 +224,10 @@ function titleOf(route: Route): string {
       return 'Fields'
     case 'recipes':
       return 'Automations'
+    case 'record':
+      return 'Record'
+    case 'collection':
+      return 'Collection'
     case 'inbox':
       return 'Inbox'
     case 'corporate':

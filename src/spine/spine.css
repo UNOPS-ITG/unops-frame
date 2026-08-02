@@ -613,6 +613,10 @@
   gap: var(--spacing-4);
 }
 
+.spine-page__inner--wide {
+  max-width: var(--layout-lg);
+}
+
 .spine-page__head {
   display: flex;
   align-items: baseline;
@@ -990,6 +994,12 @@
 .appnav__tab:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
+}
+
+/* Settings-flavoured tabs (Automations, Fields) sit apart from the app's
+   entities — an app's nav separates what you WORK ON from how it is run. */
+.appnav__spacer {
+  flex: 1;
 }
 
 /* --- the overview: the app's home ----------------------------------------
@@ -1882,6 +1892,212 @@
   color: var(--color-text-muted);
   padding: var(--spacing-2) 0 0;
   margin: 0;
+}
+
+/* --- the record page: one row as a document (GR-17) ----------------------- */
+
+.record {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-5) var(--spacing-6) var(--spacing-10);
+}
+
+.record__crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  max-width: var(--layout-lg);
+  margin-inline: auto;
+}
+
+.record__crumbs a {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.record__crumbs a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.record__crumbs [aria-current] {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40ch;
+}
+
+.record__crumb-sep {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex-shrink: 0;
+}
+
+.record__masthead {
+  max-width: var(--layout-lg);
+  margin: var(--spacing-2) auto var(--spacing-4);
+}
+
+.record__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-snug);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The document grid: the record's parts on the left, its motion — workflow
+   and history — on a rail. */
+.record__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  gap: var(--spacing-4);
+  max-width: var(--layout-lg);
+  margin-inline: auto;
+  align-items: start;
+}
+
+@media (max-width: 64rem) {
+  .record__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.record__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.record__rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+/* The rail's workflow panel is the same component the drawer uses, dressed
+   as a card rather than a strip. */
+.record__rail .workflow {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  background: var(--color-surface);
+}
+
+.record__card {
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.record__card--flush {
+  display: flex;
+  flex-direction: column;
+  max-height: 32rem;
+}
+
+.record__rail-head {
+  margin-block-end: var(--spacing-2);
+}
+
+/* The header fields as a FORM, not a list: the document's own layout. */
+.record__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--spacing-3) var(--spacing-4);
+}
+
+.record__field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.record__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.record__value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.record__empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* --- inline record tables (child collections, extensions) ----------------- */
+
+.rtable {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+}
+
+.rtable--page {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  border-radius: var(--radius-lg);
+}
+
+.rtable__head,
+.rtable__row {
+  display: grid;
+  gap: var(--spacing-2);
+  align-items: center;
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.rtable__head {
+  background: var(--color-surface-sunken);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.rtable__row {
+  border-block-start: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+.rtable__row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rtable__parent {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.rtable__parent:hover {
+  text-decoration: underline;
 }
 
 /* --- the new-app wizard --------------------------------------------------- */

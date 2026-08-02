@@ -261,6 +261,19 @@ export interface SpineDef {
    * a Blueprint `description` (BP-1); an app that cannot say what it is for
    * is a table with navigation. */
   readonly purpose: string
+  /** What the main collection is CALLED in this app — "Risks", never
+   * "Table". An app navigates entities; "table" is the grid talking. */
+  readonly entityLabel: string
+  /** Child collections surfaced as app pages of their own: the flat
+   * cross-parent rendering (BP-8 — "all deliverables due this month,
+   * regardless of agreement") that makes an app read as multiple tables
+   * joined, not one table with chrome. Row content is derived per parent
+   * by the fixture until children are served. */
+  readonly childTables: readonly {
+    readonly id: string
+    readonly label: string
+    readonly columns: readonly { readonly id: string; readonly label: string }[]
+  }[]
   readonly workflow: WorkflowDef
   readonly forms: readonly FormDef[]
   readonly recipes: readonly RecipeDef[]

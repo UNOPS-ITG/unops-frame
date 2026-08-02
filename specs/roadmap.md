@@ -91,7 +91,20 @@ fixture JSON → vision verification → then engines and APIs.
 
 Nothing in Now or Next is GCP-blocked; the spine is entirely local work.
 
-## Changes this update (2026-08-02, fifth edition — creation and morphing land)
+## Changes this update (2026-08-02, sixth edition — the composition correction)
+
+- **Owner correction #3, absorbed**: a single table with chrome still
+  reads as grid-first — an app is *multiple tables joined*, records as
+  documents, forms and lists as surfaces. Landed: the **record page**
+  (GR-17 master-detail — fields as a form, child collections as inline
+  tables, workflow + activity rail), the **flat child collection page**
+  (BP-8 — every mitigation action across all risks, rows linking back to
+  their records), and entity navigation (Overview · Risks · Mitigation
+  actions — "Table" is gone from the nav). Attention rows now open
+  records, not the grid. Parent rows real; child rows fixture-derived
+  per parent until BP-5/FM-3 serve.
+
+## Prior update (2026-08-02, fifth edition — creation and morphing land)
 
 - **The app creation journey exists** (owner directive): "New app" opens
   the wizard — describe-it drafting (AI-1's contract: reviewable draft,

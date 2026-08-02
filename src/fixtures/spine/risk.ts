@@ -21,6 +21,21 @@ export const RISK_SPINE: SpineDef = {
   purpose:
     'Track, mitigate and close operational risks — with intake, review gates and an audit trail built in, not bolted on.',
 
+  entityLabel: 'Risks',
+
+  childTables: [
+    {
+      id: 'mitigations',
+      label: 'Mitigation actions',
+      columns: [
+        { id: 'action', label: 'Action' },
+        { id: 'due', label: 'Due' },
+        { id: 'assignee', label: 'Assignee' },
+        { id: 'state', label: 'State' },
+      ],
+    },
+  ],
+
   workflow: {
     stateField: 'status',
     states: [
@@ -292,6 +307,51 @@ export const SEED_TASKS: readonly PendingTask[] = [
     status: 'waiting',
   },
 ]
+
+/**
+ * The mitigation actions "under" a real risk row, derived deterministically
+ * from the row's own values — owner, status, mitigation window — so all 500
+ * seeded parents read believably and the same parent always shows the same
+ * children. Dies when FM-3/BP-5 children are served for real.
+ */
+export interface FixtureChildRow {
+  readonly action: string
+  readonly due: string
+  readonly assignee: string
+  readonly state: 'Planned' | 'In progress' | 'Done'
+}
+
+const ACTION_VERBS = [
+  'Renegotiate the coverage clause with',
+  'Run the contingency drill owned by',
+  'Split the exposure across suppliers with',
+  'Update the escalation protocol with',
+  'Commission the independent review via',
+]
+
+export function mitigationsFor(
+  rowId: string,
+  rowValues: Readonly<Record<string, unknown>>,
+): FixtureChildRow[] {
+  const rawOwner = rowValues['owner']
+  const owner = typeof rawOwner === 'string' ? rawOwner : 'M. Okafor'
+  const status = rowValues['status']
+  const rawDue = rowValues['mitigation_due']
+  const due = typeof rawDue === 'string' ? rawDue : ''
+  const dueLabel = due === '' ? '' : new Date(due).toLocaleDateString()
+  // A stable per-row seed from the id, so the list never reshuffles.
+  const seed = [...rowId].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) % 997, 7)
+  const count = status === 'closed' ? 2 : 1 + (seed % 2)
+  return Array.from({ length: count }, (_, i) => {
+    const verb = ACTION_VERBS[(seed + i) % ACTION_VERBS.length]!
+    return {
+      action: `${verb} ${owner}`,
+      due: dueLabel,
+      assignee: owner,
+      state: status === 'closed' ? 'Done' : i === 0 ? 'In progress' : 'Planned',
+    }
+  })
+}
 
 /**
  * Scripted history behind whichever row the drawer opens on.

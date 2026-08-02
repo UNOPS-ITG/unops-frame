@@ -41,7 +41,7 @@ test.describe('the shell', () => {
     // wait for the page.
     await expect(page.getByRole('heading', { name: 'Risk register' })).toBeVisible()
 
-    await page.getByRole('link', { name: 'Table', exact: true }).click()
+    await page.getByRole('link', { name: 'Risks', exact: true }).click()
     await page.waitForSelector('canvas', { timeout: 20_000 })
   })
 

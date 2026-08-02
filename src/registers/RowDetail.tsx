@@ -19,6 +19,7 @@ import { useState } from 'react'
 import { formatValue, WITHHELD_LABEL } from '@/grid/cells'
 import { isCorporateValue, isRestricted, type Blueprint, type Row } from '@/grid/contract'
 import { Icon } from '@/app/icons'
+import { href } from '@/app/routes'
 import { activityFeed, spineFor, useSpineStore } from '@/fixtures/spine/store'
 import { ActivityFeed } from '@/spine/ActivityFeed'
 import { WorkflowPanel } from '@/spine/WorkflowPanel'
@@ -69,6 +70,17 @@ export function RowDetail({ workspaceId, blueprint, row, onClose }: RowDetailPro
     <aside className="detail" aria-label="Row detail">
       <div className="detail__header">
         <h2 className="detail__title">{title || row.id}</h2>
+        {spine !== null && (
+          // The drawer is for glancing; the record page is for working —
+          // header form, child tables inline, the full document (GR-17).
+          <a
+            className="btn btn--secondary btn--sm"
+            href={href.record(workspaceId, blueprint.id, row.id)}
+          >
+            <Icon.ArrowRight />
+            Open
+          </a>
+        )}
         <button
           type="button"
           className="btn btn--ghost btn--icon btn--sm detail__close"

@@ -163,7 +163,7 @@ export function OverviewPage({
             </button>
             <a className="btn btn--secondary" href={href.table(workspaceId, blueprintId)}>
               <Icon.Table />
-              Open the table
+              Browse {spine.entityLabel.toLowerCase()}
             </a>
             <a className="btn btn--ghost" href={href.recipes(workspaceId, blueprintId)}>
               <Icon.Bolt />
@@ -262,7 +262,7 @@ export function OverviewPage({
                 if (d === null || Number.isNaN(d.getTime())) return ''
                 return `${Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000))} days`
               }}
-              onOpen={() => navigate(href.table(workspaceId, blueprintId))}
+              onOpen={(rowId) => navigate(href.record(workspaceId, blueprintId, rowId))}
             />
             <AttentionList
               title="Largest exposure"
@@ -272,7 +272,7 @@ export function OverviewPage({
                 const field = blueprint?.fields.find((f) => f.id === 'exposure')
                 return field !== undefined ? formatValue(row.values['exposure'], field) : ''
               }}
-              onOpen={() => navigate(href.table(workspaceId, blueprintId))}
+              onOpen={(rowId) => navigate(href.record(workspaceId, blueprintId, rowId))}
             />
           </section>
 
@@ -341,7 +341,9 @@ function AttentionList({
   /** WHY this row is on the list, worn as a chip — "213 days", "5,000,495".
    * A bare number column makes the reader reconstruct the argument. */
   reason: (row: Row) => string
-  onOpen: () => void
+  /** Opens the row's RECORD page — attention leads to the document, not to
+   * a grid where the reader must find the row again. */
+  onOpen: (rowId: string) => void
 }) {
   if (rows === null || blueprint === null) {
     return <p className="panel__empty">Loading…</p>
@@ -351,7 +353,7 @@ function AttentionList({
     <div className="panel__group">
       <h4 className="panel__subtitle">{title}</h4>
       {rows.map((row) => (
-        <button key={row.id} type="button" className="panel__row" onClick={onOpen}>
+        <button key={row.id} type="button" className="panel__row" onClick={() => onOpen(row.id)}>
           <span className="panel__row-title">
             {formatValue(row.values[titleField], blueprint.fields.find((f) => f.id === titleField) ?? blueprint.fields[0]!) || row.id}
           </span>

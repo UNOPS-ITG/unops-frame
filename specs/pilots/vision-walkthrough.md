@@ -78,7 +78,20 @@ sidebar's persona switch, bottom-left).
 10. **Three themes.** Flip light / grey / dark in the header. Every spine
     surface follows — no colour in the spine is a literal.
 
-11. **The same rows, morphing** (GR-13..16). On the Table tab, use the
+11. **A record is a document, and the app is multiple tables** (GR-17,
+    BP-8 — the composition that makes it an app rather than a grid with
+    chrome). From the Overview, click any *Needs attention* row: it opens
+    as a **record page** — breadcrumb, the fields as a form (the withheld
+    treatment intact), and the child collections as REAL TABLES INLINE:
+    Mitigation actions with their own state chips, the Decision log as a
+    BP-28 extension table, workflow and activity on the rail. Then use
+    the app nav: **Mitigation actions** is a page of its own — every
+    action across all risks, flat, each row linking back to its record.
+    The nav reads Overview · Risks · Mitigation actions, never "Table".
+    (Parent rows are real; child rows are fixture-derived per parent
+    until BP-5/FM-3 children are served.)
+
+12. **The same rows, morphing** (GR-13..16). On the Table tab, use the
     view switcher: **Board** (cards in state lanes — click one, the
     workflow panel opens), **Calendar** (by Last reviewed, landing on the
     busiest month), **Gantt** (mitigation windows as bars in state
@@ -87,7 +100,7 @@ sidebar's persona switch, bottom-left).
     governance does not. A view whose field map is missing names the
     missing fields instead of rendering blank.
 
-12. **Make your own app** — the finale. Sidebar → **New app**. Describe
+13. **Make your own app** — the finale. Sidebar → **New app**. Describe
     what you track in a sentence (try "Track partner MOUs with an owner,
     amount and renewal date") — or adopt one of the four organizational
     templates (contract, asset, project, fleet — with their states,
