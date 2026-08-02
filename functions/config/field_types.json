@@ -1,0 +1,113 @@
+{
+  "$comment": [
+    "The field type registry — code-first application configuration (PRD 00).",
+    "",
+    "This defines how Frame BEHAVES as an application, so it lives in the codebase and is",
+    "seeded to the environment's store at deploy. Blueprints, by contrast, are user-authored",
+    "data at every tier including organizational, and never ride a build.",
+    "",
+    "Adding a type is a platform decision with a published contribution process, not a steward",
+    "setting: every type implies a cell renderer, an editor, a validator, a store mapping, a",
+    "replica column type, a search treatment and a document-merge format. A type added without",
+    "all seven is a type that fails somewhere the author did not look.",
+    "",
+    "`enabled: false` types are DECLARED but refused at Blueprint save. They are here so the",
+    "extension mechanism is exercised from the start rather than theorised, and so the phase a",
+    "type arrives in is recorded where the type is."
+  ],
+  "version": 1,
+  "types": {
+    "text": {
+      "enabled": true, "phase": "P1", "storage": "string", "label": "Text",
+      "variants": ["single", "long", "rich"],
+      "supports": ["required", "unique", "default", "validation", "translatable", "searchable", "indexed", "set_once"],
+      "comment": "rich is stored as sanitised HTML. Long and rich cannot be `indexed` (BP-26 refuses it): a full-text field in a composite index blows the per-document index-entry budget."
+    },
+    "number": {
+      "enabled": true, "phase": "P1", "storage": "number", "label": "Number",
+      "variants": ["integer", "decimal", "currency", "percent"],
+      "supports": ["required", "unique", "default", "validation", "min", "max", "precision", "non_negative", "searchable", "indexed", "set_once"],
+      "comment": "currency carries an ISO 4217 code alongside the amount. Never a float for money in the replica — the code travels with the value so a rollup cannot silently add two currencies."
+    },
+    "date": {
+      "enabled": true, "phase": "P1", "storage": "timestamp", "label": "Date",
+      "supports": ["required", "default", "validation", "min", "max", "indexed", "set_once"]
+    },
+    "datetime": {
+      "enabled": true, "phase": "P1", "storage": "timestamp", "label": "Date and time",
+      "supports": ["required", "default", "validation", "min", "max", "indexed", "set_once"]
+    },
+    "time": {
+      "enabled": true, "phase": "P1", "storage": "string", "label": "Time of day",
+      "supports": ["required", "default", "validation", "indexed"],
+      "comment": "Time of day with no date. Scheduling and booking registers need it and a datetime cannot express it — a datetime forces a fictitious date that then sorts and filters wrongly."
+    },
+    "boolean": {
+      "enabled": true, "phase": "P1", "storage": "boolean", "label": "Checkbox",
+      "supports": ["required", "default", "indexed"]
+    },
+    "single_select": {
+      "enabled": true, "phase": "P1", "storage": "string", "label": "Single select",
+      "supports": ["required", "default", "validation", "translatable", "searchable", "indexed", "set_once", "options"],
+      "option_attributes": ["key", "label", "colour", "icon", "order"],
+      "render_as": ["chip", "glyph"],
+      "glyph_families": ["traffic_light", "harvey_ball", "flag", "star", "priority_arrow"],
+      "comment": "The stored value is always the option key, never the label and never the glyph. Option colours are declared once here and consumed by the grid, board lanes, conditional formatting and chart series — a status vocabulary is coloured in the model, not reconfigured per view."
+    },
+    "multi_select": {
+      "enabled": true, "phase": "P1", "storage": "string_array", "label": "Multiple select",
+      "supports": ["required", "default", "validation", "translatable", "searchable", "indexed", "options"],
+      "option_attributes": ["key", "label", "colour", "icon", "order"]
+    },
+    "user": {
+      "enabled": true, "phase": "P1", "storage": "string", "label": "Person",
+      "supports": ["required", "default", "searchable", "indexed", "set_once"],
+      "comment": "Stores the stable directory subject, never the email. Email is mutable and reassignable, so keying on it means a renamed address silently changes who a row is assigned to."
+    },
+    "reference": {
+      "enabled": true, "phase": "P1", "storage": "string", "label": "Link to a record",
+      "supports": ["required", "unique", "validation", "searchable", "indexed", "set_once", "target", "link_filter"],
+      "comment": "Reading through one requires the `select` action on the target Blueprint, not `read` (PM-2). link_filter narrows the picker declaratively so authors do not build a duplicate unrestricted Blueprint to pick from."
+    },
+    "corporate_reference": {
+      "enabled": true, "phase": "P1", "storage": "corporate_ref", "label": "Corporate data",
+      "supports": ["required", "validation", "searchable", "indexed", "set_once", "dimension"],
+      "comment": "PRD 14. Stores {key, label snapshot, snapshotAt, catalogueVersion}. The snapshot is what lets the grid filter, sort, export and generate documents without touching the warehouse."
+    },
+    "formula": {
+      "enabled": true, "phase": "P1", "storage": "derived", "label": "Formula",
+      "supports": ["validation", "searchable", "indexed", "materialized"],
+      "comment": "materialized: true (default) evaluates on write and stores. materialized: false evaluates at read and cannot be filtered, sorted, grouped or indexed on — BP-26 refuses one that a saved view, report, permission rule, replica or index references."
+    },
+    "created_at":  { "enabled": true, "phase": "P1", "storage": "timestamp", "label": "Created", "system": true, "supports": ["indexed"] },
+    "created_by":  { "enabled": true, "phase": "P1", "storage": "string",    "label": "Created by", "system": true, "supports": ["indexed"] },
+    "updated_at":  { "enabled": true, "phase": "P1", "storage": "timestamp", "label": "Last updated", "system": true, "supports": ["indexed"] },
+    "updated_by":  { "enabled": true, "phase": "P1", "storage": "string",    "label": "Last updated by", "system": true, "supports": ["indexed"] },
+
+    "attachment":   { "enabled": false, "phase": "P2", "storage": "string_array", "label": "Attachment", "comment": "Needs the Drive proxy/native serving split (IN-1) before it can be honest about permissions." },
+    "group":        { "enabled": false, "phase": "P2", "storage": "string", "label": "Group", "comment": "Needs directory group resolution (IN-2), which lands with the Admin SDK scope." },
+    "duration":     { "enabled": false, "phase": "P2", "storage": "number", "label": "Duration" },
+    "url":          { "enabled": false, "phase": "P2", "storage": "string", "label": "URL" },
+    "email":        { "enabled": false, "phase": "P2", "storage": "string", "label": "Email" },
+    "phone":        { "enabled": false, "phase": "P2", "storage": "string", "label": "Phone" },
+    "rollup":       { "enabled": false, "phase": "P2", "storage": "derived", "label": "Rollup", "comment": "BP-10. Needs the dependency graph and event-driven recalculation." },
+    "multi_reference": { "enabled": false, "phase": "P2", "storage": "string_array", "label": "Links to records", "comment": "Many-to-many. The singular reference cannot express 'the stakeholders on this project'." },
+    "corporate_figure": { "enabled": false, "phase": "P3", "storage": "derived", "label": "Corporate figure", "comment": "PRD 14 CD-16. Reads a measure already at grain; Frame never aggregates." },
+    "geolocation":  { "enabled": false, "phase": "P2", "storage": "geopoint", "label": "Location" },
+    "rating":       { "enabled": false, "phase": "P2", "storage": "number", "label": "Rating" },
+    "barcode":      { "enabled": false, "phase": "P2", "storage": "string", "label": "Barcode" },
+    "json":         { "enabled": false, "phase": "P2", "storage": "map", "label": "JSON", "admin_only": true, "comment": "The escape hatch. Admin-gated because an untyped blob is invisible to validation, permissions, search and the replica — everything this platform exists to provide." },
+    "polymorphic_reference": { "enabled": false, "phase": "P3", "storage": "map", "label": "Link to any record", "comment": "Target Blueprint determined by a companion field. Deferred because index generation, the search projection, the replica schema and reverse links all have to reason about a target not known statically." }
+  },
+
+  "sensitivity_bands": {
+    "$comment": "BP-3b. An integer band, not a three-value marker, because grants are per (principal, action, band) and a principal may hold read at band 1 and write only at band 0 — a shape three values cannot express. The restricted threshold is what every downstream rule keys on: PM-10 exclusions and read-audit, SR-6 index exclusion, bound-Sheet exclusion, NT-9 notification content safety. Changing it is a platform decision with an estate-wide re-index.",
+    "restricted_threshold": 2,
+    "bands": [
+      { "band": 0, "key": "plain",      "label": "Unrestricted" },
+      { "band": 1, "key": "sensitive",  "label": "Sensitive" },
+      { "band": 2, "key": "restricted", "label": "Restricted" },
+      { "band": 3, "key": "secret",     "label": "Secret" }
+    ]
+  }
+}
