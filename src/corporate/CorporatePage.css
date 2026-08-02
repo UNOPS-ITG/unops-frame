@@ -1,0 +1,221 @@
+/* The corporate-data catalogue: what Frame discovered, and why each thing
+   landed where it did. */
+
+.corporate {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-6);
+}
+
+.corporate__inner {
+  max-width: var(--layout-xl);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.corporate__lead {
+  max-width: var(--layout-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+.corporate__section-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--spacing-3);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.corporate__count {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- the connection card ------------------------------------------------ */
+
+.connection {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.connection__icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  color: var(--color-brand-primary);
+}
+
+.connection__icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.connection__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.connection__title {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--spacing-1);
+}
+
+.connection__detail {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+  max-width: var(--layout-md);
+}
+
+/* --- the relation list -------------------------------------------------- */
+
+.relations {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--spacing-3);
+}
+
+.relation {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.relation:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.relation__trigger {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.relation__trigger:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.relation__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-block-start: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.relation__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+}
+
+.relation__label {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.relation__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.relation__description {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Disclosure is the single most consequential fact about a relation, so it is a
+   chip rather than a line of prose: `open` means Frame may cache a label,
+   `entitled` means it must not. */
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
+}
+
+.disclosure--open {
+  background: var(--color-status-active-bg);
+  color: var(--color-status-active-text);
+}
+
+.disclosure--entitled {
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-text);
+}
+
+.disclosure svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.corporate__more {
+  margin: var(--spacing-3) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.corporate__search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-block-end: var(--spacing-3);
+  max-width: var(--layout-sm);
+}
+
+.corporate__search .ops-input {
+  flex: 1;
+  min-width: 0;
+}

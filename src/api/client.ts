@@ -117,6 +117,179 @@ export function getBlueprint(workspaceId: string, blueprintId: string): Promise<
   return request(`/workspaces/${workspaceId}/blueprints/${blueprintId}`)
 }
 
+/** What the sidebar lists. The full Blueprint is the same shape, so this is a
+ * narrowing rather than a second endpoint. */
+export type BlueprintSummary = Pick<Blueprint, 'id' | 'name' | 'version' | 'tier'>
+
+export function listBlueprints(workspaceId: string): Promise<Blueprint[]> {
+  return request(`/workspaces/${workspaceId}/blueprints`)
+}
+
+// --- corporate data -------------------------------------------------------
+
+export interface CorporateAttribute {
+  name: string
+  label: string
+  dataType: string
+  role: string
+  isBusinessKey: boolean
+  restricted: boolean
+}
+
+export interface CorporateDimension {
+  id: string
+  label: string
+  description: string | null
+  businessDomain: string | null
+  dataSteward: string | null
+  businessKey: string | null
+  disclosure: 'open' | 'entitled'
+  bindable: boolean
+  reasons: string[]
+  attributes: CorporateAttribute[]
+}
+
+export interface CorporateFact {
+  id: string
+  label: string
+  description: string | null
+  businessDomain: string | null
+  dataSteward: string | null
+  grain: string[]
+  disclosure: 'open' | 'entitled'
+  bindable: boolean
+  reasons: string[]
+  measures: { name: string; label: string; dataType: string; restricted: boolean }[]
+}
+
+/**
+ * A page of the catalogue.
+ *
+ * `matched` is separate from `items.length` on purpose: a truncated list that
+ * does not say so reads as the whole answer, and someone then concludes the
+ * relation they wanted does not exist.
+ */
+export interface CataloguePage<T> {
+  items: T[]
+  /** Everything in scope, before the search term. */
+  total: number
+  /** What the term matched, which may exceed what was returned. */
+  matched: number
+}
+
+export interface CatalogueQuery {
+  bindableOnly?: boolean
+  q?: string
+  limit?: number
+}
+
+/**
+ * Searched and paged on the server, and without column lists.
+ *
+ * The real warehouse is 555 dimensions and 388 facts; returning every one with
+ * its columns is 2.1 MB to render a browse page. Columns arrive from the detail
+ * endpoint when a relation is actually opened.
+ */
+export function listDimensions(
+  workspaceId: string,
+  { bindableOnly = true, q = '', limit }: CatalogueQuery = {},
+  signal?: AbortSignal,
+): Promise<CataloguePage<CorporateDimension>> {
+  return request(
+    `/workspaces/${workspaceId}/corporate/dimensions?${catalogueParams(bindableOnly, q, limit)}`,
+    signal ? { signal } : {},
+  )
+}
+
+export function listFacts(
+  workspaceId: string,
+  { bindableOnly = true, q = '', limit }: CatalogueQuery = {},
+  signal?: AbortSignal,
+): Promise<CataloguePage<CorporateFact>> {
+  return request(
+    `/workspaces/${workspaceId}/corporate/facts?${catalogueParams(bindableOnly, q, limit)}`,
+    signal ? { signal } : {},
+  )
+}
+
+function catalogueParams(bindableOnly: boolean, q: string, limit: number | undefined): string {
+  const params = new URLSearchParams({ bindableOnly: String(bindableOnly) })
+  if (q !== '') params.set('q', q)
+  if (limit !== undefined) params.set('limit', String(limit))
+  return params.toString()
+}
+
+/** One dimension, with its columns. */
+export function getDimension(
+  workspaceId: string,
+  dimensionId: string,
+): Promise<CorporateDimension> {
+  return request(
+    `/workspaces/${workspaceId}/corporate/dimensions/${encodeURIComponent(dimensionId)}`,
+  )
+}
+
+/** One fact, with its measures. */
+export function getFact(workspaceId: string, factId: string): Promise<CorporateFact> {
+  return request(`/workspaces/${workspaceId}/corporate/facts/${encodeURIComponent(factId)}`)
+}
+
+export interface LookupRow {
+  key: string
+  label: string
+}
+
+export interface LookupResult {
+  rows: LookupRow[]
+  /** The limit was reached. Shown, because a picker listing the first 25 of 900
+   * matches and saying so is usable, and one that implies 25 is all of them is
+   * misleading. */
+  truncated: boolean
+  context: string
+}
+
+/**
+ * The picker's typeahead, resolved in the caller's own warehouse context.
+ *
+ * Debounced by the caller, never per keystroke. At BigQuery's best-case
+ * ~300–400ms per interactive query, a query per keystroke is not slow, it is
+ * unusable — and the latency is not fixable warehouse-side, because results are
+ * not cached for tables under row-level security.
+ */
+export function searchDimension(
+  workspaceId: string,
+  dimensionId: string,
+  prefix: string,
+  limit = 25,
+  signal?: AbortSignal,
+): Promise<LookupResult> {
+  const params = new URLSearchParams({ q: prefix, limit: String(limit) })
+  return request(
+    `/workspaces/${workspaceId}/corporate/dimensions/${encodeURIComponent(dimensionId)}/search?${params}`,
+    signal ? { signal } : {},
+  )
+}
+
+export interface Connection {
+  connected: boolean
+  email: string | null
+  grantedAt: string | null
+  scopes: string[]
+}
+
+export function getConnection(): Promise<Connection> {
+  return request('/corporate/connection')
+}
+
+export function disconnect(): Promise<Connection> {
+  return request('/corporate/connection', { method: 'DELETE' })
+}
+
+/** The consent flow is a redirect, so it cannot go through `fetch`. */
+export function connectUrl(): string {
+  return `${BASE}/corporate/connection/start`
+}
+
 export interface QueryOptions {
   filter?: Record<string, unknown>
   sort?: { fieldId: string; direction: 'asc' | 'desc' }[]

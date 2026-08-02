@@ -382,7 +382,11 @@ def _envelopes_since(
     precisely so nothing infers order from them, and a relay that sorted by id
     would deliver a Tuesday edit before a Monday one.
     """
-    query = db.collection(outbox).order_by("at", "ASCENDING")
+    # `direction` is keyword-only on the real client — a positional second
+    # argument is a TypeError at request time, not at import. The fake used to
+    # accept it positionally, which is why every unit test passed while the
+    # endpoint 500'd against Firestore.
+    query = db.collection(outbox).order_by("at", direction="ASCENDING")
     envelopes = [snapshot.to_dict() or {} for snapshot in query.limit(limit * 4).stream()]
 
     if since is not None:

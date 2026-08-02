@@ -1,0 +1,285 @@
+/* The application frame: a fixed sidebar, a header, and a content region that
+ * owns its own scrolling.
+ *
+ * `grid-template-rows: auto 1fr` with `min-height: 0` on the content row is
+ * load-bearing rather than incidental. A grid child defaults to `min-height:
+ * auto`, which means it refuses to shrink below its content — so a canvas grid
+ * inside it grows the page instead of scrolling itself, and the register's
+ * header scrolls away with it. That is the single most common way a
+ * full-height app layout goes wrong.
+ */
+
+.shell {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  height: 100vh;
+  height: 100dvh; /* mobile browser chrome; falls back above */
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+.shell__main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  min-height: 0;
+}
+
+.shell__content {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- sidebar ------------------------------------------------------------ */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 16rem;
+  border-inline-end: 1px solid var(--color-border);
+  background: var(--color-surface-sunken);
+  transition: width var(--transition-base);
+}
+
+.sidebar--collapsed {
+  width: 3.5rem;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+  min-height: 3.5rem;
+}
+
+.sidebar__mark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-md);
+  background: var(--color-brand-primary);
+  color: var(--color-surface);
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.sidebar__wordmark {
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  letter-spacing: -0.01em;
+}
+
+.sidebar__scroll {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-3) var(--spacing-2);
+}
+
+.sidebar__section {
+  margin-block-end: var(--spacing-5);
+}
+
+.sidebar__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-2) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebar__link:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.sidebar__link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.sidebar__link--active {
+  background: var(--color-selected);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.sidebar__icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.8;
+}
+
+.sidebar__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__count {
+  margin-inline-start: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar__empty {
+  padding: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.sidebar__footer {
+  padding: var(--spacing-3);
+  border-block-start: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* --- header ------------------------------------------------------------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  min-height: 3.5rem;
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.topbar__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-width: 0;
+}
+
+.topbar__spacer {
+  margin-inline-start: auto;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+/* --- the persona switch, development only ------------------------------- */
+
+.persona {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.persona__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* --- theme switch ------------------------------------------------------- */
+
+.theme-switch {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.theme-switch__option {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-full);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.theme-switch__option:hover {
+  color: var(--color-text);
+}
+
+.theme-switch__option[aria-pressed='true'] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+
+.theme-switch__option:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+/* --- narrow screens ----------------------------------------------------- */
+
+@media (max-width: 60rem) {
+  .sidebar {
+    width: 3.5rem;
+  }
+  .sidebar__wordmark,
+  .sidebar__label,
+  .sidebar__count,
+  .sidebar__heading span,
+  .sidebar__empty {
+    display: none;
+  }
+  .sidebar__link {
+    justify-content: center;
+  }
+}

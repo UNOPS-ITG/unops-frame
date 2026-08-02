@@ -150,7 +150,7 @@ export function GridDemo() {
             <button
               key={n}
               type="button"
-              className="btn btn-secondary btn-sm"
+              className="btn btn--secondary btn--sm"
               aria-pressed={count === n}
               onClick={() => setCount(n)}
             >
@@ -167,7 +167,7 @@ export function GridDemo() {
             <button
               key={t}
               type="button"
-              className="btn btn-secondary btn-sm"
+              className="btn btn--secondary btn--sm"
               aria-pressed={preference === t}
               onClick={() => setPreference(t)}
             >

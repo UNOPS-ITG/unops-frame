@@ -24,9 +24,11 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request
 
+from api.core.config import get_settings
 from api.core.exceptions import AuthorizationError, NotFoundError, RequestValidationError
 from api.dependencies.auth import CurrentUser
 from api.schemas.base import RequestSchema, ResponseSchema
+from lib.corporate.executor import JobConfig
 from lib.corporate.model import Dimension, Fact, Source
 from lib.corporate.sweep import Catalogue
 
@@ -123,11 +125,56 @@ class FactOut(ResponseSchema):
     measures: list[MeasureOut] = []
 
 
+DEFAULT_CATALOGUE_PAGE = 60
+MAX_CATALOGUE_PAGE = 200
+"""How much of the catalogue one request returns.
+
+Sixty because a browse page is scanned, not read: past roughly a screenful and a
+half, nobody is reading, they are searching — and the search is what should be
+made good rather than the list made longer.
+"""
+
+
+class DimensionListOut(ResponseSchema):
+    items: list[DimensionOut] = []
+    total: int
+    """Everything in scope, before the search term."""
+
+    matched: int
+    """What the term matched. Stated separately from `len(items)` so the page can
+    say "60 of 214 matches" — a list truncated silently reads as the whole
+    answer, and someone then concludes the thing they wanted is not there."""
+
+
+class FactListOut(ResponseSchema):
+    items: list[FactOut] = []
+    total: int
+    matched: int
+
+
 class ConnectionOut(ResponseSchema):
     connected: bool
     email: str | None = None
     granted_at: str | None = None
     scopes: list[str] = []
+
+
+class LookupRowOut(ResponseSchema):
+    key: str
+    label: str
+
+
+class LookupOut(ResponseSchema):
+    rows: list[LookupRowOut] = []
+    truncated: bool = False
+    """The LIMIT was reached. Surfaced rather than hidden: a picker showing the
+    first fifty of nine hundred matches and saying so is usable; one that shows
+    fifty and implies that is all of them is misleading."""
+
+    context: str
+    """`user` — always, on this path. Stated on the wire so the UI can say whose
+    entitlements produced the list, which is the difference between "no matches"
+    and "no matches you may see"."""
 
 
 # --- the connector --------------------------------------------------------
@@ -286,7 +333,6 @@ def _redirect_uri(request: Request, settings: Any) -> str:
 
 
 def _tokens(db: Any) -> Any:
-    from api.core.config import get_settings
     from lib.corporate.crypto import build_cipher
     from lib.corporate.tokens import TokenStore
 
@@ -423,15 +469,34 @@ def list_dimensions(
     # string is snake_case, and a client that assumes one convention silently
     # gets the default instead of an error.
     bindable_only: Annotated[bool, Query(alias="bindableOnly")] = True,
-) -> list[DimensionOut]:
+    q: Annotated[str, Query(max_length=100)] = "",
+    limit: Annotated[int, Query(ge=1, le=MAX_CATALOGUE_PAGE)] = DEFAULT_CATALOGUE_PAGE,
+) -> DimensionListOut:
     """What a Blueprint author can point a lookup field at.
 
     Defaults to bindable only, because a list containing things that cannot be
     picked is a list where every author eventually tries one.
+
+    Searched and paged on the server, and attributes are omitted. That is not
+    tidiness: the real warehouse is 555 dimensions and 388 facts, and returning
+    every one of them with its full column list is 2.1 MB to render a browse
+    page — measured, on the actual catalogue. Attributes come from the detail
+    endpoint when something is actually opened.
     """
     catalogue = _load_catalogue(db, workspace_id)
-    dimensions = catalogue.bindable_dimensions if bindable_only else list(catalogue.dimensions.values())
-    return [_dimension_out(d) for d in sorted(dimensions, key=lambda d: d.label.lower())]
+    dimensions = (
+        catalogue.bindable_dimensions if bindable_only else list(catalogue.dimensions.values())
+    )
+    matched = [
+        d for d in dimensions if _matches(q, d.id, d.label, d.description, d.business_domain)
+    ]
+    matched.sort(key=lambda d: d.label.lower())
+
+    return DimensionListOut(
+        items=[_dimension_out(d, attributes=False) for d in matched[:limit]],
+        total=len(dimensions),
+        matched=len(matched),
+    )
 
 
 @router.get("/workspaces/{workspace_id}/corporate/facts")
@@ -440,21 +505,234 @@ def list_facts(
     user: CurrentUser,
     db: Db,
     bindable_only: Annotated[bool, Query(alias="bindableOnly")] = True,
-) -> list[FactOut]:
+    q: Annotated[str, Query(max_length=100)] = "",
+    limit: Annotated[int, Query(ge=1, le=MAX_CATALOGUE_PAGE)] = DEFAULT_CATALOGUE_PAGE,
+) -> FactListOut:
     catalogue = _load_catalogue(db, workspace_id)
     facts = catalogue.bindable_facts if bindable_only else list(catalogue.facts.values())
-    return [_fact_out(f) for f in sorted(facts, key=lambda f: f.label.lower())]
+    matched = [f for f in facts if _matches(q, f.id, f.label, f.description, f.business_domain)]
+    matched.sort(key=lambda f: f.label.lower())
+
+    return FactListOut(
+        items=[_fact_out(f, measures=False) for f in matched[:limit]],
+        total=len(facts),
+        matched=len(matched),
+    )
+
+
+def _matches(term: str, *fields: str | None) -> bool:
+    """Substring, case-insensitive, across label, description and domain.
+
+    Deliberately not a prefix match. People search the catalogue for the word
+    they know — "vendor", "grant" — and that word is as often in the middle of
+    `Purchase_Order_Vendor` as at the start of it.
+
+    The relation id is searched too, and it earns its place: many labels in the
+    real catalogue are generic ("Absence Code Table") while the id carries the
+    table name someone actually knows.
+    """
+    needle = term.strip().lower()
+    if not needle:
+        return True
+    return any(needle in (field or "").lower() for field in fields)
 
 
 @router.get("/workspaces/{workspace_id}/corporate/dimensions/{dimension_id}")
 def get_dimension(
     workspace_id: str, dimension_id: str, user: CurrentUser, db: Db
 ) -> DimensionOut:
+    """One dimension, with its columns. The list endpoint omits them."""
     catalogue = _load_catalogue(db, workspace_id)
     dimension = catalogue.dimensions.get(dimension_id)
     if dimension is None:
         raise NotFoundError(f"No dimension {dimension_id!r} in the catalogue")
     return _dimension_out(dimension)
+
+
+@router.get("/workspaces/{workspace_id}/corporate/facts/{fact_id}")
+def get_fact(workspace_id: str, fact_id: str, user: CurrentUser, db: Db) -> FactOut:
+    """One fact, with its measures."""
+    catalogue = _load_catalogue(db, workspace_id)
+    fact = catalogue.facts.get(fact_id)
+    if fact is None:
+        raise NotFoundError(f"No fact {fact_id!r} in the catalogue")
+    return _fact_out(fact)
+
+
+@router.get("/workspaces/{workspace_id}/corporate/dimensions/{dimension_id}/search")
+def search_dimension(
+    workspace_id: str,
+    dimension_id: str,
+    user: CurrentUser,
+    db: Db,
+    q: Annotated[str, Query(max_length=100)] = "",
+    limit: Annotated[int, Query(ge=1, le=200)] = 25,
+) -> LookupOut:
+    """The picker's typeahead — TEMPLATE 3, in the user's own context.
+
+    This is the one catalogue endpoint that reads warehouse *data* rather than
+    Frame's swept record, and everything about it follows from that:
+
+    * It runs on the caller's own OAuth credential, so BigQuery's IAM, row
+      access policies and column policy tags are the enforcement point. A caller
+      who has not consented gets a message saying so rather than a fallback to a
+      service identity — falling back would make the feature work and the
+      security claim false, which is the worst of both.
+    * It is bounded and debounced on the client. Never a query per keystroke: at
+      a best-case ~300-400ms per interactive query, per-keystroke resolution is
+      not slow, it is unusable.
+    * It refuses a quarantined relation. A relation that went away upstream
+      stops serving *new* picks immediately, while rows already referencing it
+      keep rendering with a staleness marker — detection is instant and free,
+      remediation is a costed migration, and conflating them is how a total
+      silently changes.
+
+    An `open` dimension will eventually be served from Frame's own mirrored
+    projection with no warehouse call at all. That projection is not built yet,
+    so both classes take this path today; the disclosure is still recorded on
+    the response's dimension so the UI does not have to guess later.
+    """
+    from lib.corporate.bigquery import BigQueryClient
+    from lib.corporate.executor import QueryFailed, QueryRefused
+    from lib.corporate.sql import UnsafeIdentifier, search_labels
+    from lib.corporate.tokens import ReconnectRequired
+
+    catalogue = _load_catalogue(db, workspace_id)
+    dimension = catalogue.dimensions.get(dimension_id)
+    if dimension is None:
+        raise NotFoundError(f"No dimension {dimension_id!r} in the catalogue")
+    if not dimension.bindable:
+        raise RequestValidationError(
+            f"{dimension.label} cannot be picked from: "
+            + (
+                "it was withdrawn upstream and is quarantined. Values already "
+                "stored keep rendering, marked."
+                if dimension.status.value != "active"
+                else "it declares no business key, so a stored reference would "
+                "have no identity."
+            )
+        )
+
+    label_column = _label_column(dimension)
+    if label_column is None:
+        raise RequestValidationError(
+            f"{dimension.label} declares a business key but no text column to "
+            "search by label, so there is nothing a person could recognise."
+        )
+
+    source = _source(db, workspace_id)
+    settings = get_settings()
+    billing = settings.corporate_billing_project or source.project
+
+    credential = _credential(db, user.subject)
+    if credential is None:
+        raise RequestValidationError(
+            "BigQuery is not connected for this account. Corporate data is read "
+            "in your own context, so a missing consent is a missing credential "
+            "rather than a reason to read it as somebody else."
+        )
+
+    query = search_labels(
+        source.project,
+        dimension.dataset,
+        dimension.table,
+        dimension.business_key or "",
+        label_column,
+        effective_date_column=dimension.effective_date_column,
+        limit=limit,
+    )
+
+    config = JobConfig(
+        project=billing,
+        location=source.location,
+        max_bytes_billed=source.max_bytes_billed,
+        workspace_id=workspace_id,
+        surface="picker",
+    )
+
+    try:
+        result = BigQueryClient().run(query, {"prefix": q}, config, credential)
+    except (QueryRefused, ReconnectRequired) as exc:
+        raise RequestValidationError(str(exc)) from exc
+    except (QueryFailed, UnsafeIdentifier) as exc:
+        # Left as BigQuery phrased it. A permission failure here is the warehouse
+        # telling this person something true about their own access, and
+        # replacing it with "corporate data unavailable" would discard the one
+        # message that says what to ask for.
+        raise AuthorizationError(str(exc)) from exc
+
+    key_column = dimension.business_key or ""
+    return LookupOut(
+        rows=[
+            LookupRowOut(
+                key=str(row.get(key_column) or ""),
+                label=str(row.get(label_column) or row.get(key_column) or ""),
+            )
+            for row in result.rows
+            if row.get(key_column) is not None
+        ],
+        truncated=result.truncated,
+        context="user",
+    )
+
+
+def _label_column(dimension: Dimension) -> str | None:
+    """The column a person would recognise a row by.
+
+    Prefers a declared name-ish column over the first string attribute, and
+    excludes the key itself: searching a key by prefix is what a code box is
+    for, and a picker that offered only that would be a worse code box.
+
+    Restricted attributes are never used as the label. A column carrying a
+    policy tag above Level 0 is one BigQuery may withhold, and a search ordered
+    by a column the caller cannot read returns nothing in a way that looks like
+    "no such thing" rather than "not for you".
+    """
+    candidates = [
+        a
+        for a in dimension.attributes
+        if a.is_open
+        and not a.is_business_key
+        and a.data_type.upper() in {"STRING", "TEXT"}
+    ]
+    if not candidates:
+        return None
+
+    for wanted in ("name", "label", "title", "description"):
+        for attribute in candidates:
+            if wanted in attribute.name.lower():
+                return attribute.name
+    return candidates[0].name
+
+
+def _source(db: Any, workspace_id: str) -> Source:
+    """The source the catalogue was swept from.
+
+    Read from the catalogue root rather than the sources collection, because it
+    is the source that *produced these relations* — reading a re-registered
+    source would point a lookup at a project the swept dataset does not live in,
+    and the failure would be a confusing 404 from BigQuery rather than a clear
+    "the catalogue is older than the source".
+    """
+    from lib.corporate.sweep_job import CATALOGUE_COLLECTION, CURRENT
+    from lib.paths import workspace
+
+    snapshot = (
+        workspace(db, workspace_id).collection(CATALOGUE_COLLECTION).document(CURRENT).get()
+    )
+    data = (snapshot.to_dict() or {}) if snapshot.exists else {}
+    raw = data.get("source")
+    if not raw:
+        raise NotFoundError(
+            "This workspace has no swept corporate-data catalogue yet. An admin "
+            "registers a source and the scheduled sweep fills it in."
+        )
+    return Source.model_validate(raw)
+
+
+def _credential(db: Any, subject: str) -> Any:
+    """This person's BigQuery access token, or None if they have not consented."""
+    return _tokens(db).credential(subject)
 
 
 def _load_catalogue(db: Any, workspace_id: str) -> Catalogue:
@@ -473,7 +751,7 @@ def _load_catalogue(db: Any, workspace_id: str) -> Catalogue:
     return load_catalogue(db, workspace_id)
 
 
-def _dimension_out(dimension: Dimension) -> DimensionOut:
+def _dimension_out(dimension: Dimension, *, attributes: bool = True) -> DimensionOut:
     """Rendered from the stored classification.
 
     Not re-classified here. The sweep ran the probe with credentials this
@@ -501,11 +779,13 @@ def _dimension_out(dimension: Dimension) -> DimensionOut:
                 restricted=not a.is_open,
             )
             for a in dimension.attributes
-        ],
+        ]
+        if attributes
+        else [],
     )
 
 
-def _fact_out(fact: Fact) -> FactOut:
+def _fact_out(fact: Fact, *, measures: bool = True) -> FactOut:
     restricted = set(fact.restricted_columns)
     return FactOut(
         id=fact.id,
@@ -525,5 +805,7 @@ def _fact_out(fact: Fact) -> FactOut:
                 restricted=m.name in restricted,
             )
             for m in fact.measures
-        ],
+        ]
+        if measures
+        else [],
     )

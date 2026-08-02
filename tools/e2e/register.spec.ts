@@ -14,8 +14,8 @@ import { expect, test } from '@playwright/test'
  * browser read it — passed every unit test that existed.
  */
 
-const REGISTER = '/#register/ws-demo/risk'
-const VIEW = '/#view/ws-demo/risk/open-risks'
+const REGISTER = '/#/w/ws-demo/b/risk'
+const VIEW = '/#/w/ws-demo/b/risk/v/open-risks'
 
 /** The persona is set before the app loads, because the client reads it when
  * building the request. */
@@ -31,7 +31,7 @@ async function as(page: import('@playwright/test').Page, email: string, hash: st
 test.describe('the governed register', () => {
   test('states what it is not showing', async ({ page }) => {
     await as(page, 'dev@unops.org', REGISTER)
-    const status = page.getByRole('status').first()
+    const status = page.getByRole('status', { name: 'Register summary' })
     await expect(status).toContainText('withheld')
     await expect(status).toContainText('Owner rationale')
   })
@@ -41,7 +41,7 @@ test.describe('the governed register', () => {
       const context = await browser.newContext()
       const page = await context.newPage()
       await as(page, email, VIEW)
-      const text = (await page.getByRole('status').first().textContent()) ?? ''
+      const text = (await page.getByRole('status', { name: 'Register summary' }).textContent()) ?? ''
       await context.close()
       return text
     }
@@ -58,7 +58,7 @@ test.describe('the governed register', () => {
 test.describe('the filter builder', () => {
   test('narrows the register and states the new withheld count', async ({ page }) => {
     await as(page, 'dev@unops.org', REGISTER)
-    const status = page.getByRole('status').first()
+    const status = page.getByRole('status', { name: 'Register summary' })
     const before = await status.textContent()
 
     await page.getByRole('button', { name: 'Filter' }).click()
@@ -100,7 +100,7 @@ test.describe('the filter builder', () => {
     await page.getByRole('button', { name: 'Save view' }).click()
     await page.waitForTimeout(1_500)
 
-    await expect(page.locator('select').first()).toContainText(name)
+    await expect(page.getByLabel('View', { exact: true })).toContainText(name)
   })
 })
 

@@ -21,8 +21,8 @@
 
 import { GridCellKind } from '@glideapps/glide-data-grid'
 import type { GridCell, TextCell } from '@glideapps/glide-data-grid'
-import type { BlueprintField, FieldValue, Row } from './contract'
-import { isRestricted } from './contract'
+import type { BlueprintField, CorporateValue, FieldValue, Row } from './contract'
+import { isCorporateValue, isRestricted } from './contract'
 
 /** What a withheld cell shows. Not an empty string, and not a lock glyph
  * alone — screen readers get the words, sighted users get the styling. */
@@ -85,6 +85,10 @@ export function toGridCell({ row, field, palette }: CellContext): GridCell {
 
   const editable = !field.readOnly
 
+  if (field.storage === 'corporate_ref' && isCorporateValue(value)) {
+    return corporateCell(value, editable, palette)
+  }
+
   switch (field.storage) {
     case 'number':
       return {
@@ -110,15 +114,72 @@ export function toGridCell({ row, field, palette }: CellContext): GridCell {
         allowOverlay: editable,
       }
 
-    default:
+    default: {
+      // Through `formatValue` rather than `String()`. A value can legitimately
+      // be an object here — a corporate reference on a field whose storage was
+      // changed, say — and `String()` would put "[object Object]" into the
+      // cell's edit buffer, which is then what a save writes back.
+      const text = formatValue(value, field)
       return {
         kind: GridCellKind.Text,
-        data: value == null ? '' : String(value),
-        displayData: formatValue(value, field),
+        data: text,
+        displayData: text,
         allowOverlay: editable,
         readonly: !editable,
       }
+    }
   }
+}
+
+export const STALE_MARK = ' ·'
+export const ORPHAN_MARK = ' ⚠'
+
+/**
+ * A reference to corporate data.
+ *
+ * Four states, and showing them identically would lose the only information
+ * that distinguishes a fact from a guess:
+ *
+ * - **snapshot** — a cached label from an `open` dimension. Shown plainly.
+ * - **snapshot, stale** — the same, but taken more than 90 days ago and marked.
+ *   A silently old label is worse than a visibly old one: the first time anyone
+ *   notices otherwise is when two reports disagree.
+ * - **resolved** — an `entitled` dimension, resolved live in *this* reader's
+ *   context. Nothing is cached; the value is theirs.
+ * - **quarantined / orphaned** — the relation went away upstream. The stored
+ *   key is still shown, marked, because hiding it would make the row look empty
+ *   rather than orphaned, and those call for different actions.
+ *
+ * Never editable inline. Picking a corporate value means searching a catalogue
+ * of hundreds of thousands of rows in the user's own entitlements; a text box
+ * that accepted a typed key would store one nobody validated.
+ */
+function corporateCell(
+  value: CorporateValue,
+  editable: boolean,
+  palette: RestrictedPalette | undefined,
+): GridCell {
+  const label = value.label ?? value.key
+  const orphaned = value.state === 'orphaned' || value.state === 'quarantined'
+  const suffix = orphaned ? ORPHAN_MARK : value.stale ? STALE_MARK : ''
+
+  const cell: TextCell = {
+    kind: GridCellKind.Text,
+    data: value.key,
+    displayData: `${label}${suffix}`,
+    // No overlay, ever — not even a read-only one. Activating the cell raises
+    // `onCellActivated`, and the register opens the picker in response. A text
+    // overlay here would let someone type a key straight into the row, and a
+    // typed key is one nobody validated against a dimension that has hundreds
+    // of thousands of them.
+    allowOverlay: false,
+    readonly: !editable,
+    copyData: value.key,
+  }
+
+  return orphaned && palette
+    ? { ...cell, themeOverride: { bgCell: palette.background, textDark: palette.text } }
+    : cell
 }
 
 /**
@@ -139,6 +200,7 @@ export function labelFor(value: string, field: BlueprintField): string {
 export function formatValue(value: FieldValue, field: BlueprintField): string {
   if (value == null) return ''
   if (isRestricted(value)) return WITHHELD_TEXT
+  if (isCorporateValue(value)) return value.label ?? value.key
   if (Array.isArray(value)) return value.map((v) => labelFor(String(v), field)).join(', ')
 
   if (field.options && typeof value === 'string') return labelFor(value, field)

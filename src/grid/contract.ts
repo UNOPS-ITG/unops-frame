@@ -29,8 +29,33 @@ export interface RestrictedValue {
  * `null` (explicitly cleared) and from a restricted stub (present, withheld).
  * Collapsing the three is how "not recorded" comes to read as "zero".
  */
+/**
+ * What a row stores when a field points at corporate data (PRD 14).
+ *
+ * `label` is a snapshot and may be absent — on an `entitled` dimension Frame
+ * caches no label at all, because a cached label on an entitled dimension is a
+ * quiet bypass of the warehouse policy. `state` is what the server resolved it
+ * to for *this* reader, and the renderer shows each state differently.
+ */
+export interface CorporateValue {
+  readonly key: string
+  readonly label?: string | null
+  readonly state?: 'snapshot' | 'resolved' | 'quarantined' | 'orphaned'
+  readonly stale?: boolean
+}
+
+export function isCorporateValue(value: unknown): value is CorporateValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'key' in value &&
+    typeof (value as CorporateValue).key === 'string'
+  )
+}
+
 export type FieldValue =
   | RestrictedValue
+  | CorporateValue
   | string
   | number
   | boolean

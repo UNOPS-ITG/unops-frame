@@ -94,10 +94,17 @@ class FakeQuery:
         q._filters.append((path, op, value))
         return q
 
-    def order_by(self, field: str, direction: str = "ASCENDING") -> FakeQuery:
-        # The real client raises on "asc"/"desc". A fake that accepted them
-        # would pass every test and 500 on the first real request — which is
-        # exactly what it did, once.
+    def order_by(self, field: str, *, direction: str = "ASCENDING") -> FakeQuery:
+        # Keyword-only, matching the real client, and both halves of that were
+        # learned the hard way against Firestore rather than guessed:
+        #
+        # * a POSITIONAL direction is a TypeError at request time. A fake that
+        #   accepted it let `order_by("at", "ASCENDING")` pass every unit test
+        #   and 500 the deltas endpoint on the first real poll.
+        # * "asc"/"desc" are REJECTED. Only the long spellings work.
+        #
+        # Both are invisible at import and at type-check time, so the fake is
+        # the only place they can be caught before a real request.
         if direction not in {"ASCENDING", "DESCENDING"}:
             raise AssertionError(
                 f"Firestore rejects direction {direction!r}; use ASCENDING or DESCENDING"
@@ -202,8 +209,8 @@ class FakeCollectionRef:
     def where(self, path: str, op: str, value: Any) -> FakeQuery:
         return FakeQuery(self._store, self.path, self._depth).where(path, op, value)
 
-    def order_by(self, field: str, direction: str = "ASCENDING") -> FakeQuery:
-        return FakeQuery(self._store, self.path, self._depth).order_by(field, direction)
+    def order_by(self, field: str, *, direction: str = "ASCENDING") -> FakeQuery:
+        return FakeQuery(self._store, self.path, self._depth).order_by(field, direction=direction)
 
     def limit(self, count: int) -> FakeQuery:
         return FakeQuery(self._store, self.path, self._depth).limit(count)

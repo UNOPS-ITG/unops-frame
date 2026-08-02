@@ -34,8 +34,53 @@ export interface FrameGridProps {
    * belongs with the transport, not the renderer. */
   onLoadMore?: () => void
   onCellEdited?: (rowId: string, fieldId: string, value: unknown) => void
+  /** Which row the master-detail panel is showing. Null when the selection is
+   * cleared, so the parent can close the panel rather than leave a stale row
+   * open beside a grid that has moved on. */
+  onRowSelected?: (rowId: string | null) => void
+  /**
+   * A cell was opened for editing. Return true to say the parent handled it and
+   * the grid's own overlay must not open.
+   *
+   * The corporate-reference field is why this exists: its edit is a search over
+   * a warehouse dimension in the reader's own entitlements, not a text box. A
+   * text box would happily store a key nobody validated.
+   */
+  onOpenCell?: (rowId: string, field: BlueprintField) => boolean
   height?: number | string
   width?: number | string
+}
+
+/**
+ * The withheld-column header glyph.
+ *
+ * A padlock drawn into Glide's header icon sprite. It replaces a column *group*
+ * named "Withheld", which was the first attempt and was wrong in a way only
+ * visible once rendered: Glide reserves a full-width band for a group row, so
+ * one marked column produced a thirty-pixel empty stripe across every other
+ * column — which reads as a rendering fault rather than as a statement about
+ * one field.
+ */
+const HEADER_ICONS = {
+  // `xmlns` is required and one line is required: Glide turns this string into
+  // a data URI and loads it as an image, and a standalone SVG without the
+  // namespace fails to decode. The browser reports that as an unattributed
+  // "source image cannot be decoded" with no hint that an icon is the subject.
+  // Drawn in `bgColor`, which is not the mistake it looks like. Glide's header
+  // icon convention is a coloured backdrop with a knocked-out glyph, so
+  // `bgColor` is the header's TEXT colour and `fgColor` is the header's
+  // BACKGROUND — see `glideTheme.ts`. Stroking with `fgColor` paints a white
+  // padlock on a white header, which is invisible and looks like the icon
+  // failed to load rather than like a naming surprise.
+  //
+  // No backdrop square: a solid dark chip beside a column name is heavier than
+  // the fact deserves. An outline padlock in the header's own ink reads as part
+  // of the label.
+  withheld: (props: { bgColor: string }) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">` +
+    `<rect x="4" y="9" width="12" height="8" rx="2" stroke="${props.bgColor}" stroke-width="1.6"/>` +
+    `<path d="M7 9V6.75a3 3 0 0 1 6 0V9" stroke="${props.bgColor}" stroke-width="1.6" stroke-linecap="round"/>` +
+    `</svg>`,
 }
 
 /** Columns the viewer may not read at all, on any row of this page, still
@@ -51,7 +96,7 @@ function columnsFor(blueprint: Blueprint, columnStubs: readonly string[]): GridC
     // Marked in the header rather than only in the cells, so the fact is stated
     // once instead of repeated down a thousand rows. Spread rather than set to
     // `undefined` because the column type does not accept an explicit absence.
-    ...(stubs.has(field.id) ? { group: 'Withheld' } : {}),
+    ...(stubs.has(field.id) ? { icon: 'withheld' } : {}),
   }))
 }
 
@@ -73,6 +118,8 @@ export function FrameGrid({
   page,
   onLoadMore,
   onCellEdited,
+  onRowSelected,
+  onOpenCell,
   height = '100%',
   width = '100%',
 }: FrameGridProps) {
@@ -138,6 +185,29 @@ export function FrameGrid({
     [blueprint.fields, rowsById, onCellEdited],
   )
 
+  const handleCellActivated = useCallback(
+    ([col, row]: Item) => {
+      const field = blueprint.fields[col]
+      const target = rowsById.get(row)
+      if (field === undefined || target === undefined) return
+      onOpenCell?.(target.id, field)
+    },
+    [blueprint.fields, rowsById, onOpenCell],
+  )
+
+  const handleGridSelectionChange = useCallback(
+    (selection: { current?: { cell: Item } | undefined }) => {
+      const cell = selection.current?.cell
+      if (cell === undefined) {
+        onRowSelected?.(null)
+        return
+      }
+      const target = rowsById.get(cell[1])
+      onRowSelected?.(target?.id ?? null)
+    },
+    [rowsById, onRowSelected],
+  )
+
   return (
     <div style={{ height, width, position: 'relative' }}>
       <DataEditor
@@ -146,6 +216,9 @@ export function FrameGrid({
         getCellContent={getCellContent}
         onVisibleRegionChanged={onVisibleRegionChanged}
         {...(onCellEdited ? { onCellEdited: handleCellEdited } : {})}
+        {...(onOpenCell ? { onCellActivated: handleCellActivated } : {})}
+        {...(onRowSelected ? { onGridSelectionChange: handleGridSelectionChange } : {})}
+        headerIcons={HEADER_ICONS}
         theme={glideTheme}
         rowHeight={theme.metrics.rowHeight}
         headerHeight={theme.metrics.headerHeight}
@@ -180,14 +253,11 @@ function GridAnnouncer({ blueprint, page }: { blueprint: Blueprint; page: RowPag
     <div
       role="status"
       aria-live="polite"
-      style={{
-        position: 'absolute',
-        width: 1,
-        height: 1,
-        overflow: 'hidden',
-        clip: 'rect(0 0 0 0)',
-        whiteSpace: 'nowrap',
-      }}
+      // Named, because it is no longer the only status region on the page. A
+      // test — or a screen-reader user cycling regions — needs to be able to
+      // ask for *this* one rather than for whichever happens to be first.
+      aria-label="Register summary"
+      className="visually-hidden"
     >
       {`${blueprint.name}: ${annotation.visible} rows shown` +
         (annotation.withheld > 0 ? `, ${annotation.withheld} withheld` : '') +

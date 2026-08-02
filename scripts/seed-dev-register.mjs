@@ -203,8 +203,8 @@ async function main() {
 
   const base = `http://localhost:${ports.frontend}`
   console.log('done.')
-  console.log(`  register:  ${base}/#register/${WORKSPACE}/${BLUEPRINT}`)
-  console.log(`  saved view: ${base}/#view/${WORKSPACE}/${BLUEPRINT}/open-risks`)
+  console.log(`  register:  ${base}/#/w/${WORKSPACE}/b/${BLUEPRINT}`)
+  console.log(`  saved view: ${base}/#/w/${WORKSPACE}/b/${BLUEPRINT}/v/open-risks`)
   console.log('  personas:  risk@unops.org (risk-team) · dev@unops.org (staff)')
 }
 

@@ -16,7 +16,7 @@ import { chromium } from '@playwright/test'
 import { ports } from '../../config/ports.mjs'
 
 const BASE = `http://localhost:${ports.frontend}`
-const URL = `${BASE}/#view/ws-demo/risk/open-risks`
+const URL = `${BASE}/#/w/ws-demo/b/risk/v/open-risks`
 const OUT = process.argv[2] ?? '.artifacts'
 
 const PEOPLE = [
@@ -43,7 +43,7 @@ async function capture(browser, person) {
   await page.waitForSelector('canvas', { timeout: 15_000 })
   await page.waitForTimeout(1_500)
 
-  const announcement = await page.getByRole('status').textContent()
+  const announcement = await page.getByRole('status', { name: 'Register summary' }).textContent()
   await page.screenshot({ path: `${OUT}/m1-${person.email.split('@')[0]}.png` })
   await context.close()
 

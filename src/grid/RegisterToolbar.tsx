@@ -1,18 +1,20 @@
 /**
- * The register toolbar: views, import, export.
+ * The register toolbar: views, filter, import, export.
  *
- * Three governed actions in one strip, and each states something the user would
+ * Four governed actions in one strip, and each states something the user would
  * otherwise have to infer:
  *
  * - The view list says which views are *yours*, because a shared view you
  *   cannot edit and one you can look identical until you try.
+ * - The filter panel stays mounted while a filter is applying. It used to
+ *   unmount on every refetch, which threw away a half-typed view name.
  * - Import shows what a file would do before it does it. The dry run is the
  *   default path, not a checkbox nobody ticks.
  * - Export says how many rows it did not contain, in the UI as well as in the
  *   file, because the person who clicks it is the person who forwards it.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ApiError,
   createView,
@@ -22,6 +24,7 @@ import {
   type ImportResult,
   type SavedView,
 } from '../api/client'
+import { Icon } from '../app/icons'
 import { FilterBuilder } from './FilterBuilder'
 import type { Blueprint } from './contract'
 
@@ -33,6 +36,10 @@ export interface RegisterToolbarProps {
   onSelectView: (viewId: string | undefined) => void
   onImported: () => void
   onFilter: (filter: Record<string, unknown> | null) => void
+  /** Rendered at the end of the strip. The toolbar does not compute it: the
+   * withheld count belongs to the page that fetched it, and a toolbar deriving
+   * its own would be a second number that then has to agree with the first. */
+  annotation?: ReactNode
 }
 
 export function RegisterToolbar({
@@ -43,6 +50,7 @@ export function RegisterToolbar({
   onSelectView,
   onImported,
   onFilter,
+  annotation,
 }: RegisterToolbarProps) {
   const [views, setViews] = useState<SavedView[]>([])
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -145,15 +153,16 @@ export function RegisterToolbar({
   }, [workspaceId, blueprintId])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+    <>
+      <div className="register__toolbar">
         {views.length > 0 && (
-          <label style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
-            <span style={{ font: 'var(--text-body-small)', color: 'var(--color-text-secondary)' }}>
+          <div className="register__toolbar-group">
+            <label className="register__control-label" htmlFor="register-view">
               View
-            </span>
+            </label>
             <select
-              className="form-select"
+              id="register-view"
+              className="ops-select"
               value={activeViewId ?? ''}
               onChange={(e) => onSelectView(e.target.value === '' ? undefined : e.target.value)}
             >
@@ -167,24 +176,27 @@ export function RegisterToolbar({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         )}
 
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          aria-expanded={filtering}
-          onClick={() => setFiltering((f) => !f)}
-        >
-          {filtering ? 'Hide filter' : 'Filter'}
-        </button>
+        <div className="register__toolbar-group">
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            aria-expanded={filtering}
+            onClick={() => setFiltering((f) => !f)}
+          >
+            <Icon.Filter />
+            {filtering ? 'Hide filter' : 'Filter'}
+          </button>
 
-        <span style={{ marginInlineStart: 'auto', display: 'flex', gap: '0.5rem' }}>
+          <span className="register__divider" aria-hidden="true" />
+
           <input
             ref={fileInput}
             type="file"
             accept=".csv,text/csv"
-            style={{ display: 'none' }}
+            className="visually-hidden"
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) void handleFile(file)
@@ -193,31 +205,31 @@ export function RegisterToolbar({
           />
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn--ghost btn--sm"
             disabled={busy}
             onClick={() => fileInput.current?.click()}
           >
+            <Icon.Upload />
             Import CSV
           </button>
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn--ghost btn--sm"
             disabled={busy}
             onClick={() => void handleExport()}
           >
+            <Icon.Download />
             Export CSV
           </button>
-        </span>
+        </div>
+
+        {annotation !== undefined && (
+          <div className="register__toolbar-group register__toolbar-group--end">{annotation}</div>
+        )}
       </div>
 
       {filtering && (
-        <div
-          style={{
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '0.75rem',
-          }}
-        >
+        <div className="register__filter">
           <FilterBuilder
             blueprint={blueprint}
             busy={busy}
@@ -228,8 +240,11 @@ export function RegisterToolbar({
       )}
 
       {notice !== null && (
-        <div role="status" style={{ font: 'var(--text-body-small)', color: 'var(--color-text-secondary)' }}>
-          {notice}
+        <div className="notice notice--info" role="status">
+          <div className="notice__body">{notice}</div>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setNotice(null)}>
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -244,7 +259,7 @@ export function RegisterToolbar({
           }}
         />
       )}
-    </div>
+    </>
   )
 }
 
@@ -262,20 +277,8 @@ function ImportPreview({
   const blocked = result.errors.length > 0
 
   return (
-    <div
-      role="region"
-      aria-label="Import preview"
-      style={{
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-md)',
-        padding: '0.75rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-        font: 'var(--text-body-small)',
-      }}
-    >
-      <strong>
+    <div className="import" role="region" aria-label="Import preview">
+      <strong className="import__summary">
         {result.parsedRows.toLocaleString()} rows read · {result.validRows.toLocaleString()} valid
         {blocked && ` · ${result.errors.length.toLocaleString()} problems`}
       </strong>
@@ -283,19 +286,18 @@ function ImportPreview({
       {result.unmappedColumns.length > 0 && (
         // Stated, not ignored: a mis-exported file whose columns silently
         // vanish produces rows that look complete and are not.
-        <div style={{ color: 'var(--color-warning)' }}>
-          These columns matched no field and will be ignored:{' '}
-          {result.unmappedColumns.join(', ')}
+        <div className="import__warning">
+          These columns matched no field and will be ignored: {result.unmappedColumns.join(', ')}
         </div>
       )}
 
       {blocked && (
         <>
-          <div style={{ color: 'var(--color-danger)' }}>
+          <div className="import__error">
             Nothing will be written while any row is invalid — a half-applied import cannot be told
             from a finished one.
           </div>
-          <ul style={{ margin: 0, paddingInlineStart: '1.25rem', maxHeight: '10rem', overflowY: 'auto' }}>
+          <ul className="import__errors scrollable">
             {result.errors.slice(0, 50).map((e, i) => (
               <li key={`${e.line}-${e.fieldId ?? ''}-${i}`}>
                 Line {e.line}
@@ -304,21 +306,21 @@ function ImportPreview({
             ))}
           </ul>
           {result.truncatedErrors > 0 && (
-            <div>and {result.truncatedErrors.toLocaleString()} more</div>
+            <div className="import__error">and {result.truncatedErrors.toLocaleString()} more</div>
           )}
         </>
       )}
 
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div className="import__actions">
         <button
           type="button"
-          className="btn btn-primary btn-sm"
+          className="btn btn--primary btn--sm"
           disabled={busy || blocked || result.validRows === 0}
           onClick={onCommit}
         >
           Import {result.validRows.toLocaleString()} rows
         </button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} disabled={busy}>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel} disabled={busy}>
           Cancel
         </button>
       </div>

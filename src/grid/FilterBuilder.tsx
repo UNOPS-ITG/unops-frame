@@ -141,7 +141,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
         return (
           <div key={index} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <select
-              className="form-select"
+              className="ops-select"
               aria-label="Field"
               value={clause.fieldId}
               onChange={(e) => {
@@ -164,7 +164,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
             </select>
 
             <select
-              className="form-select"
+              className="ops-select"
               aria-label="Condition"
               value={clause.op}
               onChange={(e) => update(index, { op: e.target.value as Operator })}
@@ -178,7 +178,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
 
             {field?.options ? (
               <select
-                className="form-select"
+                className="ops-select"
                 aria-label="Value"
                 value={clause.value}
                 onChange={(e) => update(index, { value: e.target.value })}
@@ -194,7 +194,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
               </select>
             ) : (
               <input
-                className="form-input"
+                className="ops-input"
                 aria-label="Value"
                 type={field?.storage === 'number' ? 'number' : 'text'}
                 value={clause.value}
@@ -204,7 +204,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
 
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
+              className="btn btn--ghost btn--sm"
               aria-label="Remove condition"
               onClick={() => setClauses((prev) => prev.filter((_, i) => i !== index))}
             >
@@ -215,12 +215,12 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
       })}
 
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={add} disabled={busy}>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={add} disabled={busy}>
           Add condition
         </button>
         <button
           type="button"
-          className="btn btn-primary btn-sm"
+          className="btn btn--primary btn--sm"
           onClick={() => onApply(ast)}
           disabled={busy}
         >
@@ -229,7 +229,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
         {clauses.length > 0 && (
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
+            className="btn btn--ghost btn--sm"
             onClick={() => {
               setClauses([])
               onApply(null)
@@ -243,7 +243,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
         {onSaveView !== undefined && (
           <>
             <input
-              className="form-input"
+              className="ops-input"
               aria-label="View name"
               placeholder="Save as a view…"
               value={viewName}
@@ -252,7 +252,7 @@ export function FilterBuilder({ blueprint, onApply, onSaveView, busy = false }: 
             />
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className="btn btn--secondary btn--sm"
               disabled={busy || viewName.trim() === ''}
               onClick={() => {
                 onSaveView(viewName.trim(), ast)

@@ -25,6 +25,15 @@ a.btn:visited {
   text-decoration: none;
 }
 
+/* Icons are inline SVG with no intrinsic size — they inherit `currentColor` and
+   need the box. Sized here rather than on each icon so a button's glyph and its
+   label stay on one optical grid wherever the button is used. */
+.btn svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
 a.btn--primary,
 a.btn--primary:hover,
 a.btn--primary:visited {

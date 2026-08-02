@@ -1,0 +1,141 @@
+.fields {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-6);
+}
+
+.fields__inner {
+  max-width: var(--layout-xl);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.fields__lead {
+  max-width: var(--layout-md);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.fields__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.fields__table th,
+.fields__table td {
+  text-align: start;
+  vertical-align: top;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.fields__table thead th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+}
+
+.fields__table tbody tr:last-child th,
+.fields__table tbody tr:last-child td {
+  border-block-end: 0;
+}
+
+.fields__name {
+  font-weight: var(--font-weight-normal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 12rem;
+}
+
+.fields__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.fields__badge {
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* The stable id, monospaced, because it is the thing an API caller and a CSV
+   header must match exactly — and it is never case-transformed on the wire. */
+.fields__id {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.fields__help {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+  max-width: var(--layout-sm);
+}
+
+.fields__type {
+  display: block;
+  color: var(--color-text);
+}
+
+.fields__variant,
+.fields__storage {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.fields__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-inline-end: var(--spacing-1);
+  margin-block-end: var(--spacing-1);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--color-chip-bg);
+  border: 1px solid var(--color-chip-border);
+  color: var(--color-chip-text);
+  font-size: var(--font-size-xs);
+}
+
+.fields__flag--warn {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+  border-color: transparent;
+}
+
+.fields__flag--restricted {
+  background: var(--grid-cell-restricted-bg);
+  color: var(--grid-cell-restricted-text);
+  border-color: transparent;
+}
+
+.fields__glyph {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.fields__none {
+  color: var(--color-text-muted);
+}

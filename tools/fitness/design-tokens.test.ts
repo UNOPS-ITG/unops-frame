@@ -66,6 +66,11 @@ describe('brand tokens', () => {
     for (const f of files) {
       const body = stripComments(f.text)
       for (const [i, line] of body.split('\n').entries()) {
+        // A media-query breakpoint is not a container width, and it cannot be a
+        // token even in principle: CSS custom properties are not permitted in
+        // media feature values. Breakpoint SPRAWL is a real problem, so it is
+        // checked separately below rather than not at all.
+        if (/@media|@container/.test(line)) continue
         if (hardWidth.test(line)) offenders.push(`${f.path}:${i + 1}  ${line.trim().slice(0, 90)}`)
       }
     }
@@ -76,6 +81,38 @@ describe('brand tokens', () => {
         'in one place. A hard-coded 720px is a decision nobody can find later.\n' +
         'Offending lines:',
     ).toEqual([])
+  })
+
+  it('breakpoints are a small shared set, not one per component', () => {
+    // Custom properties are illegal in media feature values, so breakpoints
+    // cannot be tokens. What can be enforced is that there are FEW of them: a
+    // codebase where each component invents its own collapse point has no
+    // responsive design, it has a collection of unrelated ones, and the symptom
+    // is a layout that reflows three times across a fifty-pixel drag.
+    const breakpoints = new Map<string, string[]>()
+
+    for (const f of walk('src', ['.css'])) {
+      const body = stripComments(f.text)
+      for (const [i, line] of body.split('\n').entries()) {
+        for (const match of line.matchAll(/\((?:min|max)-width:\s*([^)]+)\)/g)) {
+          const value = (match[1] ?? '').trim()
+          const seen = breakpoints.get(value)
+          if (seen) seen.push(`${f.path}:${i + 1}`)
+          else breakpoints.set(value, [`${f.path}:${i + 1}`])
+        }
+      }
+    }
+
+    const MAX_BREAKPOINTS = 3
+    const distinct = [...breakpoints].map(([value, at]) => `${value}  (${at.join(', ')})`).sort()
+
+    expect(
+      distinct.length,
+      `At most ${MAX_BREAKPOINTS} distinct breakpoints. Reuse one already in the\n` +
+        'set, or raise this bound deliberately because a layout genuinely needs a\n' +
+        'new one. In use:\n  ' +
+        distinct.join('\n  '),
+    ).toBeLessThanOrEqual(MAX_BREAKPOINTS)
   })
 
   it('the theme contract is documented where it is easy to get wrong', () => {

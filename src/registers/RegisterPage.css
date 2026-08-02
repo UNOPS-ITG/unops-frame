@@ -1,0 +1,343 @@
+/* The register: a toolbar, the grid, and a detail drawer that shares the row. */
+
+.register {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.register__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+
+.register__toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.register__toolbar-group--end {
+  margin-inline-start: auto;
+}
+
+.register__divider {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--color-border);
+  margin-inline: var(--spacing-1);
+}
+
+.register__control-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.register__filter {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-sunken);
+}
+
+/* --- import preview ----------------------------------------------------- */
+
+.import {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-sunken);
+  font-size: var(--font-size-sm);
+}
+
+.import__summary {
+  font-weight: var(--font-weight-medium);
+}
+
+.import__warning {
+  color: var(--color-brand-warning);
+}
+
+.import__error {
+  color: var(--color-brand-error);
+}
+
+.import__errors {
+  margin: 0;
+  padding-inline-start: var(--spacing-5);
+  max-height: 10rem;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+}
+
+.import__actions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.register__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+.register__grid {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* --- notices ------------------------------------------------------------ */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.notice--info {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+
+.notice--warning {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+}
+
+.notice--error {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-text);
+}
+
+.notice__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice__title {
+  font-weight: var(--font-weight-medium);
+  color: inherit;
+}
+
+/* --- states ------------------------------------------------------------- */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-8);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.state__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.state__body {
+  max-width: var(--layout-sm);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+/* A skeleton, not a spinner. A spinner says "something is happening"; a
+   skeleton says "a table is coming and roughly this shape", which is the
+   difference between waiting and wondering. */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  flex: 1;
+}
+
+.skeleton__row {
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-sunken) 25%,
+    var(--color-hover) 37%,
+    var(--color-surface-sunken) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease infinite;
+}
+
+@keyframes skeleton-sweep {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton__row {
+    animation: none;
+  }
+}
+
+/* --- annotation --------------------------------------------------------- */
+
+.annotation {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.annotation__withheld {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--color-chip-bg);
+  border: 1px solid var(--color-chip-border);
+  color: var(--color-chip-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.annotation__estimate {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* --- row detail drawer -------------------------------------------------- */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  width: min(24rem, 40vw);
+  border-inline-start: 1px solid var(--color-border);
+  background: var(--color-surface);
+  min-height: 0;
+}
+
+.detail__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.detail__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail__close {
+  margin-inline-start: auto;
+}
+
+.detail__hint {
+  padding: var(--spacing-4);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.detail__fields {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-2) var(--spacing-4) var(--spacing-6);
+}
+
+.detail__field {
+  padding: var(--spacing-3) 0;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.detail__field:last-child {
+  border-block-end: 0;
+}
+
+.detail__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-block-end: var(--spacing-1);
+}
+
+.detail__value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.detail__value--empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* A withheld value is styled as withheld, not as absent. The grid does the
+   same thing; matching them means a user learns the treatment once. */
+.detail__value--withheld {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--grid-cell-restricted-bg);
+  color: var(--grid-cell-restricted-text);
+  font-size: var(--font-size-xs);
+}
+
+.detail__glyph {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.detail__badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 60rem) {
+  .detail {
+    width: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-overlay);
+  }
+}

@@ -20,7 +20,10 @@ import { expect, test } from '@playwright/test'
 // reads config/ports.json and honours FRAME_PORT_*. A literal here works
 // until someone shifts their block, and then fails with seven red tests and
 // no clue that the port is the reason.
-const APP = '/'
+// The grid harness, not the application root. It renders the grid against a
+// generated dataset with no server, which is what makes a paint measurement a
+// measurement of the grid rather than of a fetch.
+const APP = '/#/harness'
 
 test.describe('the grid renders', () => {
   test('paints a non-blank canvas in brand colours', async ({ page }) => {

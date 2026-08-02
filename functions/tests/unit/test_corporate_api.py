@@ -143,9 +143,9 @@ def test_the_id_in_the_body_must_match_the_url(admin: TestClient) -> None:
 def test_the_catalogue_lists_what_a_blueprint_author_can_bind_to(author: TestClient) -> None:
     body = author.get(f"{BASE}/dimensions").json()
 
-    assert body
-    assert all(d["bindable"] for d in body)
-    assert all(d["businessKey"] for d in body)
+    assert body["items"]
+    assert all(d["bindable"] for d in body["items"])
+    assert all(d["businessKey"] for d in body["items"])
 
 
 def test_an_unbindable_dimension_is_hidden_by_default_and_says_why_when_shown(
@@ -156,10 +156,44 @@ def test_an_unbindable_dimension_is_hidden_by_default_and_says_why_when_shown(
     shown = author.get(f"{BASE}/dimensions?bindableOnly=false").json()
     hidden = author.get(f"{BASE}/dimensions").json()
 
-    assert len(shown) > len(hidden)
-    unbindable = [d for d in shown if not d["bindable"]]
+    assert shown["total"] > hidden["total"]
+    unbindable = [d for d in shown["items"] if not d["bindable"]]
     assert unbindable
     assert all(d["reasons"] for d in unbindable)
+
+
+def test_the_catalogue_is_searched_and_paged_on_the_server(author: TestClient) -> None:
+    """The real warehouse is 555 dimensions and 388 facts; returning all of them
+    with their column lists is 2.1 MB to render a browse page. Both halves of
+    the fix are asserted here — the search narrows, and the page states what it
+    did not return."""
+    everything = author.get(f"{BASE}/dimensions?bindableOnly=false").json()
+    label = everything["items"][0]["label"]
+
+    narrowed = author.get(f"{BASE}/dimensions?bindableOnly=false&q={label}").json()
+    assert narrowed["matched"] < everything["matched"]
+    assert narrowed["total"] == everything["total"], "total is before the search term"
+
+    one = author.get(f"{BASE}/dimensions?bindableOnly=false&limit=1").json()
+    assert len(one["items"]) == 1
+    # Stated rather than silently truncated: a short list that does not admit it
+    # reads as the whole answer.
+    assert one["matched"] > 1
+
+    nothing = author.get(f"{BASE}/dimensions?q=nothing-matches-this-xyzzy").json()
+    assert nothing["items"] == []
+    assert nothing["matched"] == 0
+
+
+def test_the_list_omits_columns_and_the_detail_endpoint_carries_them(
+    author: TestClient,
+) -> None:
+    """Columns are the bulk of the payload and almost nobody opens a card."""
+    listed = author.get(f"{BASE}/dimensions").json()["items"][0]
+    assert listed["attributes"] == []
+
+    detail = author.get(f"{BASE}/dimensions/{listed['id']}").json()
+    assert detail["attributes"]
 
 
 def test_an_unclassified_relation_is_not_public(author: TestClient) -> None:
@@ -167,33 +201,39 @@ def test_an_unclassified_relation_is_not_public(author: TestClient) -> None:
     a public one, and that default is what stops a sweep that has not finished
     from disclosing anything."""
     body = author.get(f"{BASE}/dimensions").json()
-    assert all(d["disclosure"] == "entitled" for d in body)
-    assert all(d["reasons"] for d in body)
+    assert all(d["disclosure"] == "entitled" for d in body["items"])
+    assert all(d["reasons"] for d in body["items"])
 
 
 def test_a_dimensions_restricted_attributes_are_marked(author: TestClient) -> None:
     """So an author picking attributes to carry onto a row can see which ones
     will make the whole binding entitled."""
-    dimensions = author.get(f"{BASE}/dimensions?bindableOnly=false").json()
-    with_restricted = [d for d in dimensions if any(a["restricted"] for a in d["attributes"])]
+    listed = author.get(f"{BASE}/dimensions?bindableOnly=false").json()["items"]
+    detailed = [author.get(f"{BASE}/dimensions/{d['id']}").json() for d in listed]
+    with_restricted = [d for d in detailed if any(a["restricted"] for a in d["attributes"])]
 
     assert with_restricted, "the fixture should contain a policy-tagged dimension"
-    assert any(a["isBusinessKey"] for d in dimensions for a in d["attributes"])
+    assert any(a["isBusinessKey"] for d in detailed for a in d["attributes"])
 
 
 def test_a_fact_reports_the_grain_it_is_keyed_by(author: TestClient) -> None:
     """A Frame row can bind to it only where the row already references every
     dimension in the grain — otherwise there is no defensible answer to which
     rows the number belongs to."""
-    facts = author.get(f"{BASE}/facts").json()
+    facts = author.get(f"{BASE}/facts").json()["items"]
     assert facts
     for fact in facts:
         assert fact["grain"]
-        assert fact["measures"]
+        # Measures come from the detail endpoint, like dimension attributes.
+        assert author.get(f"{BASE}/facts/{fact['id']}").json()["measures"]
 
 
 def test_an_unknown_dimension_is_a_404(author: TestClient) -> None:
     assert author.get(f"{BASE}/dimensions/Dimensions_Api.Nope").status_code == 404
+
+
+def test_an_unknown_fact_is_a_404(author: TestClient) -> None:
+    assert author.get(f"{BASE}/facts/Facts_Api.Nope").status_code == 404
 
 
 def test_an_empty_catalogue_is_an_empty_list_not_an_error(
@@ -206,7 +246,9 @@ def test_an_empty_catalogue_is_an_empty_list_not_an_error(
     # a catalogue whose summary is gone.
     for path in db.paths_under(f"workspaces/{WS}/corporateCatalogue/"):
         db.docs.pop(path, None)
-    assert author.get(f"{BASE}/dimensions").json() == []
+    body = author.get(f"{BASE}/dimensions").json()
+    assert body["items"] == []
+    assert body["total"] == 0
 
 
 # --- what does not exist --------------------------------------------------
