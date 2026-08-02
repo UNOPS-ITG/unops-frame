@@ -1940,6 +1940,17 @@
 .record__masthead {
   max-width: var(--layout-lg);
   margin: var(--spacing-2) auto var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.record__acts {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
 }
 
 .record__title {

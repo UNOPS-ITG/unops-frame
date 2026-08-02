@@ -27,7 +27,7 @@ import { isCorporateValue, type BlueprintField } from '@/grid/contract'
 import { spineFor, useSpineStore } from '@/fixtures/spine/store'
 import { GeneratedForm } from '@/spine/GeneratedForm'
 import { BoardView, CalendarView, GanttView, type DataViewMode } from '@/spine/views'
-import { href } from '@/app/routes'
+import { href, navigate } from '@/app/routes'
 import { NewRow } from './NewRow'
 import { RowDetail } from './RowDetail'
 import { Annotation, Empty, Failed, Loading } from './states'
@@ -324,6 +324,12 @@ export function RegisterPage({ workspaceId, blueprintId, viewId, dataView = 'tab
               onRowSelected={setSelectedRowId}
               onOpenCell={onOpenCell}
               onAppendRow={() => setAdding(true)}
+              {...(spine !== null
+                ? {
+                    onOpenRow: (rowId: string) =>
+                      navigate(href.record(workspaceId, blueprintId, rowId)),
+                  }
+                : {})}
               flashRow={flashRow}
               onFlashDone={onFlashDone}
               height="100%"

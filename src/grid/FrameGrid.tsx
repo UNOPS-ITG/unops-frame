@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DataEditor, GridCellKind } from '@glideapps/glide-data-grid'
-import type { DataEditorRef, DrawCellCallback, EditableGridCell, GridColumn, Item, Theme } from '@glideapps/glide-data-grid'
+import type { CellClickedEventArgs, DataEditorRef, DrawCellCallback, EditableGridCell, GridColumn, Item, Theme } from '@glideapps/glide-data-grid'
 import '@glideapps/glide-data-grid/dist/index.css'
 
 import { useGridTheme } from '../styles/useGridTheme'
@@ -53,6 +53,15 @@ export interface FrameGridProps {
    * dialog, because required fields and row-conditioned grants make a silent
    * empty-row create refusable for reasons the user cannot see). */
   onAppendRow?: () => void
+  /**
+   * The row's OPEN action (GR-23): an affordance on the hovered row's frozen
+   * primary cell that opens the row as its form view — the record page. It
+   * lives on the primary column so it stays reachable however far the grid
+   * scrolls, and it is a distinct callback rather than a variant of
+   * selection because opening a record and selecting a row are different
+   * intents a grid must not conflate.
+   */
+  onOpenRow?: (rowId: string) => void
   /** Row index to scroll to and flash — the landing beat after a create. The
    * parent sets it when the created row arrives in the page and clears it when
    * the flash ends; the grid only performs it. */
@@ -76,6 +85,10 @@ const FLASH = {
   settle: 60, //  scroll finishes before the tint appears
   hold: 900, //   long enough to find, short enough to never feel like state
 }
+
+/** Width of the Open affordance's paint-and-click zone at the right edge of
+ * the primary cell (GR-23). One constant shared by draw and hit-test. */
+const OPEN_ZONE = 64
 
 /**
  * The withheld-column header glyph.
@@ -249,6 +262,7 @@ export function FrameGrid({
   onRowSelected,
   onOpenCell,
   onAppendRow,
+  onOpenRow,
   flashRow,
   onFlashDone,
   height = '100%',
@@ -383,11 +397,56 @@ export function FrameGrid({
       const meta = (args.cell as FrameCell).frame
       if (meta === undefined) {
         drawContent()
-        return
+      } else {
+        paintFrameCell(args.ctx, args.rect, meta, theme.palette, glideTheme)
       }
-      paintFrameCell(args.ctx, args.rect, meta, theme.palette, glideTheme)
+
+      // GR-23's Open affordance: painted over the hovered row's primary cell,
+      // right-aligned, in the accent the anchor ring already resolves. Canvas
+      // has no buttons; the matching hit-test lives in handleCellClicked, and
+      // the two share OPEN_ZONE so paint and click can never disagree.
+      if (onOpenRow !== undefined && args.col === 0 && args.row === hoverRow) {
+        const { ctx, rect } = args
+        const w = OPEN_ZONE - 12
+        const h = Math.min(22, rect.height - 8)
+        const x = rect.x + rect.width - w - 6
+        const y = rect.y + (rect.height - h) / 2
+        ctx.save()
+        // An opaque backing over the zone first: the chip sits ON the cell,
+        // not tangled through the title's tail characters.
+        ctx.fillStyle = theme.palette['grid-row-hover']
+        ctx.fillRect(rect.x + rect.width - OPEN_ZONE, rect.y + 1, OPEN_ZONE, rect.height - 2)
+        ctx.beginPath()
+        ctx.roundRect(x, y, w, h, h / 2)
+        ctx.fillStyle = theme.palette['grid-row-selected']
+        ctx.fill()
+        ctx.strokeStyle = theme.palette['grid-cell-anchor-ring']
+        ctx.lineWidth = 1
+        ctx.stroke()
+        ctx.fillStyle = theme.palette['grid-cell-anchor-ring']
+        ctx.font = `600 ${glideTheme.baseFontStyle} ${glideTheme.fontFamily}`
+        ctx.textBaseline = 'middle'
+        ctx.textAlign = 'center'
+        ctx.fillText('Open', x + w / 2, y + h / 2 + 0.5)
+        ctx.restore()
+      }
     },
-    [theme.palette, glideTheme],
+    [theme.palette, glideTheme, onOpenRow, hoverRow],
+  )
+
+  /** Clicks inside the Open chip's zone on the primary cell open the record;
+   * everywhere else, clicking keeps meaning selection. */
+  const handleCellClicked = useCallback(
+    ([col, row]: Item, event: CellClickedEventArgs) => {
+      if (onOpenRow === undefined || col !== 0) return
+      if (event.localEventX < event.bounds.width - OPEN_ZONE) return
+      const target = rowsById.get(row)
+      if (target !== undefined) {
+        event.preventDefault()
+        onOpenRow(target.id)
+      }
+    },
+    [onOpenRow, rowsById],
   )
 
   const handleGridSelectionChange = useCallback(
@@ -415,6 +474,7 @@ export function FrameGrid({
         {...(onCellEdited ? { onCellEdited: handleCellEdited } : {})}
         {...(onOpenCell ? { onCellActivated: handleCellActivated } : {})}
         {...(onRowSelected ? { onGridSelectionChange: handleGridSelectionChange } : {})}
+        {...(onOpenRow ? { onCellClicked: handleCellClicked } : {})}
         headerIcons={HEADER_ICONS}
         theme={glideTheme}
         rowHeight={theme.metrics.rowHeight}

@@ -84,6 +84,15 @@ sidebar's persona switch, bottom-left).
 10. **Three themes.** Flip light / grey / dark in the header. Every spine
     surface follows — no colour in the spine is a literal.
 
+10a. **Rows have actions; Open is the first** (GR-23). In any table, rest
+    the pointer on a row: an **Open** chip appears on the primary cell —
+    reachable however far the grid scrolls. Click it: the row opens as
+    its form view, read-only, with an explicit **Edit** in the masthead.
+    Edit turns the writable fields into inputs (the withheld field is
+    never offered), and **Save changes** goes through the same
+    field-scoped write path as a grid edit — change a contract's
+    manager, save, and see the table agree.
+
 11. **A record is a document, and the app is multiple tables** (GR-17,
     BP-8 — the composition that makes it an app rather than a grid with
     chrome). From the Overview, click any *Needs attention* row: it opens
