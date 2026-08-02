@@ -1,0 +1,21 @@
+{
+  "$comment": "Byte-identical to firebase.json except that every emulator binds 0.0.0.0. Inside a container 127.0.0.1 means 'reachable only from this container', so the published ports would answer nothing and the stack would look started while being unusable. scripts/check-ports.mjs asserts this file agrees with firebase.json on every port, names the same database, and uses 0.0.0.0 throughout.",
+  "firestore": {
+    "database": "frame",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "emulators": {
+    "singleProjectMode": true,
+    "firestore": { "port": 6310, "host": "0.0.0.0" },
+    "auth": { "port": 6311, "host": "0.0.0.0" },
+    "functions": { "port": 6312, "host": "0.0.0.0" },
+    "storage": { "port": 6313, "host": "0.0.0.0" },
+    "pubsub": { "port": 6314, "host": "0.0.0.0" },
+    "ui": { "enabled": true, "port": 6315, "host": "0.0.0.0" },
+    "hub": { "port": 6316, "host": "0.0.0.0" }
+  }
+}

@@ -1,0 +1,22 @@
+# Keeping the build context small matters more than usual here: the venv is a Windows
+# venv and would be actively harmful inside a Linux image, and __pycache__ carries a
+# different magic number.
+
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Local configuration, including the dev auth bypass secret.
+config/.env
+
+# Never needed in an image.
+tests/
+Dockerfile*
+.dockerignore

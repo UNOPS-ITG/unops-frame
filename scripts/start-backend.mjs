@@ -10,6 +10,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ports } from "../config/ports.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
@@ -31,7 +32,18 @@ if (!existsSync(pythonPath)) {
 const child = spawn(pythonPath, ["-m", "api.cloudrun"], {
   cwd: functionsDir,
   stdio: "inherit",
-  env: process.env,
+  env: {
+    ...process.env,
+    // Passed explicitly rather than left to functions/config/.env, so that the
+    // backend and every emulator client agree even when FRAME_PORT_OFFSET has
+    // shifted the whole block for a second checkout. config/ports.json stays
+    // the single source of truth in both languages.
+    PORT: String(ports.backend),
+    FIRESTORE_EMULATOR_HOST: `127.0.0.1:${ports.emulators.firestore}`,
+    PUBSUB_EMULATOR_HOST: `127.0.0.1:${ports.emulators.pubsub}`,
+    FIREBASE_AUTH_EMULATOR_HOST: `127.0.0.1:${ports.emulators.auth}`,
+    FIREBASE_STORAGE_EMULATOR_HOST: `127.0.0.1:${ports.emulators.storage}`,
+  },
 });
 
 const forward = (signal) => {

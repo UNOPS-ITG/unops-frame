@@ -58,8 +58,11 @@ const SCANNED = [
   'config/ports.json',
   'config/ports.mjs',
   'scripts/emulator-config.json',
+  'scripts/start-backend.mjs',
   'tools/shoot-gallery.mjs',
   'scripts/agent-browser/browser.mjs',
+  'functions/api/cloudrun.py',
+  'functions/api/core/config.py',
 ]
 
 for (const rel of SCANNED) {
@@ -83,7 +86,74 @@ for (const rel of SCANNED) {
   }
 }
 
-/* --- 3. The allocation is internally consistent -------------------------- */
+/* --- 3. firebase.docker.json agrees with firebase.json, on 0.0.0.0 -------- */
+// Inside a container 127.0.0.1 means "reachable only from this container", so the
+// published ports would answer nothing while the stack looked started.
+try {
+  const fb = JSON.parse(readFileSync(join(root, 'firebase.json'), 'utf8'))
+  const fbDocker = JSON.parse(readFileSync(join(root, 'firebase.docker.json'), 'utf8'))
+
+  if (fbDocker.firestore?.database !== fb.firestore?.database) {
+    problems.push(
+      `firebase.docker.json: database "${fbDocker.firestore?.database}" != "${fb.firestore?.database}"`,
+    )
+  }
+  for (const [name, cfg] of Object.entries(fb.emulators ?? {})) {
+    if (typeof cfg !== 'object' || cfg === null || cfg.port === undefined) continue
+    const docker = fbDocker.emulators?.[name]
+    if (docker?.port !== cfg.port) {
+      problems.push(`firebase.docker.json: ${name} port ${docker?.port} != ${cfg.port}`)
+    }
+    if (docker?.host !== '0.0.0.0') {
+      problems.push(
+        `firebase.docker.json: ${name} host is "${docker?.host}", must be 0.0.0.0 — ` +
+          '127.0.0.1 inside a container is unreachable from the published port',
+      )
+    }
+    if (cfg.host && cfg.host !== '127.0.0.1') {
+      problems.push(`firebase.json: ${name} host should be 127.0.0.1, found "${cfg.host}"`)
+    }
+  }
+} catch (err) {
+  problems.push(`could not compare firebase.json / firebase.docker.json: ${err.message}`)
+}
+
+/* --- 4. docker-compose publishes the same ports --------------------------- */
+try {
+  const compose = readFileSync(join(root, 'docker-compose.yml'), 'utf8')
+  const expected = [
+    ['FRAME_PORT_POSTGRES', ports.postgres],
+    ['FRAME_PORT_FIRESTORE', ports.emulators.firestore],
+    ['FRAME_PORT_AUTH', ports.emulators.auth],
+    ['FRAME_PORT_FUNCTIONS', ports.emulators.functions],
+    ['FRAME_PORT_STORAGE', ports.emulators.storage],
+    ['FRAME_PORT_PUBSUB', ports.emulators.pubsub],
+    ['FRAME_PORT_EMULATOR_UI', ports.emulators.ui],
+    ['FRAME_PORT_EMULATOR_HUB', ports.emulators.hub],
+    ['FRAME_PORT_BACKEND', ports.backend],
+  ]
+  for (const [envName, port] of expected) {
+    // Compose cannot import config/ports.mjs, so the default is written inline and
+    // checked here instead.
+    if (!new RegExp(`\\$\\{${envName}:-${port}\\}`).test(compose)) {
+      problems.push(
+        `docker-compose.yml: expected \${${envName}:-${port}} — the inline default has ` +
+          'drifted from config/ports.json',
+      )
+    }
+  }
+  // Publishing to 0.0.0.0 would put a dev/dev Postgres on the office network.
+  const unbound = [...compose.matchAll(/^\s*-\s*"(?!127\.0\.0\.1:)([^"]*:\d+)"/gm)]
+  for (const m of unbound) {
+    if (/\d+:\d+/.test(m[1])) {
+      problems.push(`docker-compose.yml: port mapping "${m[1]}" is not bound to 127.0.0.1`)
+    }
+  }
+} catch (err) {
+  problems.push(`could not check docker-compose.yml: ${err.message}`)
+}
+
+/* --- 5. The allocation is internally consistent -------------------------- */
 const all = [
   ['frontend', ports.frontend],
   ['backend', ports.backend],

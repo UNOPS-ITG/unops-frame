@@ -1,0 +1,131 @@
+# Frame's local stack.
+#
+#   docker compose up                          -> Postgres + the Firebase emulator suite.
+#                                                 Backend and frontend run natively;
+#                                                 `npm run dev` orchestrates all of it.
+#   docker compose --profile containerized up  -> the above plus the FastAPI backend in a
+#                                                 container with hot reload.
+#
+# The default profile runs infrastructure only, with the application native. That is
+# deliberate on Windows: uvicorn --reload and Vite HMR watching a bind mount into a Linux
+# container is the classic "my save didn't reload" bug, and polling is a workaround rather
+# than a fix. The containerized profile exists for clean-machine reproduction.
+#
+# Every published port is bound to 127.0.0.1 on purpose. Docker publishes to 0.0.0.0 by
+# default and punches through the Windows firewall, which would put a dev/dev Postgres on
+# the office network. It is the one security-relevant line in this file and it costs nothing.
+#
+# Ports mirror config/ports.json, which is the single source of truth. Compose cannot import
+# a .mjs, so each is written ${FRAME_PORT_*:-<default>} and scripts/check-ports.mjs asserts
+# the defaults here agree with config/ports.json. FRAME_PORT_OFFSET is deliberately NOT
+# honoured here: shift individual ports with the named variables instead.
+
+name: frame
+
+services:
+  db:
+    # Plain postgres:16 — Frame stores no embeddings today. Switch to
+    # pgvector/pgvector:0.8.2-pg16 (and add shm_size) if the search projection ever needs
+    # vectors. Never :latest — an image that changes under you between two machines is a
+    # debugging session nobody enjoys.
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: frame_dev
+      POSTGRES_USER: dev
+      # Local-emulator-only credentials, acceptable in a committed file solely because the
+      # port above is loopback-bound. This pair must never appear in any non-local config.
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "127.0.0.1:${FRAME_PORT_POSTGRES:-6320}:5432"
+    volumes:
+      - frame-pgdata:/var/lib/postgresql/data
+      # Runs once, on empty-volume initialisation only. Extensions and roles here;
+      # application schema belongs in functions/migrations/.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Without this the app races Postgres on a cold start. Frame's Python backend has no
+      # connection-retry safety net, so the race surfaces as a confusing first-run failure.
+      test: ["CMD-SHELL", "pg_isready -U dev -d frame_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  emulators:
+    # Firestore (named database "frame"), Auth, Pub/Sub, Storage, the UI and the discovery
+    # hub. There is no official image; docker/emulators/Dockerfile is node + a JRE +
+    # firebase-tools with the emulator jars baked in.
+    build:
+      context: ./docker/emulators
+    restart: unless-stopped
+    environment:
+      GCLOUD_PROJECT: unops-frame-dev
+    ports:
+      - "127.0.0.1:${FRAME_PORT_FIRESTORE:-6310}:6310"
+      - "127.0.0.1:${FRAME_PORT_AUTH:-6311}:6311"
+      - "127.0.0.1:${FRAME_PORT_FUNCTIONS:-6312}:6312"
+      - "127.0.0.1:${FRAME_PORT_STORAGE:-6313}:6313"
+      - "127.0.0.1:${FRAME_PORT_PUBSUB:-6314}:6314"
+      - "127.0.0.1:${FRAME_PORT_EMULATOR_UI:-6315}:6315"
+      - "127.0.0.1:${FRAME_PORT_EMULATOR_HUB:-6316}:6316"
+    volumes:
+      # firebase.json pins 127.0.0.1, which inside a container means "unreachable from the
+      # published port". firebase.docker.json is the same file on 0.0.0.0.
+      - ./firebase.docker.json:/frame/firebase.json:ro
+      - ./firestore.rules:/frame/firestore.rules:ro
+      - ./firestore.indexes.json:/frame/firestore.indexes.json:ro
+      - ./storage.rules:/frame/storage.rules:ro
+      - frame-emulator-data:/frame/emulator-data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:6310/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  api:
+    profiles: ["containerized"]
+    build:
+      context: ./functions
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: local
+      PORT: "6301"
+      GCP_PROJECT_ID: unops-frame-dev
+      FIRESTORE_DATABASE_ID: frame
+      # Container-to-container DNS uses the SERVICE NAME, not localhost. On the host these
+      # same variables are 127.0.0.1:<port>. Getting this backwards is the single most
+      # common "why is my store empty" hour.
+      FIRESTORE_EMULATOR_HOST: emulators:6310
+      PUBSUB_EMULATOR_HOST: emulators:6314
+      FIREBASE_AUTH_EMULATOR_HOST: emulators:6311
+      FIREBASE_STORAGE_EMULATOR_HOST: emulators:6313
+      POSTGRES_DSN: postgresql://dev:dev@db:5432/frame_dev
+      # Windows and macOS bind mounts do not propagate inotify events into a Linux
+      # container, so uvicorn's watcher sees nothing without polling. This is also why the
+      # native path is the recommended one.
+      WATCHFILES_FORCE_POLLING: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "127.0.0.1:${FRAME_PORT_BACKEND:-6301}:6301"
+    volumes:
+      - ./functions:/app
+      # Anonymous volumes SHADOW the host paths. Without these the container would see the
+      # Windows venv (wrong platform, wrong interpreter) and the host's __pycache__ (wrong
+      # magic number) at /app/venv and /app/**/__pycache__.
+      - /app/venv
+      - /app/.venv
+      # api/core/config.py resolves config/ports.json as parents[3] of its own file. From
+      # /app/api/core/config.py that is /config/ports.json.
+      - ./config/ports.json:/config/ports.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      emulators:
+        condition: service_healthy
+
+volumes:
+  frame-pgdata:
+  frame-emulator-data:
