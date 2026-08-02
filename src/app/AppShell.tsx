@@ -44,7 +44,6 @@ export function AppShell({ route, workspaceId, title, meta, actions, children }:
           <div className="topbar__spacer" />
           <div className="topbar__actions">
             {actions}
-            <PersonaSwitch />
             <ThemeSwitch />
           </div>
         </header>
@@ -138,6 +137,11 @@ function Sidebar({
     </a>
   )
 
+  // The one always-visible creator, like Bob's "New conversation". Authoring
+  // is not built yet, so the button answers honestly instead of doing nothing —
+  // a dead primary CTA would be worse than none.
+  const [ctaOpen, setCtaOpen] = useState(false)
+
   return (
     <nav className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`} aria-label="Workspace">
       <div className="sidebar__header">
@@ -163,6 +167,25 @@ function Sidebar({
         </button>
       </div>
 
+      <div className="sidebar__cta-wrap">
+        <button
+          type="button"
+          className={`sidebar__cta${collapsed ? ' sidebar__cta--rail' : ''}`}
+          aria-expanded={ctaOpen}
+          onClick={() => setCtaOpen((o) => !o)}
+          {...(collapsed ? { title: 'New register', 'aria-label': 'New register' } : {})}
+        >
+          {collapsed ? <Icon.Plus /> : 'New register'}
+        </button>
+        {ctaOpen && (
+          <div className="sidebar__cta-pop" role="note">
+            <strong>A tracker with governance built in.</strong> Describe it and
+            start typing — the Blueprint editor arrives with the authoring
+            milestone. Today a steward publishes Blueprints.
+          </div>
+        )}
+      </div>
+
       <div className="sidebar__scroll scrollable">
         {item(
           'home',
@@ -175,66 +198,142 @@ function Sidebar({
         <section className="sidebar__section">
           {!collapsed && (
             <h2 className="sidebar__heading">
+              <Icon.Table className="sidebar__heading-icon" />
               <span>Registers</span>
             </h2>
           )}
 
-          {!collapsed && registers === null && <p className="sidebar__empty">Loading…</p>}
+          <div className="sidebar__group">
+            {!collapsed && registers === null && <p className="sidebar__empty">Loading…</p>}
 
-          {!collapsed && registers?.length === 0 && (
-            // Not a blank space. A workspace with no Blueprints is a normal
-            // starting state, and saying so is the difference between "new" and
-            // "broken".
-            <p className="sidebar__empty">
-              No registers yet. A steward publishes a Blueprint and it appears
-              here — no deploy.
-            </p>
-          )}
+            {!collapsed && registers?.length === 0 && (
+              // Not a blank space. A workspace with no Blueprints is a normal
+              // starting state, and saying so is the difference between "new"
+              // and "broken".
+              <p className="sidebar__empty">
+                No registers yet. A steward publishes a Blueprint and it appears
+                here — no deploy.
+              </p>
+            )}
 
-          {registers?.map((register) =>
-            item(
-              register.id,
-              href.register(workspaceId, register.id),
-              register.id === activeBlueprint && route.kind !== 'fields',
-              register.name,
-              <Icon.Table className="sidebar__icon" />,
-            ),
-          )}
+            {registers?.map((register) =>
+              item(
+                register.id,
+                href.register(workspaceId, register.id),
+                register.id === activeBlueprint && route.kind !== 'fields',
+                register.name,
+                <Icon.Table className="sidebar__icon" />,
+              ),
+            )}
+          </div>
         </section>
 
         <section className="sidebar__section">
           {!collapsed && (
             <h2 className="sidebar__heading">
+              <Icon.Warehouse className="sidebar__heading-icon" />
               <span>Data</span>
             </h2>
           )}
-          {item(
-            'corporate',
-            href.corporate(workspaceId),
-            route.kind === 'corporate',
-            'Corporate data',
-            <Icon.Warehouse className="sidebar__icon" />,
+          <div className="sidebar__group">
+            {item(
+              'corporate',
+              href.corporate(workspaceId),
+              route.kind === 'corporate',
+              'Corporate data',
+              <Icon.Warehouse className="sidebar__icon" />,
+            )}
+          </div>
+        </section>
+
+        <section className="sidebar__section">
+          {!collapsed && (
+            <h2 className="sidebar__heading">
+              <Icon.Grid className="sidebar__heading-icon" />
+              <span>Development</span>
+            </h2>
           )}
+          <div className="sidebar__group">
+            {item(
+              'harness',
+              href.harness(),
+              route.kind === 'harness',
+              'Grid harness',
+              <Icon.Grid className="sidebar__icon" />,
+            )}
+            {item(
+              'tokens',
+              href.tokens(),
+              route.kind === 'tokens',
+              'Design tokens',
+              <Icon.Fields className="sidebar__icon" />,
+            )}
+          </div>
         </section>
       </div>
 
-      <div className="sidebar__footer">
-        {item(
-          'harness',
-          href.harness(),
-          route.kind === 'harness',
-          'Grid harness',
-          <Icon.Grid className="sidebar__icon" />,
-        )}
-        {item(
-          'tokens',
-          href.tokens(),
-          route.kind === 'tokens',
-          'Design tokens',
-          <Icon.Fields className="sidebar__icon" />,
-        )}
-      </div>
+      <UserArea collapsed={collapsed} />
     </nav>
+  )
+}
+
+const PERSONA_KEY = 'frame-dev-persona'
+const PERSONAS = ['risk@unops.org', 'dev@unops.org']
+
+/**
+ * The fixed user area at the sidebar's foot — Bob's organization: avatar and
+ * identity below the scroll, separated by a hairline, present in the rail as
+ * the avatar alone.
+ *
+ * Development only, and eliminated from a production bundle by
+ * `import.meta.env.DEV`: today the identity shown IS the dev persona switch,
+ * because the product's central claim is that two people see different things,
+ * and a demonstration that needs two Google accounts is one nobody runs. The
+ * server still refuses any identity not on its allow-list. When real sign-in
+ * state reaches the client, this area shows it and the select goes.
+ */
+function UserArea({ collapsed }: { collapsed: boolean }) {
+  const [persona, setPersona] = useState(
+    () => globalThis.sessionStorage?.getItem(PERSONA_KEY) ?? PERSONAS[0],
+  )
+
+  if (!import.meta.env.DEV) return null
+
+  const initial = (persona ?? '?').charAt(0).toUpperCase()
+
+  return (
+    <div className="sidebar__user">
+      <span className="sidebar__avatar" aria-hidden="true" title={persona}>
+        {initial}
+      </span>
+      {!collapsed && (
+        <>
+          <select
+            className="sidebar__user-select"
+            aria-label="Viewing as"
+            value={persona}
+            onChange={(e) => {
+              globalThis.sessionStorage?.setItem(PERSONA_KEY, e.target.value)
+              setPersona(e.target.value)
+              // A full reload, deliberately. Identity changes what every open
+              // request may return, and patching a page in place after it
+              // changes would leave the previous person's rows on screen
+              // beside the new person's header.
+              globalThis.location.reload()
+            }}
+          >
+            {PERSONAS.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+          <span className="sidebar__dev-pill" title="Development persona switch">
+            dev
+          </span>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -258,50 +357,5 @@ function ThemeSwitch() {
         </button>
       ))}
     </div>
-  )
-}
-
-const PERSONA_KEY = 'frame-dev-persona'
-const PERSONAS = ['risk@unops.org', 'dev@unops.org']
-
-/**
- * Development only, and eliminated from a production bundle by `import.meta.env.DEV`.
- *
- * It exists because the product's central claim is that two people see
- * different things, and a demonstration of that which requires two browsers and
- * two Google accounts is one nobody runs. The server still refuses any identity
- * not on its allow-list, so this selects among sanctioned identities rather than
- * asserting one.
- */
-function PersonaSwitch() {
-  const [persona, setPersona] = useState(
-    () => globalThis.sessionStorage?.getItem(PERSONA_KEY) ?? PERSONAS[0],
-  )
-
-  if (!import.meta.env.DEV) return null
-
-  return (
-    <label className="persona">
-      <span className="persona__label">Viewing as</span>
-      <select
-        className="ops-select"
-        value={persona}
-        onChange={(e) => {
-          globalThis.sessionStorage?.setItem(PERSONA_KEY, e.target.value)
-          setPersona(e.target.value)
-          // A full reload, deliberately. Identity changes what every open
-          // request may return, and patching a page in place after it changes
-          // would leave the previous person's rows on screen beside the new
-          // person's header.
-          globalThis.location.reload()
-        }}
-      >
-        {PERSONAS.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
-    </label>
   )
 }

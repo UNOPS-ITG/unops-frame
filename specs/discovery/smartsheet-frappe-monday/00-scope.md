@@ -31,6 +31,31 @@ metadata; this run tests that synthesis against the real products and finds
 where the *combination* leaves open ground neither incumbent covers (e.g.
 governed promotion, ABAC transparency, warehouse-native corporate data).
 
+## Reframing (owner directive, 2026-08-02, mid-run)
+
+After Phase 1 launched, the repo owner flagged a problem with the current
+vision: **it has gone too far down the grid path and too far from Frappe** —
+Frappe builds full-fledged enterprise applications, and grid-as-the-focus
+has not served Frame well. This changes the weighting, not the competitor
+list:
+
+- **Phase 2 (synthesis):** the Frappe leg is the primary axis. Compare on
+  *application completeness* — metadata → forms, workflow, roles, reports,
+  print formats, navigation/app shell, i.e. what lets ERPNext exist — not
+  primarily on grid ergonomics.
+- **Opportunity ranking:** clusters that advance "a Blueprint yields a whole
+  application" (PRD 03 forms, 04 workflow, 05 permissions, 07 documents,
+  10 App Composer) outrank grid-polish clusters (PRD 02, 11), all else
+  equal. The grid stays table stakes for adoption; it stops being the
+  thesis.
+- **The sharper question** replaces the original one: not "how does Frame
+  match Smartsheet's grid" but "how does Frame deliver Frappe-grade
+  applications with Smartsheet-grade approachability."
+- **Candidate landings** phase 4 must consider: amending the vision's
+  emphasis (its top risk currently reads "the grid is the product"), and
+  whether PRD 10 (App Composer, currently Phase 3) deserves earlier
+  phasing.
+
 ## Frame context for researchers
 
 - Vision: `specs/frame-prds/product-vision-frame.md`; index and shared

@@ -108,6 +108,68 @@
   outline-offset: 2px;
 }
 
+/* --- the primary action (Bob's "New conversation" slot) ------------------- */
+
+.sidebar__cta-wrap {
+  position: relative;
+  padding: var(--spacing-1) var(--spacing-1) 0;
+}
+
+.sidebar__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.sidebar__cta:hover {
+  background: var(--color-brand-primary-600);
+}
+
+.sidebar__cta:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.sidebar__cta--rail {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0;
+  border-radius: var(--radius-full);
+  margin-inline: auto;
+}
+
+.sidebar__cta-pop {
+  position: absolute;
+  top: calc(100% + var(--spacing-2));
+  inset-inline: var(--spacing-1);
+  z-index: var(--z-popover);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+}
+
+.sidebar__cta-pop strong {
+  color: var(--color-text);
+}
+
 /* --- the rail (Bob's 56px collapsed mode) --------------------------------- */
 
 .sidebar--collapsed {
@@ -140,8 +202,19 @@
   margin-inline: auto;
 }
 
-.sidebar--collapsed .sidebar__footer {
-  align-items: center;
+.sidebar--collapsed .sidebar__group {
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+
+.sidebar--collapsed .sidebar__cta-wrap {
+  padding-inline: 0;
+  width: 100%;
+}
+
+.sidebar--collapsed .sidebar__user {
+  justify-content: center;
   width: 100%;
 }
 
@@ -195,6 +268,24 @@
   flex: 1;
   height: 1px;
   background: var(--color-border-subtle);
+}
+
+.sidebar__heading-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* Bob's nested-section rail: items sit inside a thin left rule, which is what
+   turns a flat list into visible structure. */
+.sidebar__group {
+  margin-inline-start: var(--spacing-2);
+  padding-inline-start: var(--spacing-2);
+  border-inline-start: 2px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
 }
 
 .sidebar__link {
@@ -259,12 +350,60 @@
   line-height: var(--line-height-normal);
 }
 
-.sidebar__footer {
+/* Bob's user area: fixed below the scroll, hairline above, avatar leading. */
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
   padding-block-start: var(--spacing-3);
   border-block-start: 1px solid var(--color-border-subtle);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-0-5);
+  min-height: 3rem;
+}
+
+.sidebar__avatar {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-primary);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.sidebar__user-select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  padding-block: var(--spacing-1);
+}
+
+.sidebar__user-select:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+/* Quarantined dev marker, so a screenshot can never pass as production
+   chrome. */
+.sidebar__dev-pill {
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border: 1px dashed var(--color-brand-warning);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
 }
 
 /* --- header --------------------------------------------------------------- */
@@ -310,36 +449,6 @@
   align-items: center;
   gap: var(--spacing-3);
   flex-shrink: 0;
-}
-
-/* --- the persona switch, development only --------------------------------- */
-
-/* Quarantined: dashed amber border says "dev scaffolding", so a screenshot can
-   never pass as production chrome. */
-.persona {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-1) var(--spacing-2);
-  border: 1px dashed var(--color-brand-warning);
-  border-radius: var(--radius-md);
-}
-
-.persona__label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-wider);
-  text-transform: uppercase;
-  color: var(--color-warning-strong);
-  white-space: nowrap;
-}
-
-.persona .ops-select {
-  background: transparent;
-  border: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  padding-block: var(--spacing-0-5);
 }
 
 /* --- theme switch ---------------------------------------------------------- */
@@ -413,8 +522,29 @@
     gap: 0;
     margin-inline: auto;
   }
-  .sidebar__footer {
-    align-items: center;
+  .sidebar__group {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+  .sidebar__cta-wrap {
+    padding-inline: 0;
     width: 100%;
+  }
+  .sidebar__cta {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+    border-radius: var(--radius-full);
+    margin-inline: auto;
+  }
+  .sidebar__user {
+    justify-content: center;
+    width: 100%;
+  }
+  .sidebar__user-select,
+  .sidebar__dev-pill {
+    display: none;
   }
 }
