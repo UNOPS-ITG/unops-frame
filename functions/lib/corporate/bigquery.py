@@ -28,7 +28,7 @@ from lib.corporate.executor import (
     Result,
     rows_from_payload,
 )
-from lib.corporate.sql import Query
+from lib.corporate.sql import Query, ident, project_id
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +122,165 @@ class BigQueryClient:
                 return dict(json.loads(detail))
             except json.JSONDecodeError:
                 raise QueryFailed(f"BigQuery returned {exc.code}: {detail[:300]}") from exc
+
+
+class BigQueryInspector:
+    """The probe's `WarehouseInspector`, over the REST API.
+
+    Every method returns `None` rather than raising when it cannot read, because
+    the probe's contract is that a failure to gather evidence is recorded and
+    forces `entitled`. A raise here would abort the sweep on the first dataset
+    Frame lacks a grant on, which is both worse behaviour and the wrong shape:
+    "I could not check that one" is per-relation information.
+
+    Results are cached per dataset and per base table. Without it a
+    555-dimension sweep asks for the same dataset's IAM 555 times, and the probe
+    becomes the expensive part of a job whose whole point is to be cheap enough
+    to schedule.
+    """
+
+    def __init__(
+        self,
+        client: BigQueryClient | None = None,
+        *,
+        config: JobConfig | None = None,
+        credential: Credential | None = None,
+        http_get: Any | None = None,
+    ) -> None:
+        self._client = client or BigQueryClient()
+        self._config = config
+        self._credential = credential
+        self._get = http_get
+        self._access: dict[str, list[dict[str, Any]] | None] = {}
+        self._definitions: dict[str, dict[str, str]] = {}
+        self._tags: dict[str, dict[str, tuple[str, ...]] | None] = {}
+        self._policies: dict[str, dict[str, int] | None] = {}
+
+    # --- check 1 ----------------------------------------------------------
+
+    def dataset_access(self, project: str, dataset: str) -> list[dict[str, Any]] | None:
+        key = f"{project}.{dataset}"
+        if key not in self._access:
+            self._access[key] = self._fetch_access(project, dataset)
+        return self._access[key]
+
+    def _fetch_access(self, project: str, dataset: str) -> list[dict[str, Any]] | None:
+        url = f"{BIGQUERY_API}/projects/{project}/datasets/{dataset}"
+        try:
+            payload = self._http_get(url)
+        except Exception:  # noqa: BLE001 - unreadable IAM is evidence, not a crash
+            logger.warning("could not read IAM on %s.%s", project, dataset)
+            return None
+        if "error" in payload:
+            return None
+        access = payload.get("access")
+        return list(access) if isinstance(access, list) else None
+
+    # --- view resolution --------------------------------------------------
+
+    def view_definition(self, project: str, dataset: str, table: str) -> str | None:
+        key = f"{project}.{dataset}"
+        if key not in self._definitions:
+            # One query per dataset, not per view. 555 dimensions across a
+            # handful of datasets is a handful of queries.
+            self._definitions[key] = self._fetch_definitions(project, dataset)
+        return self._definitions[key].get(table)
+
+    def _fetch_definitions(self, project: str, dataset: str) -> dict[str, str]:
+        rows = self._query(
+            f"SELECT table_name, view_definition "  # noqa: S608 - identifiers validated
+            f"FROM `{project_id(project)}.{ident(dataset, 'dataset')}"
+            f".INFORMATION_SCHEMA.VIEWS`"
+        )
+        return {
+            str(r.get("table_name")): str(r.get("view_definition") or "")
+            for r in (rows or [])
+        }
+
+    # --- check 2b ---------------------------------------------------------
+
+    def tagged_columns(self, project: str, dataset: str, table: str) -> tuple[str, ...] | None:
+        key = f"{project}.{dataset}"
+        if key not in self._tags:
+            self._tags[key] = self._fetch_tags(project, dataset)
+        tags = self._tags[key]
+        return None if tags is None else tags.get(table, ())
+
+    def _fetch_tags(self, project: str, dataset: str) -> dict[str, tuple[str, ...]] | None:
+        rows = self._query(
+            f"SELECT table_name, field_path "  # noqa: S608 - identifiers validated
+            f"FROM `{project_id(project)}.{ident(dataset, 'dataset')}"
+            f".INFORMATION_SCHEMA.COLUMN_FIELD_PATHS` "
+            "WHERE ARRAY_LENGTH(policy_tags) > 0"
+        )
+        if rows is None:
+            return None
+        out: dict[str, list[str]] = {}
+        for row in rows:
+            out.setdefault(str(row.get("table_name")), []).append(str(row.get("field_path")))
+        return {table: tuple(sorted(columns)) for table, columns in out.items()}
+
+    # --- check 2a ---------------------------------------------------------
+
+    def row_access_policy_count(self, project: str, dataset: str, table: str) -> int | None:
+        key = f"{project}.{dataset}"
+        if key not in self._policies:
+            self._policies[key] = self._fetch_policies(project, dataset)
+        policies = self._policies[key]
+        return None if policies is None else policies.get(table, 0)
+
+    def _fetch_policies(self, project: str, dataset: str) -> dict[str, int] | None:
+        """Row access policies, per table.
+
+        Returns `None` against `unops-datahub` today: the
+        `INFORMATION_SCHEMA.ROW_ACCESS_POLICIES` view is not readable with the
+        access Frame currently has, and reports "not found" rather than an empty
+        result. That is recorded as a failed check rather than assumed to mean
+        "there are none" — the two are indistinguishable from here, and only one
+        of them is safe to act on.
+        """
+        # One row per policy, counted in Python. Not `COUNT(*) ... GROUP BY`,
+        # because the aggregation fence forbids it and the fence is worth more
+        # than the convenience. Carving an exception for "but this one is only
+        # metadata" is how a rule with no exceptions becomes a rule with one,
+        # and the tally is trivial to do here anyway.
+        rows = self._query(
+            "SELECT table_name "  # noqa: S608 - identifiers validated
+            f"FROM `{project_id(project)}.{ident(dataset, 'dataset')}"
+            f".INFORMATION_SCHEMA.ROW_ACCESS_POLICIES`"
+        )
+        if rows is None:
+            return None
+
+        counts: dict[str, int] = {}
+        for row in rows:
+            table = str(row.get("table_name"))
+            counts[table] = counts.get(table, 0) + 1
+        return counts
+
+    # --- transport --------------------------------------------------------
+
+    def _query(self, sql: str) -> list[dict[str, Any]] | None:
+        if self._config is None or self._credential is None:
+            return None
+        try:
+            return self._client.run(Query(sql=sql), {}, self._config, self._credential).rows
+        except Exception as exc:  # noqa: BLE001 - an unreadable view is evidence
+            logger.info("probe query failed (recorded as an unperformed check): %s", exc)
+            return None
+
+    def _http_get(self, url: str) -> dict[str, Any]:
+        if self._get is not None:
+            return dict(self._get(url))
+        if not url.startswith(BIGQUERY_API + "/"):
+            raise QueryFailed(f"refusing to send a credential to {url!r}")
+
+        token = self._credential.access_token if self._credential else ""
+        request = urllib.request.Request(  # noqa: S310 - host checked above
+            url, headers={"Authorization": f"Bearer {token}"}
+        )
+        with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
+            return dict(json.load(response))
 
 
 class BigQueryMetadataReader:

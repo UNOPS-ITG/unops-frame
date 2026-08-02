@@ -269,6 +269,39 @@ Worth raising with the data team as either a definition fix (`MEASURE` should me
 additional column (`Additive_Flag`), since the ambiguity cannot be resolved downstream: no consumer
 can tell `Voucher_No` from `Amount` by type alone.
 
+**W-3 · Column policy tags stop at the base layer; the published `_Api` views carry none · HIGH · verified, with an important caveat**
+
+Measured directly against `unops-datahub`:
+
+- the base `Dimensions` dataset has **85 policy-tagged columns** (of 4,807); `Facts` has **319**;
+- the published `Dimensions_Api` and `Facts_Api` datasets have **zero**;
+- **every one of the 30 tagged base columns sampled is also published through `_Api`** — including
+  `Dimensions.Bank.Bank_Account_Number` and `Bank_Account_IBAN`;
+- the `_Api` dataset grants `g.reporting.allpersonnel@unops.org` (all staff) `READER`; the base
+  dataset does **not** — its only group-shaped grants are `projectReaders` / `projectWriters` /
+  `projectOwners`.
+
+So: columns protected by a policy tag on the base table are republished through a view that carries
+no tag, in a dataset every member of staff can read.
+
+**The caveat matters and I could not resolve it.** Whether an ordinary staff member can actually read
+those columns depends on whether the `_Api` views are authorized views — which run with the view
+owner's credentials and therefore can expose data the caller could not read directly. I could not
+determine this, because the account available to me is too privileged to be a test: reading
+`Bank_Account_IBAN` with it succeeds *both* through the view and directly against the base table
+(`LIMIT 0`, so no values were returned). That result says the account is privileged, not that a
+bypass exists.
+
+This is the concrete reason the disclosure design insists on a **floor principal** — a service
+account in exactly the all-staff group and nothing else. It is the only way to distinguish "everyone
+may read this" from "you may read this", and it is item 5 in `gcp-provisioning.md`.
+
+Worth the data team confirming independently: if the `_Api` views are authorized views, the
+column-level protection applied to the base tables is not in force for anyone reading the published
+layer, and the `Policy_Tag` column in `Metadata_Api` is then documentation of an intent that is not
+being enforced there. Frame is unaffected either way — it treats a tagged base column as forcing
+`entitled` — but every other consumer of `_Api` reads those columns with no such treatment.
+
 **W-2 · Four of eight `Metadata_Api` views are undocumented in the estate · LOW · verified**
 Every consumer found in the estate filters `WHERE Dataset_Name = 'Dimensions_Api'`, so
 `Datahub_Table_Reference`'s 2,780 `Fact → Dimension` edges and 849 `Dimension → Dimension` edges are

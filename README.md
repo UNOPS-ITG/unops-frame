@@ -99,9 +99,13 @@ found only here.
 | **Corporate data** | the scheduled sweep, the disclosure classifier, four SQL templates, the BigQuery connector |
 
 Not yet built: forms, automations, document generation, the AI layer, reporting, notifications,
-search. Corporate data has everything except the disclosure *probe* — the sweep records every
-relation as `entitled` until a probe with IAM read access classifies it, which is the safe default
-and means the fast `open` path is not yet exercised.
+search.
+
+Corporate data is complete except for what needs GCP provisioning — see
+`specs/frame-prds/gcp-provisioning.md`. The probe runs three of its four checks; the fourth needs a
+*floor principal* (a service account in exactly the all-staff group and nothing else), without which
+every relation stays `entitled`. That is the correct and safe default, and it means the `open` fast
+path exists but is not yet exercised.
 
 ### Sweeping the corporate catalogue
 

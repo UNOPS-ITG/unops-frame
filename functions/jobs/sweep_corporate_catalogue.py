@@ -68,13 +68,39 @@ def sweep_workspace(db: Any, workspace_id: str, source_id: str, actor: str) -> i
     credential = _service_credential()
     reader = BigQueryMetadataReader()
 
-    catalogue, result = run_sweep(
-        source,
-        reader,
-        credential,
-        billing_project=billing,
-        previous=load_previous(db, workspace_id),
+    from lib.corporate.bigquery import BigQueryInspector
+    from lib.corporate.executor import JobConfig
+    from lib.corporate.probe import probe_catalogue
+
+    config = JobConfig(
+        project=billing,
+        location=source.location,
+        max_bytes_billed=source.max_bytes_billed,
+        surface="disclosure-probe",
     )
+
+    # The catalogue has to exist before it can be probed — the probe needs to
+    # know which relations there are and which datasets they live in. So the
+    # sweep runs twice: once to derive, once to classify what it derived.
+    # Cheaper than it looks, because the metadata queries hit BigQuery's result
+    # cache and the inspector caches per dataset.
+    catalogue, result = run_sweep(
+        source, reader, credential, billing_project=billing, previous=None
+    )
+    if result.ok:
+        inspector = BigQueryInspector(config=config, credential=credential)
+        relations: list[Any] = [*catalogue.dimensions.values(), *catalogue.facts.values()]
+        logger.info("probing %d relations for disclosure", len(relations))
+        probes = probe_catalogue(relations, inspector, project=source.project)
+
+        catalogue, result = run_sweep(
+            source,
+            reader,
+            credential,
+            billing_project=billing,
+            previous=load_previous(db, workspace_id),
+            probes=probes,
+        )
 
     if not result.ok:
         # Loud, and non-zero, so a scheduler surfaces it. The previous catalogue
