@@ -1,39 +1,36 @@
-/* ==========================================================================
-   Utility Classes
-
-   Low-level layout / helper utilities referenced by the brand-design-tokens
-   rule. Token-driven; framework-agnostic so they can be used alongside or
-   instead of Tailwind utilities.
-   ========================================================================== */
+/* Frame utilities.
+ *
+ * Only classes that Tailwind does NOT already provide. The inherited version
+ * of this file also carried .flex-row, .flex-col, .flex-1, .flex-shrink-0,
+ * .items-*, .gap-*, .w-full, .h-full, .min-h-0, .truncate and .line-clamp-*,
+ * every one of which collides with a Tailwind utility of the same name **and
+ * different behaviour** — its .flex-row sets `display: flex` as well as the
+ * direction, Tailwind's sets only the direction. Both land in @layer
+ * utilities, so which one wins depends on import order, and the resulting bug
+ * ("this flex container isn't flexing") is miserable to trace.
+ *
+ * They are dropped. Use Tailwind's. What remains is either Frame-specific or
+ * token-aware in a way Tailwind's equivalent is not.
+ */
 
 @layer utilities {
-  /* ── Flex layout ── */
-  .flex-row      { display: flex; flex-direction: row; }
-  .flex-col      { display: flex; flex-direction: column; }
-  .flex-center   { display: flex; align-items: center; justify-content: center; }
-  .flex-between  { display: flex; align-items: center; justify-content: space-between; }
-  .flex-1        { flex: 1 1 0%; }
-  .flex-shrink-0 { flex-shrink: 0; }
+  /* Two-property idioms used constantly enough to be worth a name, and not
+     expressible as a single Tailwind class. */
+  .flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
-  /* ── Alignment ── */
-  .items-start  { align-items: flex-start; }
-  .items-center { align-items: center; }
-  .items-end    { align-items: flex-end; }
-
-  /* ── Gap ── */
-  .gap-1 { gap: var(--spacing-1); }
-  .gap-2 { gap: var(--spacing-2); }
-  .gap-3 { gap: var(--spacing-3); }
-  .gap-4 { gap: var(--spacing-4); }
-  .gap-6 { gap: var(--spacing-6); }
-  .gap-8 { gap: var(--spacing-8); }
-
-  /* ── Sizing ── */
-  .w-full  { width: 100%; }
-  .h-full  { height: 100%; }
-  .min-h-0 { min-height: 0; }
-
-  /* ── Centered, width-limited page containers ── */
+  /* Centred, width-limited page containers. These exist so page widths come
+     from --layout-* rather than being typed as arbitrary values at each call
+     site; the design rules forbid a hard-coded max-width and this is how a
+     component satisfies that without thinking about it. */
   .container-sm,
   .container-md,
   .container-lg,
@@ -42,27 +39,19 @@
     margin-inline: auto;
     padding-inline: var(--spacing-4);
   }
-  .container-sm { max-width: var(--layout-sm); }
-  .container-md { max-width: var(--layout-md); }
-  .container-lg { max-width: var(--layout-lg); }
-  .container-xl { max-width: var(--layout-xl); }
-
-  /* ── Text ── */
-  .truncate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .container-sm {
+    max-width: var(--layout-sm);
   }
-  .line-clamp-2,
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  .container-md {
+    max-width: var(--layout-md);
   }
-  .line-clamp-2 { -webkit-line-clamp: 2; line-clamp: 2; }
-  .line-clamp-3 { -webkit-line-clamp: 3; line-clamp: 3; }
+  .container-lg {
+    max-width: var(--layout-lg);
+  }
+  .container-xl {
+    max-width: var(--layout-xl);
+  }
 
-  /* ── Accessibility ── */
   .visually-hidden {
     position: absolute;
     width: 1px;
@@ -75,7 +64,8 @@
     border: 0;
   }
 
-  /* ── Scrollable region with brand-tinted thin scrollbar ── */
+  /* Scrollable region with a brand-tinted thin scrollbar. Tailwind has no
+     equivalent, and the colours are tokens so it follows the theme. */
   .scrollable {
     overflow: auto;
     scrollbar-width: thin;

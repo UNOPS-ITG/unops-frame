@@ -9,9 +9,9 @@ or human-in-the-loop login.
 ## Why this exists
 
 Normal local dev (`npm run dev`) authenticates through `oauth2-proxy` at
-`localhost:4180`, which drives an interactive Google OAuth consent screen
+`localhost:6302`, which drives an interactive Google OAuth consent screen
 (see `../../LOCAL-RUN-GUIDANCE.md`). A headless browser can't click through
-that. Hitting `localhost:4200` directly instead just bounces between `/` and
+that. Hitting `localhost:6300` directly instead just bounces between `/` and
 `/login` forever, because `checkIAPAuth()` fails without the headers
 oauth2-proxy would have injected.
 
@@ -20,7 +20,7 @@ requests at the browser-network layer (`route.continue()` with a rewritten
 URL — the request stays on the normal network stack, so SSE/streaming
 responses still stream; only same-origin requests are touched, so no
 third-party URL ever sees the secret) and re-targeting them directly at the
-FastAPI backend (`localhost:8000`), attaching an `x-dev-auth-bypass` header. The
+FastAPI backend (`localhost:6301`), attaching an `x-dev-auth-bypass` header. The
 backend's `DevAuthBypassMiddleware`
 (`functions/api/middleware/dev_auth_bypass_middleware.py`) accepts that
 header **only** when `DEV_AUTH_BYPASS_SECRET` is set in the (gitignored)
@@ -32,7 +32,7 @@ backend's already-configured real service-account credentials — this is not
 a mock backend or the Firebase emulator, it's the real dev environment.
 
 This also means oauth2-proxy doesn't even need to be running for headless
-testing — only `dev:be` (backend, port 8000) and `dev:fe` (vite, port 4200).
+testing — only `dev:be` (backend, port 6301) and `dev:fe` (vite, port 6300).
 
 **This bypass cannot activate outside a bare local `uvicorn` process** —
 `DevAuthBypassMiddleware` is only registered when `DEV_AUTH_BYPASS_SECRET` is
@@ -104,7 +104,7 @@ override with the `AGENT_BROWSER_TIMEOUT_MS` env var.
 | `network` | `limit` (default 100) | `{requests}` — every `/api` request this run: method, path, and status (a number, `"pending"`, or `"failed: <reason>"`) |
 
 `url` for `goto` may be relative (`"/cases"`) — it's resolved against
-`FRONTEND_URL` (default `http://localhost:4200`).
+`FRONTEND_URL` (default `http://localhost:6300`).
 
 **Expect slow first loads.** Some dev-backend endpoints (e.g.
 `/api/v1/case-types`) take 7–9 seconds locally, so pages sit on loading

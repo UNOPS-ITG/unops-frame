@@ -10,6 +10,9 @@
 
 set -e
 
+echo "› ports"
+npm run check:ports --silent
+
 echo "› lint"
 npm run lint --silent
 

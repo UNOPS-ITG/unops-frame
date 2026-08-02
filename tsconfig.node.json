@@ -19,5 +19,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "tools/**/*.ts"]
+  "include": ["vite.config.ts", "vitest.config.ts", "tools/**/*.ts", "config/*.d.mts"]
 }

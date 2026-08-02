@@ -1,0 +1,148 @@
+/* Frame grid tokens.
+ *
+ * The brand token set is mature for document and app chrome and gives us
+ * roughly nothing for a dense governed grid: no row-height scale, one
+ * selection colour where four states are needed, no directional shadow for a
+ * frozen column edge, and no way to say "this cell is restricted" as opposed
+ * to "this cell is empty". This file adds that layer.
+ *
+ * Two principles.
+ *
+ * 1. STRUCTURE IS INVARIANT, COLOUR IS DERIVED. Row heights, padding and the
+ *    z-scale are the same in every theme, so they live once in :root. Colours
+ *    are composed from the brand tokens with color-mix(), which means they
+ *    follow [data-theme] automatically and there is no fourfold copy to keep
+ *    in sync. Only where a derivation genuinely misbehaves in a theme is there
+ *    an override, and each one says why.
+ *
+ * 2. ROW HEIGHTS ARE NUMBERS, NOT SPACING STEPS. Virtualization needs an exact
+ *    pixel height it can multiply; --spacing-* offers no 28/32/40 anchors and
+ *    a rem-derived height that shifts with the root font size would desync the
+ *    canvas from the scrollbar.
+ */
+
+:root {
+  /* --- Density -------------------------------------------------------- */
+  /* Deliberately px. See principle 2. */
+  --grid-row-height-compact: 28px;
+  --grid-row-height-standard: 32px;
+  --grid-row-height-tall: 40px;
+  --grid-row-height: var(--grid-row-height-standard);
+
+  --grid-header-height: 36px;
+  --grid-cell-padding-x: var(--spacing-2);
+  --grid-cell-padding-y: var(--spacing-1);
+  --grid-indent-step: 20px;
+
+  /* --- Type ----------------------------------------------------------- */
+  --grid-font-size: var(--font-size-sm);
+  --grid-header-font-size: var(--font-size-xs);
+  --grid-header-font-weight: var(--font-weight-semibold);
+
+  /* --- Geometry ------------------------------------------------------- */
+  --grid-border-width: 1px;
+  --grid-fill-handle-size: 6px;
+  --grid-checkbox-column-width: 36px;
+  --grid-min-column-width: 56px;
+
+  /* --- Z-scale, local and deliberately not inherited -------------------
+   * The global scale is inverted for this purpose: --z-sticky (200) sits
+   * ABOVE --z-dropdown (100), so a column-header menu opened over a frozen
+   * header would render behind it. The grid keeps its own ordered scale and
+   * stays below --z-dropdown so application chrome still wins.
+   */
+  --grid-z-cell: 1;
+  --grid-z-stripe: 2;
+  --grid-z-selection: 3;
+  --grid-z-frozen: 10;
+  --grid-z-header: 20;
+  --grid-z-frozen-header: 30;
+  --grid-z-editor: 40;
+  --grid-z-fill-handle: 50;
+  --grid-z-menu: 60;
+}
+
+/* --- Colour, derived so it follows the theme ---------------------------- */
+:root,
+[data-theme='light'],
+[data-theme='grey'],
+[data-theme='dark'] {
+  /* Cell hairlines are lighter than section borders: at 30 columns the
+     column rules dominate the visual field and full-strength borders read
+     as a wireframe rather than a table. */
+  --grid-border-row: var(--color-border-subtle);
+  --grid-border-column: color-mix(in srgb, var(--color-border-subtle) 70%, transparent);
+  --grid-border-section: var(--color-border);
+
+  --grid-header-bg: var(--color-surface-sunken);
+  --grid-header-text: var(--color-text-secondary);
+  --grid-header-border: var(--color-border);
+
+  /* Zebra striping is intentionally near-invisible. Its job is to help the
+     eye track across 30 columns, not to decorate. */
+  --grid-row-stripe: color-mix(in srgb, var(--color-text) 2.5%, transparent);
+  --grid-row-hover: var(--color-hover);
+
+  /* Four distinct selection states that --color-selected alone cannot express:
+     the selected ROW band, the selected CELL, the ANCHOR cell that keyboard
+     extension pivots on, and the RANGE fill between them. */
+  --grid-row-selected: var(--color-selected);
+  --grid-cell-selected: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
+  --grid-cell-anchor-ring: var(--color-brand-primary);
+  --grid-range-fill: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+  --grid-range-border: color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+
+  --grid-fill-handle: var(--color-brand-primary);
+  --grid-fill-handle-ring: var(--color-surface);
+
+  /* Directional: a frozen column casts to the right only. --shadow-* are all
+     ambient and would halo the column on both sides. */
+  --grid-frozen-shadow: 4px 0 8px -4px color-mix(in srgb, var(--color-brand-secondary) 22%, transparent);
+  --grid-drop-indicator: var(--color-brand-primary);
+  --grid-resize-handle: color-mix(in srgb, var(--color-brand-primary) 55%, transparent);
+
+  /* --- Cell states ---------------------------------------------------- */
+  /* A restricted cell must READ as restricted (GR-6): withheld is a governed
+     state the viewer is entitled to know about, not an empty cell. */
+  --grid-cell-restricted-bg: color-mix(in srgb, var(--color-text-muted) 8%, transparent);
+  --grid-cell-restricted-text: var(--color-text-muted);
+  --grid-cell-restricted-hatch: color-mix(in srgb, var(--color-text-muted) 14%, transparent);
+
+  /* Written locally, not yet acknowledged by the server. */
+  --grid-cell-dirty: color-mix(in srgb, var(--color-brand-warning) 16%, transparent);
+  --grid-cell-dirty-marker: var(--color-brand-warning);
+
+  /* Note --color-brand-error is cherry/magenta in this brand, not red. */
+  --grid-cell-error-bg: color-mix(in srgb, var(--color-brand-error) 10%, transparent);
+  --grid-cell-error-border: var(--color-brand-error);
+
+  /* Someone else's write won this cell (GR-8 last-write-wins). */
+  --grid-cell-conflict-bg: color-mix(in srgb, var(--color-brand-accent-orange) 14%, transparent);
+  --grid-cell-conflict-marker: var(--color-brand-accent-orange);
+
+  --grid-cell-readonly-bg: color-mix(in srgb, var(--color-text) 3%, transparent);
+  --grid-comment-indicator: var(--color-brand-accent-yellow);
+  --grid-presence-ring: var(--color-brand-primary);
+}
+
+/* Dark and grey carry more contrast than a linear derivation gives: a 2.5%
+   text-over-surface stripe that reads correctly on a near-white background
+   disappears against #0a1420. These are the only per-theme overrides. */
+[data-theme='dark'],
+[data-theme='grey'] {
+  --grid-row-stripe: color-mix(in srgb, var(--color-text) 4.5%, transparent);
+  --grid-cell-selected: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
+  --grid-range-fill: color-mix(in srgb, var(--color-brand-primary) 13%, transparent);
+  --grid-cell-restricted-bg: color-mix(in srgb, var(--color-text-muted) 12%, transparent);
+  --grid-frozen-shadow: 4px 0 10px -4px rgb(0 0 0 / 45%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --grid-row-stripe: color-mix(in srgb, var(--color-text) 4.5%, transparent);
+    --grid-cell-selected: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
+    --grid-range-fill: color-mix(in srgb, var(--color-brand-primary) 13%, transparent);
+    --grid-cell-restricted-bg: color-mix(in srgb, var(--color-text-muted) 12%, transparent);
+    --grid-frozen-shadow: 4px 0 10px -4px rgb(0 0 0 / 45%);
+  }
+}

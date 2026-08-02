@@ -1,0 +1,34 @@
+{
+  "$comment": [
+    "Single source of truth for every port Frame binds locally.",
+    "",
+    "Frame deliberately does NOT use the estate's shared defaults — 4200 (Vite),",
+    "4180 (oauth2-proxy), 8000 (backend), 5432 (Postgres), 5120, and the Firebase",
+    "emulator defaults 9099/8181/5001/9199/4000 are all in use by sibling projects",
+    "on the same machine. Running two of them at once meant one silently landed on",
+    "a different port and tooling then talked to the wrong app.",
+    "",
+    "Everything here sits in one contiguous 63xx block so it is easy to remember,",
+    "easy to firewall, and obvious in a netstat listing that it belongs to Frame.",
+    "The block is inside the registered range rather than 49152+, because Windows",
+    "allocates ephemeral outbound ports from 49152 up and would occasionally",
+    "collide.",
+    "",
+    "Every value can be overridden by the matching FRAME_PORT_* environment",
+    "variable, so a second checkout can be shifted wholesale without editing this",
+    "file."
+  ],
+  "frontend": 6300,
+  "backend": 6301,
+  "oauthProxy": 6302,
+  "emulators": {
+    "firestore": 6310,
+    "auth": 6311,
+    "functions": 6312,
+    "storage": 6313,
+    "pubsub": 6314,
+    "ui": 6315,
+    "hub": 6316
+  },
+  "postgres": 6320
+}

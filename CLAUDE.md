@@ -85,13 +85,41 @@ resolved values.
 - `noUncheckedIndexedAccess` is on deliberately: row values are keyed by
   user-defined field ids, so indexing into them genuinely is unsafe.
 
+## Ports — Frame owns the 63xx block
+
+Frame deliberately does **not** use the estate defaults. Several sibling
+projects run on this machine simultaneously, and 4200, 4180, 8000, 5432, 5120
+and the Firebase emulator defaults (9099, 8181, 5001, 9199, 4000) are already
+taken. Sharing them meant one app silently landed on a different port and the
+tooling then talked to the wrong thing.
+
+| Service | Port |
+|---|---|
+| Frontend (Vite) | 6300 |
+| Backend (FastAPI) | 6301 |
+| oauth2-proxy | 6302 |
+| Firestore / Auth / Functions / Storage / Pub-Sub / UI / Hub emulators | 6310–6316 |
+| Postgres | 6320 |
+
+`config/ports.json` is the single source of truth; `config/ports.mjs` resolves
+it and applies overrides. Every value takes a `FRAME_PORT_*` environment
+variable, and `FRAME_PORT_OFFSET` shifts the whole block at once — which is how
+you run two Frame checkouts side by side.
+
+**Never hard-code a port.** `npm run check:ports` fails the build and the
+pre-commit hook if a literal creeps back in, if `emulator-config.json` drifts
+from `ports.json`, or if two services want the same number. Vite uses
+`strictPort`, so a busy port is a clear error rather than a silent slide onto
+the next free one.
+
 ## Commands
 
 ```
-npm run dev         # Vite on :4200, /api proxied to :8000
-npm run verify      # lint + typecheck + fitness + unit tests
-npm run fitness     # the architectural gate on its own
-npm run build       # tsc -b, locale check, then vite build
+npm run dev          # Vite on :6300, /api proxied to :6301
+npm run ports        # print the resolved port allocation
+npm run verify       # ports + lint + typecheck + fitness + unit tests
+npm run fitness      # the architectural gate on its own
+npm run build        # tsc -b, locale check, then vite build
 ```
 
 ## Environment

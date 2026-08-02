@@ -1,0 +1,31 @@
+/* Form tokens.
+ *
+ * Exists for one reason: a data-URI SVG cannot read a CSS custom property, and
+ * it cannot inherit currentColor either, so any icon drawn that way has its
+ * colour baked in at authoring time. The inherited select caret was baked to
+ * #476580 — a light slate that is legible on the light theme's #fafbfe input
+ * and very nearly invisible on the dark theme's #070e18 one.
+ *
+ * The fix is to carry the whole caret as a token and swap it per theme, which
+ * keeps the literal inside a token file where it belongs rather than in a
+ * component stylesheet. If more inline-SVG affordances appear, they belong
+ * here too rather than being hand-coloured at each call site.
+ */
+
+:root,
+[data-theme='light'] {
+  /* stroke = --color-text-secondary (light) */
+  --caret-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%233a4d62' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+[data-theme='dark'],
+[data-theme='grey'] {
+  /* stroke = --color-text-secondary (dark/grey) */
+  --caret-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%2392aac4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --caret-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%2392aac4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+}

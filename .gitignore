@@ -53,6 +53,9 @@ emulator-data/
 !*.tfvars.example
 crash.log
 
+# ---- Generated artefacts (screenshots, reports) ----
+.artifacts/
+
 # ---- Playwright / test artefacts ----
 test-results/
 playwright-report/

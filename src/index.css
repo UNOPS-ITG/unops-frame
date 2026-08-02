@@ -14,8 +14,21 @@
  *   6. view-transitions.css  — last; only affects the theme-switch wipe
  */
 
+/* Fonts are self-hosted rather than pulled from a CDN: field offices work on
+   poor connections and sometimes behind restrictive egress rules, and a
+   render-blocking third-party request is a bad thing to depend on. Inter is
+   the variable cut, so one file covers every weight the tokens reference.
+   Noto Sans SC is deliberately absent — it is ~10MB unsubsetted and loads
+   lazily behind the locale rather than for everyone. */
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
 @import 'tailwindcss';
 @import './styles/brand-tokens.css';
+@import './styles/frame-grid-tokens.css';
+@import './styles/frame-form-tokens.css';
+@import './styles/tailwind-bridge.css';
 @import './styles/buttons.css';
 @import './styles/forms.css';
 @import './styles/utilities.css';

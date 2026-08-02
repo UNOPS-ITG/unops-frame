@@ -16,6 +16,7 @@ import { walk, stripComments } from './walk'
 const TOKEN_FILES = [
   'src/styles/brand-tokens.css',
   'src/styles/frame-grid-tokens.css',
+  'src/styles/frame-form-tokens.css',
   'src/styles/tailwind-bridge.css',
 ]
 

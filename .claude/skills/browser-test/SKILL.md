@@ -9,8 +9,8 @@ errors — instead of only reasoning about source code.
 
 ## Prerequisites
 
-The dev stack must be running: `npm run dev` (starts backend on :8000, vite
-on :4200, oauth2-proxy on :4180 — oauth2-proxy itself isn't needed for this
+The dev stack must be running: `npm run dev` (starts backend on :6301, vite
+on :6300, oauth2-proxy on :6302 — oauth2-proxy itself isn't needed for this
 skill but is harmless to leave running). If it's not running, start it in
 the background yourself (`npm run dev`, `run_in_background: true`) — it's a
 safe, reversible local action — and wait ~10s for `Application startup
@@ -84,9 +84,9 @@ Two operational lessons baked in from real use:
 ## Why this works without interactive login
 
 Normal local dev requires clicking through a real Google OAuth screen via
-oauth2-proxy (:4180) — impossible for a headless script. This harness
+oauth2-proxy (:6302) — impossible for a headless script. This harness
 instead intercepts `/api/**` calls in the browser and re-issues them
-directly to the backend (:8000) with an `x-dev-auth-bypass` header that the
+directly to the backend (:6301) with an `x-dev-auth-bypass` header that the
 backend's `DevAuthBypassMiddleware` accepts *only* in local dev, treating
 the request as the real configured user. Firestore access is real — same
 dev database, same service-account credentials the backend always uses.

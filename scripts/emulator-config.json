@@ -1,24 +1,25 @@
 {
-  "projectId": "unops-dev-penchob",
+  "$comment": "Ports must match config/ports.json — scripts/check-ports.mjs enforces it, because two files drifting apart is how a seeder ends up writing into a different project's emulator.",
+  "projectId": "unops-frame-dev",
   "location": "europe-west1",
-  "firestoreDatabaseId": "playbook",
-  "storageBucket": "unops-dev-penchob-cs-002-playbook-data",
+  "firestoreDatabaseId": "frame",
+  "storageBucket": "unops-frame-dev-frame-data",
   "emulators": {
     "auth": {
       "host": "localhost",
-      "port": 9099
+      "port": 6311
     },
     "firestore": {
       "host": "localhost",
-      "port": 8181
+      "port": 6310
     },
     "functions": {
       "host": "localhost",
-      "port": 5001
+      "port": 6312
     },
     "storage": {
       "host": "localhost",
-      "port": 9199
+      "port": 6313
     }
   },
   "testDataDir": "../test-data"

@@ -1,0 +1,182 @@
+/* Tailwind v4 bridge.
+ *
+ * Registers Frame's runtime tokens with Tailwind so generated utilities emit
+ * `var(--color-…)` references rather than baked values, which is what makes
+ * `bg-surface` follow the [data-theme] switch instead of freezing at whatever
+ * the light theme happened to be at build time. `@theme inline` is what does
+ * that: it registers the name without emitting a :root definition, leaving the
+ * real values owned by brand-tokens.css.
+ *
+ * Three things the sibling repo's version carries that are deliberately NOT
+ * here:
+ *
+ *   - The legacy palette remap (--color-white to surface, the gray and slate
+ *     ramps to text/border, the blue and indigo ramps to brand). That exists
+ *     to let a large body of
+ *     pre-existing Tailwind markup keep working while a theme was retrofitted
+ *     underneath it. A greenfield app inheriting it gets a `bg-white` that is
+ *     not white and a `text-gray-500` that is not grey — an ambiguity with no
+ *     upside when nothing here predates the tokens.
+ *
+ *   - --radius-ops-* (6/8/12/16/20), a second radius scale with a confusingly
+ *     similar name to brand-tokens' --radius-* (4/6/8/12/16). Two scales means
+ *     coin-flip consistency. Use --radius-*.
+ *
+ *   - --color-brand-status-* — light-mode literals duplicating the
+ *     theme-reactive --color-status-*. Using them yields light-blue chips on a
+ *     dark background.
+ */
+
+@theme inline {
+  /* Surfaces */
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-sunken: var(--color-surface-sunken);
+
+  /* Borders */
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-border-subtle: var(--color-border-subtle);
+
+  /* Text */
+  --color-text: var(--color-text);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-link: var(--color-text-link);
+  --color-text-on-primary: var(--color-text-on-primary);
+
+  /* Brand */
+  --color-brand-primary: var(--color-brand-primary);
+  --color-brand-subtle: var(--color-brand-subtle);
+  --color-brand-secondary: var(--color-brand-secondary);
+
+  /* Feedback */
+  --color-brand-success: var(--color-brand-success);
+  --color-brand-warning: var(--color-brand-warning);
+  --color-brand-error: var(--color-brand-error);
+  --color-brand-info: var(--color-brand-info);
+
+  /* Interactive */
+  --color-hover: var(--color-hover);
+  --color-active: var(--color-active);
+  --color-selected: var(--color-selected);
+
+  /* Inputs */
+  --color-input-bg: var(--color-input-bg);
+  --color-input-border: var(--color-input-border);
+  --color-input-border-focus: var(--color-input-border-focus);
+
+  /* Type */
+  --font-display: var(--font-family-display);
+  --font-body: var(--font-family-body);
+  --font-mono: var(--font-family-mono);
+
+  /* Shadows */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  /* Radii — the single scale */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+}
+
+@layer base {
+  /* Tailwind v4 defaults an un-set border-color to currentColor, which turns
+     every un-coloured border into text-coloured. Restore the v3 behaviour of
+     deferring to the brand border token. */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+}
+
+@layer components {
+  /* Chips, lifted from the sibling repo's bridge as plain CSS. This is the one
+     part of it that was framework-free and worth keeping: the status variants
+     key off the theme-reactive --color-status-* tokens, so badges flip
+     correctly across light, grey and dark. */
+  .ops-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--chip-gap);
+    padding: var(--chip-padding-y) var(--chip-padding-x);
+    background: var(--color-chip-bg);
+    color: var(--color-chip-text);
+    border: 1px solid var(--color-chip-border);
+    border-radius: var(--chip-radius);
+    font-size: var(--chip-font-size);
+    font-weight: var(--chip-font-weight);
+    line-height: 1.4;
+  }
+
+  .ops-chip--mono {
+    font-family: var(--font-family-mono);
+  }
+  .ops-chip--pill {
+    border-radius: var(--radius-full);
+  }
+  .ops-chip--bordered {
+    border-color: var(--color-border);
+  }
+  .ops-chip--branded {
+    background: var(--color-brand-subtle);
+    color: var(--color-brand-primary);
+    border-color: transparent;
+  }
+
+  .ops-chip[data-status='draft'] {
+    background: var(--color-status-draft-bg);
+    color: var(--color-status-draft-text);
+    border-color: transparent;
+  }
+  .ops-chip[data-status='progress'] {
+    background: var(--color-status-progress-bg);
+    color: var(--color-status-progress-text);
+    border-color: transparent;
+  }
+  .ops-chip[data-status='active'] {
+    background: var(--color-status-active-bg);
+    color: var(--color-status-active-text);
+    border-color: transparent;
+  }
+  .ops-chip[data-status='warning'] {
+    background: var(--color-status-warning-bg);
+    color: var(--color-status-warning-text);
+    border-color: transparent;
+  }
+  .ops-chip[data-status='danger'] {
+    background: var(--color-status-danger-bg);
+    color: var(--color-status-danger-text);
+    border-color: transparent;
+  }
+  .ops-chip[data-status='info'] {
+    background: var(--color-status-info-bg);
+    color: var(--color-status-info-text);
+    border-color: transparent;
+  }
+  .ops-chip[data-status='closed'] {
+    background: var(--color-status-closed-bg);
+    color: var(--color-status-closed-text);
+    border-color: transparent;
+  }
+  .ops-chip[data-status='special'] {
+    background: var(--color-status-special-bg);
+    color: var(--color-status-special-text);
+    border-color: transparent;
+  }
+
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--chip-gap);
+  }
+}

@@ -16,6 +16,9 @@ import { chromium } from 'playwright';
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// Frame runs on its own port block so it never collides with the sibling
+// projects that own the estate defaults. See config/ports.json.
+import { urls as framePorts } from '../../config/ports.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROFILE_DIR = join(__dirname, '.browser-profile');
@@ -44,8 +47,8 @@ function loadLocalEnv() {
 
 const localEnv = loadLocalEnv();
 const config = {
-  frontendUrl: process.env.AGENT_BROWSER_FRONTEND_URL || localEnv.FRONTEND_URL || 'http://localhost:4200',
-  backendUrl: process.env.AGENT_BROWSER_BACKEND_URL || localEnv.BACKEND_URL || 'http://localhost:8000',
+  frontendUrl: process.env.AGENT_BROWSER_FRONTEND_URL || localEnv.FRONTEND_URL || framePorts.frontend,
+  backendUrl: process.env.AGENT_BROWSER_BACKEND_URL || localEnv.BACKEND_URL || framePorts.backend,
   devBypassSecret: process.env.AGENT_BROWSER_DEV_AUTH_BYPASS_SECRET || localEnv.DEV_AUTH_BYPASS_SECRET || null,
   devBypassEmail: process.env.AGENT_BROWSER_DEV_AUTH_BYPASS_EMAIL || localEnv.DEV_AUTH_BYPASS_EMAIL || null,
 };
@@ -88,7 +91,7 @@ async function installApiBypass(context) {
 }
 
 /** Local browsers can't PUT to GCS signed URLs — the dev bucket has no CORS
- * config for http://localhost:4200, so the browser's preflight fails and
+ * config for the Frame dev origin, so the browser's preflight fails and
  * upload flows die at the direct-to-GCS step. Proxy those requests through
  * Node (no CORS there): answer the preflight ourselves, re-issue the PUT
  * verbatim with fetch, and hand the real GCS response back to the page. */
