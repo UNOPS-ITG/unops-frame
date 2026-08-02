@@ -119,6 +119,35 @@ class RowWriteOut(ResponseSchema):
     values: dict[str, Any]
 
 
+class DeltaOut(ResponseSchema):
+    """Identifiers only. A consumer that needs a value refetches it under its
+    own identity, which is what keeps the delta channel from being a second
+    read path trimmed for the wrong person."""
+
+    kind: Literal["upsert", "remove"]
+    row_id: str
+    changed_fields: list[str] = Field(default_factory=list)
+
+
+class DeltaPollIn(RequestSchema):
+    since: str | None = None
+    known_row_ids: list[str] = Field(default_factory=list)
+    """What the client currently has on screen.
+
+    Separates silence from a removal: a row that turns invisible and was never
+    sent needs no delta, and sending one would disclose that something the
+    caller cannot see changed.
+    """
+
+    max_envelopes: int = Field(default=100, ge=1, le=500)
+
+
+class DeltaPageOut(ResponseSchema):
+    deltas: list[DeltaOut]
+    since: str | None = None
+    blueprint_version: int
+
+
 class ConflictOut(ResponseSchema):
     """A 412 body naming what was lost and what won.
 

@@ -26,6 +26,9 @@ from api.core.exceptions import (
 from api.dependencies.auth import CurrentUser
 from api.schemas.rows import (
     AnnotationOut,
+    DeltaOut,
+    DeltaPageOut,
+    DeltaPollIn,
     PagePlanOut,
     QueryIn,
     RowOut,
@@ -40,6 +43,7 @@ from lib.permissions.evaluate import compile_rules, evaluate_row
 from lib.permissions.model import Principal
 from lib.permissions.trim import trim_row
 from lib.principals import resolve_principal
+from lib.rows.deltas import Room, authorise_deltas, may_subscribe
 from lib.rows.reader import (
     InvalidCursor,
     PageRequest,
@@ -158,6 +162,96 @@ def list_rows(
         raise RequestValidationError(f"Invalid cursor: {exc}") from exc
 
     return _page_out(page, compiled)
+
+
+@router.post("/workspaces/{workspace_id}/blueprints/{blueprint_id}/rows/deltas")
+def poll_deltas(
+    workspace_id: str,
+    blueprint_id: str,
+    user: CurrentUser,
+    db: Db,
+    body: DeltaPollIn,
+) -> DeltaPageOut:
+    """What changed since a watermark, for rows this caller may know about.
+
+    A poll rather than a socket, deliberately, and it is not a placeholder for
+    one: the shape is what makes real-time safe to add. Every delta is evaluated
+    against the CURRENT row by the same permission library a read uses, so a
+    push transport later inherits the authorisation instead of needing its own.
+    A browser-side store listener would evaluate the store's rules rather than
+    Frame's and become a second, weaker decision site.
+
+    ``knownRowIds`` is what the client currently has on screen. It is what
+    separates silence from a removal: a row that turns invisible and was never
+    sent needs no delta, and sending one would disclose that something the
+    caller cannot see changed.
+    """
+    from lib.paths import OUTBOX
+    from lib.paths import row as row_path
+
+    compiled = _compiled(db, workspace_id, blueprint_id)
+    rule_set = compile_rules(compiled)
+    principal = resolve_principal(db, workspace_id, user)
+
+    if not may_subscribe(compiled, rule_set, principal):
+        raise AuthorizationError("You have no read grant on this Blueprint")
+
+    room = Room(workspace_id, compiled.id, compiled.version)
+    envelopes = _envelopes_since(db, OUTBOX, body.since, body.max_envelopes)
+
+    events = [
+        event
+        for envelope in envelopes
+        for event in envelope.get("events", [])
+        if room.accepts(event)
+    ]
+
+    # Fetched here rather than inside the authoriser so the library that decides
+    # stays free of I/O — the property that lets every consumer link it.
+    affected = {e.get("rowId") for e in events if isinstance(e.get("rowId"), str)}
+    rows: dict[str, dict[str, Any] | None] = {}
+    for row_id in affected:
+        snapshot = row_path(db, workspace_id, compiled.id, row_id).get()
+        if snapshot.exists:
+            stored = snapshot.to_dict() or {}
+            stored.setdefault("id", row_id)
+            rows[row_id] = stored
+        else:
+            rows[row_id] = None
+
+    deltas = authorise_deltas(
+        events, rows, compiled, rule_set, principal,
+        known_to_client=frozenset(body.known_row_ids),
+    )
+
+    return DeltaPageOut(
+        deltas=[DeltaOut(**d.to_payload()) for d in deltas],
+        # The watermark advances past every envelope EXAMINED, not past the last
+        # one that produced a delta. Advancing only on delivery means a client
+        # whose next thousand envelopes are all invisible to it re-examines the
+        # same thousand forever — the same failure the row cursor avoids.
+        since=envelopes[-1].get("envelopeId") if envelopes else body.since,
+        blueprint_version=compiled.version,
+    )
+
+
+def _envelopes_since(
+    db: Any, outbox: str, since: str | None, limit: int
+) -> list[dict[str, Any]]:
+    """Outbox envelopes after a watermark, oldest first.
+
+    Ordered by write time rather than by envelope id: ids are opaque uuids
+    precisely so nothing infers order from them, and a relay that sorted by id
+    would deliver a Tuesday edit before a Monday one.
+    """
+    query = db.collection(outbox).order_by("at", "asc")
+    envelopes = [snapshot.to_dict() or {} for snapshot in query.limit(limit * 4).stream()]
+
+    if since is not None:
+        ids = [e.get("envelopeId") for e in envelopes]
+        if since in ids:
+            envelopes = envelopes[ids.index(since) + 1 :]
+    return envelopes[:limit]
 
 
 @router.get("/workspaces/{workspace_id}/blueprints/{blueprint_id}/rows/{row_id}")

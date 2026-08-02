@@ -418,6 +418,78 @@ def test_the_openapi_document_is_versioned_with_the_blueprint(client: TestClient
     assert doc["info"]["version"] == "3"
 
 
+# --- the delta channel ---------------------------------------------------
+
+
+def test_a_write_is_visible_to_a_subscriber_as_a_delta(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    """The channel is fed by the outbox the writer already fills in the same
+    transaction as the row — not by a second publish that can be lost."""
+    created = client.post(f"{BASE}/rows", json={"values": {"title": "New"}}).json()
+
+    body = client.post(f"{BASE}/rows/deltas", json={}).json()
+
+    assert [d["rowId"] for d in body["deltas"]] == [created["id"]]
+    assert body["deltas"][0]["kind"] == "upsert"
+    assert body["deltas"][0]["changedFields"] == ["title"]
+
+
+def test_a_delta_never_carries_values(client: TestClient) -> None:
+    client.post(f"{BASE}/rows", json={"values": {"title": "New"}})
+    body = client.post(f"{BASE}/rows/deltas", json={}).json()
+
+    assert set(body["deltas"][0]) == {"kind", "rowId", "changedFields"}
+
+
+def test_the_watermark_advances_past_envelopes_that_produced_nothing(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    """Advancing only on delivery means a client whose next thousand envelopes
+    are all invisible to it re-examines the same thousand forever — the same
+    failure the row cursor avoids."""
+    client.post(f"{BASE}/rows", json={"values": {"title": "One"}})
+    first = client.post(f"{BASE}/rows/deltas", json={}).json()
+
+    # Nothing new since. The watermark must not rewind, and the second poll must
+    # not re-report the first write.
+    second = client.post(f"{BASE}/rows/deltas", json={"since": first["since"]}).json()
+
+    assert second["deltas"] == []
+    assert second["since"] == first["since"]
+
+
+def test_a_subscriber_is_not_told_about_rows_it_cannot_read(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    """A delta is a statement that a row exists and moved."""
+    client.post(f"{BASE}/rows", json={"values": {"title": "Secret", "amount": 500}})
+
+    db.seed(f"workspaces/{WS}/blueprints/{BP_ID}", {
+        **BLUEPRINT,
+        "permissions": [
+            {"principals": ["*"], "actions": ["read", "create"], "effect": "allow"},
+            {"principals": ["*"], "actions": ["read"], "effect": "deny",
+             "row_condition": {"type": "binary", "op": "gte",
+                               "left": {"type": "field", "id": "amount"},
+                               "right": {"type": "literal", "value": 100}}},
+        ],
+    })
+
+    body = client.post(f"{BASE}/rows/deltas", json={}).json()
+    assert body["deltas"] == []
+
+
+def test_a_principal_with_no_read_grant_cannot_open_the_channel(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    db.seed(f"workspaces/{WS}/blueprints/{BP_ID}", {
+        **BLUEPRINT,
+        "permissions": [{"principals": ["someone-else"], "actions": ["read"], "effect": "allow"}],
+    })
+    assert client.post(f"{BASE}/rows/deltas", json={}).status_code == 403
+
+
 def test_an_unknown_blueprint_is_a_404_everywhere(client: TestClient) -> None:
     for path in (
         f"{API}/workspaces/{WS}/blueprints/nope",
