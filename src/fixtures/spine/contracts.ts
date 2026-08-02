@@ -202,6 +202,56 @@ export interface ExtensionDef {
   }[]
 }
 
+/** BP-1a's per-view-type field maps, drafted. A view type is offered only
+ * where its map is satisfiable; where it is not, the switcher names the
+ * missing fields instead of rendering an empty view — the vision's honesty
+ * caveat, enforced in the contract shape itself. */
+export interface ViewMaps {
+  readonly board?: { readonly laneField: string }
+  readonly calendar?: { readonly dateField: string }
+  readonly gantt?: { readonly startField: string; readonly endField: string }
+}
+
+/** One field of a drafted app (BP-16's typing wizard / AI-1's draft): the
+ * subset of BP-3 a creator confronts at birth. */
+export interface DraftField {
+  readonly id: string
+  readonly label: string
+  readonly type: 'text' | 'number' | 'date' | 'select' | 'user' | 'corporate_reference'
+  readonly required?: boolean
+  readonly options?: readonly string[]
+  /** Names the corporate dimension a reference binds (PRD 14) — the draft
+   * says "this column KNOWS the supplier" rather than offering free text. */
+  readonly binds?: string
+}
+
+/** An adoptable application template (AC-7): the Blueprint plus its working
+ * parts, packaged as one act of adoption. The gallery is code-first
+ * configuration; the four pilot registers are its first entries. */
+export interface AppTemplate {
+  readonly id: string
+  readonly name: string
+  readonly tagline: string
+  readonly fields: readonly DraftField[]
+  readonly states: readonly WorkflowState[]
+  readonly starterRecipes: readonly string[]
+  readonly hasChildCollections: readonly string[]
+  /** BP-28: what a workspace typically extends this base with — shown so
+   * adopting reads as "locked base + your additions", not "fork". */
+  readonly extendsWith?: string
+}
+
+/** What the describe-it path returns: a reviewable draft, never a created
+ * thing (AI-1: rendered for edit before creation). */
+export interface AppDraft {
+  readonly name: string
+  readonly purpose: string
+  readonly fields: readonly DraftField[]
+  readonly states: readonly WorkflowState[]
+  readonly starterRecipes: readonly string[]
+  readonly fromTemplate?: string
+}
+
 /** Everything the spine knows about one register, as one object — the shape
  * a future `GET .../blueprints/{bp}/spine` (or the Blueprint itself, once
  * AU-10/FM-1 land in metadata) would return. */
@@ -214,5 +264,6 @@ export interface SpineDef {
   readonly workflow: WorkflowDef
   readonly forms: readonly FormDef[]
   readonly recipes: readonly RecipeDef[]
+  readonly viewMaps?: ViewMaps
   readonly extension?: ExtensionDef
 }

@@ -78,6 +78,27 @@ sidebar's persona switch, bottom-left).
 10. **Three themes.** Flip light / grey / dark in the header. Every spine
     surface follows — no colour in the spine is a literal.
 
+11. **The same rows, morphing** (GR-13..16). On the Table tab, use the
+    view switcher: **Board** (cards in state lanes — click one, the
+    workflow panel opens), **Calendar** (by Last reviewed, landing on the
+    busiest month), **Gantt** (mitigation windows as bars in state
+    colours, real dates, months scaled). Same fetch, same filter, same
+    withheld annotation above all of them — the views morph, the
+    governance does not. A view whose field map is missing names the
+    missing fields instead of rendering blank.
+
+12. **Make your own app** — the finale. Sidebar → **New app**. Describe
+    what you track in a sentence (try "Track partner MOUs with an owner,
+    amount and renewal date") — or adopt one of the four organizational
+    templates (contract, asset, project, fleet — with their states,
+    automations and extension notes visible before you commit). Either
+    way you land on **"Here is your app — check it before it exists"**:
+    rename fields, remove them, add one, read the state flow and starter
+    automations. Create it. It appears in the sidebar and opens as an
+    app — purpose hero, zero-count state tiles, the model you reviewed —
+    not as a config screen. (Session-lived: the persistence engine is
+    what the checkpoint gates.)
+
 ## The question this walk answers
 
 Does a register with intake, state, gated approvals, legible automations

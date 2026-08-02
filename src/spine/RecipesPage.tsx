@@ -45,7 +45,7 @@ export function RecipesPage({
         <div className="spine-page__inner">
           <h2 className="spine-page__title">Automations</h2>
           <p className="spine-page__lede">
-            This register has no automations yet. They arrive with the engine preview on the demo
+            This app has no automations yet. They arrive with the engine preview on the demo
             register first —{' '}
             <a href={href.register(workspaceId, blueprintId)}>back to the grid</a>.
           </p>
@@ -130,12 +130,12 @@ function RecipeCard({
             <span>{lastRunLabel(recipe)}</span>
           </>
         )}
-        {gallery && <span>Adopting copies this record into the register — yours to edit after.</span>}
+        {gallery && <span>Adopting copies this record into the app — yours to edit after.</span>}
         <span className="recipe__meta-spacer" />
         {gallery ? (
           <button type="button" className="btn btn--secondary btn--sm" onClick={onToggle}>
             <Icon.Plus />
-            Add to this register
+            Add to this app
           </button>
         ) : (
           <label className="recipe__switch">

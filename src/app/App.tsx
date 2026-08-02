@@ -16,10 +16,11 @@ import { useThemeStore } from '@/styles/theme'
 import { GridDemo } from '@/grid/GridDemo'
 import { CorporatePage } from '@/corporate/CorporatePage'
 import { RegisterPage } from '@/registers/RegisterPage'
+import { CreatedAppPage } from '@/spine/CreatedAppPage'
 import { InboxPage } from '@/spine/InboxPage'
 import { OverviewPage } from '@/spine/OverviewPage'
 import { RecipesPage } from '@/spine/RecipesPage'
-import { spineFor } from '@/fixtures/spine/store'
+import { spineFor, useSpineStore } from '@/fixtures/spine/store'
 import { AppShell } from './AppShell'
 import { FieldsPage } from './FieldsPage'
 import { TokenGallery } from './TokenGallery'
@@ -40,6 +41,9 @@ export function App() {
     return () => globalThis.removeEventListener('hashchange', onHashChange)
   }, [])
 
+  // Above the harness early-returns: hooks must run on every render.
+  const createdApps = useSpineStore((s) => s.createdApps)
+
   // Harnesses, unchromed. See the module note.
   if (route.kind === 'tokens') return <TokenGallery />
   if (route.kind === 'harness') return <GridDemo />
@@ -47,7 +51,12 @@ export function App() {
   const workspaceId = workspaceOf(route)
 
   return (
-    <AppShell route={route} workspaceId={workspaceId} title={titleOf(route)} actions={actionsFor(route)}>
+    <AppShell
+      route={route}
+      workspaceId={workspaceId}
+      title={titleOf(route)}
+      actions={actionsFor(route, createdApps)}
+    >
       <RegisterTabs route={route} />
       <Page route={route} />
     </AppShell>
@@ -61,18 +70,19 @@ export function App() {
  * which have only the table today and honestly say so by having no tabs.
  */
 function RegisterTabs({ route }: { route: Route }) {
+  const createdApps = useSpineStore((s) => s.createdApps)
   if (route.kind !== 'register' && route.kind !== 'recipes' && route.kind !== 'fields') return null
   const { workspaceId, blueprintId } = route
-  if (spineFor(blueprintId) === null) return null
+  if (spineFor(blueprintId) === null && createdApps[blueprintId] === undefined) return null
 
   const active =
     route.kind === 'recipes'
       ? 'recipes'
       : route.kind === 'fields'
         ? 'fields'
-        : route.section === 'table'
-          ? 'table'
-          : 'overview'
+        : route.section === 'overview'
+          ? 'overview'
+          : 'table' // every data view — table, board, calendar, gantt — is the Table tab
 
   const tab = (key: string, to: string, label: string, icon: React.ReactNode) => (
     <a key={key} className={`appnav__tab${active === key ? ' appnav__tab--active' : ''}`} href={to}>
@@ -92,6 +102,16 @@ function RegisterTabs({ route }: { route: Route }) {
 }
 
 function Page({ route }: { route: Route }) {
+  // Session-born apps render from their reviewed draft until the
+  // Blueprint-create engine persists them.
+  const createdApps = useSpineStore((s) => s.createdApps)
+  if (
+    (route.kind === 'register' || route.kind === 'recipes' || route.kind === 'fields') &&
+    createdApps[route.blueprintId] !== undefined
+  ) {
+    return <CreatedAppPage app={createdApps[route.blueprintId]!} route={route} />
+  }
+
   switch (route.kind) {
     case 'register': {
       // The overview is the landing — the grid is the table section. A
@@ -110,14 +130,14 @@ function Page({ route }: { route: Route }) {
       }
       return (
         <RegisterPage
-          // Keyed on the register AND the view. Without the key, switching
-          // registers reuses the component, and its filter, selected row and
-          // open picker all survive into a Blueprint where none of them mean
-          // anything.
+          // Keyed on the register AND the saved view — but NOT the data-view
+          // mode, so switching table→board→gantt keeps the fetched page,
+          // filter and selection: that is what makes morphing lossless.
           key={`${route.workspaceId}/${route.blueprintId}/${route.viewId ?? ''}`}
           workspaceId={route.workspaceId}
           blueprintId={route.blueprintId}
           viewId={route.viewId}
+          dataView={route.section === 'overview' ? 'table' : route.section}
         />
       )
     }
@@ -148,10 +168,10 @@ function Page({ route }: { route: Route }) {
 function titleOf(route: Route): string {
   switch (route.kind) {
     case 'register':
-      // The Blueprint's own name is not known until it loads, and a header that
+      // The app's own name is not known until it loads, and a header that
       // flickers from an id to a name is worse than one that waits. The page
       // states the name; the shell states where you are.
-      return 'Register'
+      return 'App'
     case 'fields':
       return 'Fields'
     case 'recipes':
@@ -165,10 +185,12 @@ function titleOf(route: Route): string {
   }
 }
 
-function actionsFor(route: Route) {
-  // Register-family navigation lives in the app tabs (RegisterTabs); the
-  // header keeps links only for registers that have no spine and so no tabs.
-  if (route.kind === 'register' && spineFor(route.blueprintId) === null) {
+function actionsFor(route: Route, createdApps: Record<string, unknown>) {
+  // App-family navigation lives in the app tabs (RegisterTabs); the header
+  // keeps links only for apps that have no tabs — neither a spine nor a
+  // session draft.
+  const hasTabs = (bp: string) => spineFor(bp) !== null || createdApps[bp] !== undefined
+  if (route.kind === 'register' && !hasTabs(route.blueprintId)) {
     return (
       <a className="btn btn--secondary btn--sm" href={href.fields(route.workspaceId, route.blueprintId)}>
         <Icon.Fields />
@@ -176,7 +198,7 @@ function actionsFor(route: Route) {
       </a>
     )
   }
-  if ((route.kind === 'fields' || route.kind === 'recipes') && spineFor(route.blueprintId) === null) {
+  if ((route.kind === 'fields' || route.kind === 'recipes') && !hasTabs(route.blueprintId)) {
     return (
       <a
         className="btn btn--secondary btn--sm"

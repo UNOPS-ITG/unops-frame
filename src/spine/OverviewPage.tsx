@@ -147,7 +147,7 @@ export function OverviewPage({
             its name, so repeating it here would be furniture. */}
         <header className="overview__hero">
           <p className="overview__eyebrow">
-            {blueprint?.tier ?? 'team'} tier · governed register
+            {blueprint?.tier ?? 'team'} tier · governed app
             <PreviewPill what="The overview's task list, automation pulse and recent activity" />
           </p>
           <h2 className="overview__purpose">{spine.purpose}</h2>

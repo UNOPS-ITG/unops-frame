@@ -16,7 +16,7 @@
 
 import { create } from 'zustand'
 import { updateRow } from '@/api/client'
-import type { ActivityEntry, PendingTask, TransitionDef, WorkflowDef } from './contracts'
+import type { ActivityEntry, AppDraft, PendingTask, TransitionDef, WorkflowDef } from './contracts'
 import { RISK_SPINE, SEED_TASKS, activityFor } from './risk'
 
 /** The acting identity — the dev persona the whole client already uses.
@@ -43,8 +43,18 @@ interface DraftChildRow {
   readonly values: Readonly<Record<string, string>>
 }
 
+/** An app born this session. It lives here until the Blueprint-create
+ * engine persists drafts for real (BP-16/AI-1); the pages it renders are
+ * the journey being judged, and they say so with the preview pill. */
+export interface CreatedApp {
+  readonly id: string
+  readonly draft: AppDraft
+  readonly createdAt: string
+}
+
 interface SpineStore {
   tasks: PendingTask[]
+  createdApps: Record<string, CreatedApp>
   /** Activity appended THIS session, newest first, keyed by row. Rendered
    * above the scripted history from `activityFor`. */
   appended: Record<string, ActivityEntry[]>
@@ -55,6 +65,8 @@ interface SpineStore {
   generation: number
 
   toggleRecipe: (id: string) => void
+  /** Registers a reviewed draft as a session app and returns its id. */
+  createApp: (draft: AppDraft) => string
   /** A direct (ungated) transition: performs the real state write and
    * records the activity. Throws what the API throws. */
   performTransition: (args: {
@@ -104,6 +116,7 @@ function entry(partial: Omit<ActivityEntry, 'id' | 'at'>): ActivityEntry {
 
 export const useSpineStore = create<SpineStore>((set, get) => ({
   tasks: [...SEED_TASKS],
+  createdApps: {},
   appended: {},
   draftChildren: {},
   recipeEnabled: {},
@@ -111,6 +124,21 @@ export const useSpineStore = create<SpineStore>((set, get) => ({
 
   toggleRecipe: (id) =>
     set((s) => ({ recipeEnabled: { ...s.recipeEnabled, [id]: !(s.recipeEnabled[id] ?? false) } })),
+
+  createApp: (draft) => {
+    const slug = draft.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+    const id = `new-${slug || 'app'}-${Math.random().toString(36).slice(2, 6)}`
+    set((s) => ({
+      createdApps: {
+        ...s.createdApps,
+        [id]: { id, draft, createdAt: new Date().toISOString() },
+      },
+    }))
+    return id
+  },
 
   performTransition: async ({ workspaceId, blueprintId, rowId, rowTitle, stateField, transition }) => {
     await updateRow(workspaceId, blueprintId, rowId, { [stateField]: transition.to }, null, 'api')

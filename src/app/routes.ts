@@ -15,9 +15,16 @@
 
 export type Route =
   | { kind: 'workspace'; workspaceId: string }
-  /** A register is an APP with views. `section: 'overview'` is the landing —
-   * the grid is the `table` section, one tab away, never the front door. */
-  | { kind: 'register'; workspaceId: string; blueprintId: string; section: 'overview' | 'table'; viewId?: string }
+  /** A register is an APP with views. `section: 'overview'` is the landing;
+   * the data sections — table, board, calendar, gantt — are the same rows
+   * morphing (GR-13..16), one tab away, never the front door. */
+  | {
+      kind: 'register'
+      workspaceId: string
+      blueprintId: string
+      section: 'overview' | 'table' | 'board' | 'calendar' | 'gantt'
+      viewId?: string
+    }
   | { kind: 'fields'; workspaceId: string; blueprintId: string }
   | { kind: 'recipes'; workspaceId: string; blueprintId: string }
   | { kind: 'inbox'; workspaceId: string }
@@ -55,8 +62,13 @@ export function parseRoute(hash: string): Route {
       const blueprintId = segments[3]
       if (segments[4] === 'fields') return { kind: 'fields', workspaceId, blueprintId }
       if (segments[4] === 'recipes') return { kind: 'recipes', workspaceId, blueprintId }
-      if (segments[4] === 'table') {
-        return { kind: 'register', workspaceId, blueprintId, section: 'table' }
+      if (
+        segments[4] === 'table' ||
+        segments[4] === 'board' ||
+        segments[4] === 'calendar' ||
+        segments[4] === 'gantt'
+      ) {
+        return { kind: 'register', workspaceId, blueprintId, section: segments[4] }
       }
       if (segments[4] === 'v' && segments[5]) {
         // A saved view is a grid rendering, so it lives in the table section.
@@ -103,6 +115,8 @@ export const href = {
   workspace: (ws: string) => `#/w/${ws}`,
   register: (ws: string, bp: string) => `#/w/${ws}/b/${bp}`,
   table: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/table`,
+  dataView: (ws: string, bp: string, view: 'table' | 'board' | 'calendar' | 'gantt') =>
+    `#/w/${ws}/b/${bp}/${view}`,
   view: (ws: string, bp: string, view: string) => `#/w/${ws}/b/${bp}/v/${view}`,
   fields: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/fields`,
   recipes: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/recipes`,

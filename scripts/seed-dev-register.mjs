@@ -79,6 +79,11 @@ const blueprint = {
       indexed: true, validation: { min: 0, max: 100000000 },
     },
     { id: 'reviewed', label: 'Last reviewed', type: 'date', indexed: true },
+    // The Gantt pair (BP-1a field maps): mitigation runs from start to due.
+    // Not indexed — the views lay them out client-side from fetched values,
+    // and an unindexed field honestly reports itself unsortable in the grid.
+    { id: 'mitigation_start', label: 'Mitigation start', type: 'date' },
+    { id: 'mitigation_due', label: 'Mitigation due', type: 'date' },
     // Band 2 is at or above the restricted threshold, so this renders as a
     // typed stub for anyone without a grant that reaches it.
     { id: 'rationale', label: 'Owner rationale', type: 'text', variant: 'long', sensitivity: 2 },
@@ -283,6 +288,10 @@ async function main() {
         owner: OWNERS[i % OWNERS.length],
         exposure,
         reviewed: new Date(2026, 0, 1 + (i % 200)).toISOString(),
+        // Mitigation windows stagger across Jul–Nov 2026 with varied spans,
+        // so the Gantt has real overlapping bars rather than a staircase.
+        mitigation_start: new Date(2026, 6, 1 + (i % 90)).toISOString(),
+        mitigation_due: new Date(2026, 6, 15 + (i % 90) + ((i * 7) % 60)).toISOString(),
         rationale: `Reviewed with the owner in Q${(i % 4) + 1}.`,
         // Three of the four corporate states, so the renderer's treatments are
         // visible without waiting for a warehouse to go wrong: a fresh

@@ -1400,3 +1400,481 @@
 .panel .feed {
   padding: 0;
 }
+
+/* --- the data-view switcher ---------------------------------------------- */
+
+.viewswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+.viewswitch__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 0.2rem var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.viewswitch__opt:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+
+.viewswitch__opt--active {
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.viewswitch__opt:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+/* --- board ---------------------------------------------------------------- */
+
+.board {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  align-items: flex-start;
+  overflow-x: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.board__lane {
+  flex: 0 0 17rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  max-height: 100%;
+}
+
+.board__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-1);
+}
+
+.board__count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.board__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  overflow-y: auto;
+  min-height: 0;
+  padding: 2px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.card__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  line-height: var(--line-height-snug);
+}
+
+.card__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.card__value {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.board__more {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+  padding: var(--spacing-1);
+}
+
+/* --- calendar ------------------------------------------------------------- */
+
+.cal {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.cal__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.cal__month {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  min-width: 11ch;
+  text-align: center;
+}
+
+.cal__prev {
+  transform: rotate(180deg);
+}
+
+.cal__field {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-inline-start: var(--spacing-2);
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  flex: 1;
+  min-height: 0;
+}
+
+.cal__dow {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  padding: var(--spacing-1);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cal__day {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-1);
+  min-height: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.cal__day--pad {
+  background: none;
+  border-color: transparent;
+}
+
+.cal__num {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cal__item {
+  display: block;
+  width: 100%;
+  padding: 1px 0.4em;
+  border: 0;
+  border-radius: var(--chip-radius);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  text-align: start;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+
+.cal__item--danger { background: var(--color-status-danger-bg); color: var(--color-status-danger-text); }
+.cal__item--progress { background: var(--color-status-progress-bg); color: var(--color-status-progress-text); }
+.cal__item--active { background: var(--color-status-active-bg); color: var(--color-status-active-text); }
+.cal__item--warning { background: var(--color-status-warning-bg); color: var(--color-status-warning-text); }
+.cal__item--closed { background: var(--color-status-closed-bg); color: var(--color-status-closed-text); }
+.cal__item--draft { background: var(--color-status-draft-bg); color: var(--color-status-draft-text); }
+
+.cal__overflow {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* --- gantt ---------------------------------------------------------------- */
+
+.gantt {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gantt__scale {
+  display: flex;
+  align-items: flex-end;
+  min-height: 1.5rem;
+  position: sticky;
+  top: 0;
+  background: var(--color-background);
+  z-index: 1;
+}
+
+.gantt__months {
+  position: relative;
+  flex: 1;
+  height: 1.25rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.gantt__month {
+  position: absolute;
+  bottom: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  border-inline-start: 1px solid var(--color-border-subtle);
+  padding-inline-start: 4px;
+  line-height: 1;
+}
+
+.gantt__row {
+  display: flex;
+  align-items: center;
+  min-height: 1.4rem;
+}
+
+.gantt__label {
+  flex: 0 0 16rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-inline-end: var(--spacing-2);
+}
+
+.gantt__open {
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.gantt__open:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.gantt__track {
+  position: relative;
+  flex: 1;
+  height: 0.9rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface-sunken) 55%, transparent);
+}
+
+.gantt__bar {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  min-inline-size: 6px;
+  opacity: 0.9;
+}
+
+.gantt__bar:hover {
+  opacity: 1;
+  box-shadow: var(--shadow-xs);
+}
+
+.gantt__bar:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.gantt__note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding: var(--spacing-2) 0 0;
+  margin: 0;
+}
+
+/* --- the new-app wizard --------------------------------------------------- */
+
+.wizard {
+  display: flex;
+  flex-direction: column;
+  width: min(46rem, 96vw);
+  max-height: min(48rem, 94vh);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.wizard__draft-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-block-start: var(--spacing-2);
+}
+
+.wizard__gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--spacing-3);
+}
+
+.wizard__tpl {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.wizard__tpl:hover {
+  border-color: var(--color-brand-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.wizard__tpl:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.wizard__tpl-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.wizard__tpl-tag {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.wizard__tpl-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-wrap: wrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.wizard__tpl-states {
+  display: inline-flex;
+  gap: var(--spacing-1);
+  flex-wrap: wrap;
+}
+
+.wizard__tpl-ext {
+  font-size: var(--font-size-xs);
+  color: var(--color-governance-text);
+}
+
+.wizard__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.wizard__fieldrow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.wizard__fieldrow .ops-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.wizard__fieldrow--add {
+  margin-block-start: var(--spacing-2);
+  padding-block-start: var(--spacing-2);
+  border-block-start: 1px dashed var(--color-border);
+}
+
+.wizard__states {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-wrap: wrap;
+}
+
+.wizard__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.wizard__recipes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.wizard__recipes li {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}

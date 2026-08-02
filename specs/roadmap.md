@@ -91,7 +91,24 @@ fixture JSON → vision verification → then engines and APIs.
 
 Nothing in Now or Next is GCP-blocked; the spine is entirely local work.
 
-## Changes this update (2026-08-02, fourth edition — the app-first correction)
+## Changes this update (2026-08-02, fifth edition — creation and morphing land)
+
+- **The app creation journey exists** (owner directive): "New app" opens
+  the wizard — describe-it drafting (AI-1's contract: reviewable draft,
+  nothing created unreviewed) or the four pilot templates as an AC-7
+  gallery (states, starter automations, extension notes visible before
+  adopting) → the review step → a created app that lands in the sidebar
+  and opens as an app. Session-lived until the persistence engine.
+- **View morphing landed** (owner directive — the Smartsheet capability
+  the vision keeps): Board / Calendar / Gantt over the same fetched rows
+  as the Table, lossless, annotation intact, BP-1a field maps drafted in
+  the spine contract, honest missing-field gates. Gantt runs on real
+  mitigation dates added to the seed.
+- **"Register" renamed to "app" in every user-facing string** (owner
+  directive): sidebar, launcher, wizard, overview, recipes. Specs keep
+  "register/Blueprint" as domain vocabulary; the product says app.
+
+## Prior update (2026-08-02, fourth edition — the app-first correction)
 
 - **The owner rejected the first spine cut at the checkpoint** — it still
   landed registers on the grid. Rebuilt the same day: a register now

@@ -10,6 +10,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { listBlueprints, type BlueprintSummary } from '@/api/client'
 import { useSpineStore, waitingCount } from '@/fixtures/spine/store'
+import { NewAppWizard } from '@/spine/NewAppWizard'
 import { useThemeStore, type ThemePreference } from '@/styles/theme'
 import { Icon } from './icons'
 import { href, type Route } from './routes'
@@ -26,14 +27,18 @@ export interface AppShellProps {
 
 export function AppShell({ route, workspaceId, title, meta, actions, children }: AppShellProps) {
   const registers = useRegisters(workspaceId)
+  const createdApps = useSpineStore((s) => s.createdApps)
 
-  // The register's real name, from the list the sidebar already loaded rather
+  // The app's real name, from the list the sidebar already loaded rather
   // than from a second fetch or a callback out of the page. A page reporting its
   // own title upward means the child setting the parent's state during render —
   // which React warns about — or an effect, which paints the placeholder first
-  // and the name a frame later.
+  // and the name a frame later. Session-born apps come from the spine store.
   const named =
-    'blueprintId' in route ? registers?.find((r) => r.id === route.blueprintId)?.name : undefined
+    'blueprintId' in route
+      ? (createdApps[route.blueprintId]?.draft.name ??
+        registers?.find((r) => r.id === route.blueprintId)?.name)
+      : undefined
 
   return (
     <div className="shell">
@@ -138,10 +143,10 @@ function Sidebar({
     </a>
   )
 
-  // The one always-visible creator, like Bob's "New conversation". Authoring
-  // is not built yet, so the button answers honestly instead of doing nothing —
-  // a dead primary CTA would be worse than none.
-  const [ctaOpen, setCtaOpen] = useState(false)
+  // The one always-visible creator, like Bob's "New conversation". It opens
+  // the app wizard: describe the work or adopt a template, review, create.
+  const [creating, setCreating] = useState(false)
+  const createdApps = useSpineStore((s) => s.createdApps)
 
   return (
     <nav className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`} aria-label="Workspace">
@@ -172,19 +177,12 @@ function Sidebar({
         <button
           type="button"
           className={`sidebar__cta${collapsed ? ' sidebar__cta--rail' : ''}`}
-          aria-expanded={ctaOpen}
-          onClick={() => setCtaOpen((o) => !o)}
-          {...(collapsed ? { title: 'New register', 'aria-label': 'New register' } : {})}
+          onClick={() => setCreating(true)}
+          {...(collapsed ? { title: 'New app', 'aria-label': 'New app' } : {})}
         >
-          {collapsed ? <Icon.Plus /> : 'New register'}
+          {collapsed ? <Icon.Plus /> : 'New app'}
         </button>
-        {ctaOpen && (
-          <div className="sidebar__cta-pop" role="note">
-            <strong>A tracker with governance built in.</strong> Describe it and
-            start typing — the Blueprint editor arrives with the authoring
-            milestone. Today a steward publishes Blueprints.
-          </div>
-        )}
+        {creating && <NewAppWizard workspaceId={workspaceId} onClose={() => setCreating(false)} />}
       </div>
 
       <div className="sidebar__scroll scrollable">
@@ -202,20 +200,20 @@ function Sidebar({
           {!collapsed && (
             <h2 className="sidebar__heading">
               <Icon.Table className="sidebar__heading-icon" />
-              <span>Registers</span>
+              <span>Apps</span>
             </h2>
           )}
 
           <div className="sidebar__group">
             {!collapsed && registers === null && <p className="sidebar__empty">Loading…</p>}
 
-            {!collapsed && registers?.length === 0 && (
-              // Not a blank space. A workspace with no Blueprints is a normal
+            {!collapsed && registers?.length === 0 && Object.keys(createdApps).length === 0 && (
+              // Not a blank space. A workspace with no apps is a normal
               // starting state, and saying so is the difference between "new"
               // and "broken".
               <p className="sidebar__empty">
-                No registers yet. A steward publishes a Blueprint and it appears
-                here — no deploy.
+                No apps yet. Describe one with "New app" and it appears here —
+                no deploy, no ticket.
               </p>
             )}
 
@@ -226,6 +224,16 @@ function Sidebar({
                 register.id === activeBlueprint && route.kind !== 'fields',
                 register.name,
                 <Icon.Table className="sidebar__icon" />,
+              ),
+            )}
+
+            {Object.values(createdApps).map((app) =>
+              item(
+                app.id,
+                href.register(workspaceId, app.id),
+                app.id === activeBlueprint,
+                app.draft.name,
+                <Icon.Bolt className="sidebar__icon" />,
               ),
             )}
           </div>

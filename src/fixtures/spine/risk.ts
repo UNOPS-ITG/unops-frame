@@ -62,13 +62,19 @@ export const RISK_SPINE: SpineDef = {
     ],
   },
 
+  viewMaps: {
+    board: { laneField: 'status' },
+    calendar: { dateField: 'reviewed' },
+    gantt: { startField: 'mitigation_start', endField: 'mitigation_due' },
+  },
+
   forms: [
     {
       id: 'report-a-risk',
       name: 'Report a risk',
       verb: 'Report this risk',
       intro:
-        'What you report lands in the register as a governed row — with a state, an owner and a clock — not as an email.',
+        'What you report lands in the app as a governed row — with a state, an owner and a clock — not as an email.',
       sections: [
         {
           title: 'The risk',

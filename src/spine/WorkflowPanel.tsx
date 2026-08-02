@@ -104,7 +104,7 @@ export function WorkflowPanel({
 
       {current.terminal === true || doors.length === 0 ? (
         <p className="workflow__terminal">
-          A closed risk stays closed — corrections happen by reopening through the register owner,
+          A closed risk stays closed — corrections happen by reopening through the app owner,
           so the record keeps its history.
         </p>
       ) : (

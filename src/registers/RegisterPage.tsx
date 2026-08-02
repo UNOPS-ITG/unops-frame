@@ -26,6 +26,8 @@ import { useRegister } from '@/grid/useRegister'
 import { isCorporateValue, type BlueprintField } from '@/grid/contract'
 import { spineFor, useSpineStore } from '@/fixtures/spine/store'
 import { GeneratedForm } from '@/spine/GeneratedForm'
+import { BoardView, CalendarView, GanttView, type DataViewMode } from '@/spine/views'
+import { href } from '@/app/routes'
 import { NewRow } from './NewRow'
 import { RowDetail } from './RowDetail'
 import { Annotation, Empty, Failed, Loading } from './states'
@@ -35,6 +37,11 @@ export interface RegisterPageProps {
   workspaceId: string
   blueprintId: string
   viewId?: string | undefined
+  /** Which rendering of the same rows (GR-13..16): the grid, or one of the
+   * morphing views. Switching is lossless — same fetch, same filter, same
+   * annotation — because the views share this page rather than replacing
+   * it. */
+  dataView?: DataViewMode
 }
 
 /** A conflicting value, rendered for a human. Never `[object Object]`: the
@@ -62,7 +69,7 @@ function dimensionOf(field: BlueprintField): string | null {
   return field.storage === 'corporate_ref' ? field.dimension : null
 }
 
-export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageProps) {
+export function RegisterPage({ workspaceId, blueprintId, viewId, dataView = 'table' }: RegisterPageProps) {
   // Bumped after an import so the whole page refetches. The row set, the
   // annotation and the withheld count all move together, and rebuilding from one
   // source is both simpler and more honest than patching three things that then
@@ -186,7 +193,7 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
   }
 
   if (loading || blueprint === null || page === null) {
-    return <Loading label="Opening the register" />
+    return <Loading label="Opening the app" />
   }
 
   const { annotation } = page
@@ -208,6 +215,19 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
           : {})}
         annotation={
           <>
+            {spine !== null && (
+              <span className="viewswitch" role="group" aria-label="Data views">
+                {(['table', 'board', 'calendar', 'gantt'] as const).map((mode) => (
+                  <a
+                    key={mode}
+                    className={`viewswitch__opt${dataView === mode ? ' viewswitch__opt--active' : ''}`}
+                    href={href.dataView(workspaceId, blueprintId, mode)}
+                  >
+                    {mode === 'table' ? 'Table' : mode === 'board' ? 'Board' : mode === 'calendar' ? 'Calendar' : 'Gantt'}
+                  </a>
+                ))}
+              </span>
+            )}
             <button
               type="button"
               className="btn btn--ghost btn--sm"
@@ -269,7 +289,7 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
           <Empty title={filter === null ? 'No rows yet' : 'Nothing matches this filter'}>
             {filter === null ? (
               <>
-                This register is published and empty. Add a row, or import a CSV
+                This app is published and empty. Add a row, or import a CSV
                 — the import shows you exactly what it will do before it does
                 it.
               </>
@@ -281,6 +301,19 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
               </>
             )}
           </Empty>
+        ) : dataView !== 'table' && spine !== null ? (
+          // The same rows, morphing. Selecting anything opens the detail
+          // panel, where the workflow doors already live — a card is a row.
+          (() => {
+            const openRow = (rowId: string) => {
+              setSelectedRowId(rowId)
+              setDetailOpen(true)
+            }
+            const viewProps = { blueprint, spine, rows: page.rows, onSelect: openRow }
+            if (dataView === 'board') return <BoardView {...viewProps} />
+            if (dataView === 'calendar') return <CalendarView {...viewProps} />
+            return <GanttView {...viewProps} />
+          })()
         ) : (
           <div className="register__grid">
             <FrameGrid
