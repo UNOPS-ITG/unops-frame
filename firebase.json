@@ -1,0 +1,20 @@
+{
+  "firestore": {
+    "database": "frame",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "emulators": {
+    "singleProjectMode": true,
+    "firestore": { "port": 6310, "host": "127.0.0.1" },
+    "auth": { "port": 6311, "host": "127.0.0.1" },
+    "functions": { "port": 6312, "host": "127.0.0.1" },
+    "storage": { "port": 6313, "host": "127.0.0.1" },
+    "pubsub": { "port": 6314, "host": "127.0.0.1" },
+    "ui": { "enabled": true, "port": 6315, "host": "127.0.0.1" },
+    "hub": { "port": 6316, "host": "127.0.0.1" }
+  }
+}

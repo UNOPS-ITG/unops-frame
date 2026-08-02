@@ -1,0 +1,23 @@
+{
+  "$comment": [
+    "Composite indexes are DECLARED, DEPLOYED artifacts, capped at 1000 per database.",
+    "Saved views are user-authored data with arbitrary filters and sorts (GR-11).",
+    "Those two facts do not compose: a user saving a new filter-plus-sort combination",
+    "would need an index that a data write cannot create.",
+    "",
+    "Frame's answer, per PRD 01 BP-1a, is that indexes are generated from DECLARED",
+    "Blueprint metadata rather than from view shapes: declared-filterable fields go into",
+    "a generic equality token array and declared-sortable fields into typed generic slots,",
+    "so the index count is O(slots) rather than O(Blueprints x view shapes).",
+    "",
+    "This file therefore stays small and hand-authored only for platform collections.",
+    "Per-Blueprint indexes are emitted by the metadata compiler. Do not add an index here",
+    "because one saved view needed it — that is the failure mode this design avoids.",
+    "",
+    "Fixed collection ids (items, children) mean one collection-group index set covers",
+    "every Blueprint that will ever exist; collectionId is a FIELD on the child, not a",
+    "collection name."
+  ],
+  "indexes": [],
+  "fieldOverrides": []
+}

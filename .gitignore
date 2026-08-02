@@ -83,3 +83,6 @@ Thumbs.db
 # Plans and local settings are per-developer; skills and commands are shared.
 .claude/plans/
 .claude/settings.local.json
+
+# ---- Backend local config (contains the dev auth bypass secret) ----
+functions/config/.env

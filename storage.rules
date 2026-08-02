@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// Same posture as firestore.rules: everything goes through the API.
+//
+// Attachments on rows governed by row-level permission rules, and attachments
+// containing restricted-marked content, are served proxy-only — stored without
+// user-facing ACLs and delivered through Frame with the row permission checked
+// on every download (IN-1). A permissive rule here would quietly bypass that.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

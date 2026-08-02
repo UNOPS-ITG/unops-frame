@@ -1,0 +1,66 @@
+[project]
+name = "frame-api"
+version = "0.0.0"
+description = "Frame's backend: a metadata-driven API over governed Blueprints."
+requires-python = ">=3.12"
+
+dependencies = [
+  "fastapi>=0.115",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.5",
+  "uvicorn[standard]>=0.30",
+  "google-cloud-firestore>=2.19",
+  "google-cloud-pubsub>=2.23",
+  "firebase-admin>=7.1,<8",
+  "joserfc>=1.0",          # IAP JWT verification
+  "httpx>=0.27",
+  "cachetools>=5.5",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.7",
+  "mypy>=1.13",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Flat layout with several top-level packages, so auto-discovery has to be told
+# what is a package and what is not. `config/` holds .env files rather than
+# Python, and `tests/` is not shipped.
+[tool.setuptools]
+packages = ["api", "lib", "fn_impl", "consumers", "migrations"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP", "ASYNC", "S"]
+ignore = [
+  "E501",   # line length is the formatter's job, not the linter's
+  "B008",   # FastAPI's Depends() in a default argument is the whole idiom
+  "S101",   # assert is fine in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+# Most Google client libraries ship incomplete stubs; failing on their internals
+# would drown the signal from our own code.
+[[tool.mypy.overrides]]
+module = ["google.*", "firebase_admin.*", "joserfc.*"]
+ignore_missing_imports = true
