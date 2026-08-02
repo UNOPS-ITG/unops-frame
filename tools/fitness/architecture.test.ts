@@ -87,8 +87,15 @@ describe('one write path (BP-4)', () => {
     // Firestore write verbs against a row collection.
     const writes = /\.(set|update|delete|create)\s*\(|batch\(\)|transaction\(\)/
 
+    // Detected by IMPORT, not by naming convention. `lib/paths.py` is the only
+    // place a row path is constructed, so importing one of its row helpers is
+    // the load-bearing signal — and unlike a `rows_ref` variable name, it
+    // cannot be sidestepped by calling the variable something else.
+    const reachesRows =
+      /from lib\.paths import [^\n]*\b(row|rows|child|children|child_collection_group)\b/
+
     const offenders = files
-      .filter((f) => /rows?_(collection|ref)|collection\(["']rows["']\)/.test(f.text))
+      .filter((f) => reachesRows.test(stripComments(f.text)))
       .filter((f) => writes.test(stripComments(f.text)))
       .map((f) => f.path)
 

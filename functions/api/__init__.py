@@ -158,7 +158,7 @@ def _include_routers(app: FastAPI, settings: Settings) -> None:
     rather than aspirational.
     """
     from api.dependencies.auth import require_auth
-    from api.routers import health
+    from api.routers import blueprints, docs, health, rows
 
     prefix = settings.api_prefix
     app.include_router(health.router, prefix=prefix)
@@ -167,7 +167,9 @@ def _include_routers(app: FastAPI, settings: Settings) -> None:
     # route is fine when a human writes each route and unsafe when a generator
     # emits them: one missed decorator is a silently public endpoint.
     guarded: list[Any] = [Depends(require_auth)]
-    _ = guarded  # consumed as the generic routers land in Stage 4
+    app.include_router(blueprints.router, prefix=prefix, dependencies=guarded)
+    app.include_router(rows.router, prefix=prefix, dependencies=guarded)
+    app.include_router(docs.router, prefix=prefix, dependencies=guarded)
 
 
 def _register_exception_handlers(app: FastAPI) -> None:
