@@ -158,7 +158,7 @@ def _include_routers(app: FastAPI, settings: Settings) -> None:
     rather than aspirational.
     """
     from api.dependencies.auth import require_auth
-    from api.routers import blueprints, docs, health, rows, views
+    from api.routers import blueprints, corporate_data, docs, health, rows, views
 
     prefix = settings.api_prefix
     app.include_router(health.router, prefix=prefix)
@@ -172,6 +172,7 @@ def _include_routers(app: FastAPI, settings: Settings) -> None:
     # route's `/rows/{row_id}` pattern, which would resolve a view id as a row.
     app.include_router(views.router, prefix=prefix, dependencies=guarded)
     app.include_router(rows.router, prefix=prefix, dependencies=guarded)
+    app.include_router(corporate_data.router, prefix=prefix, dependencies=guarded)
     app.include_router(docs.router, prefix=prefix, dependencies=guarded)
 
 

@@ -86,3 +86,57 @@ def test_restricted_stub_is_a_present_key_with_a_discriminator() -> None:
     assert "owner_rationale" in dumped
     assert dumped["owner_rationale"] == {"restricted": True}
     assert dumped["amount"] == 50000
+
+
+def test_no_query_parameter_reaches_the_wire_in_snake_case() -> None:
+    """The envelope is camelCase; query parameters have to match it.
+
+    FastAPI applies the alias generator to request and response *models* but not
+    to query parameters, so a handler argument named `bindable_only` arrives on
+    the wire as `bindable_only` while everything around it is camelCased. A
+    client that assumes one convention does not get an error — it silently gets
+    the default, which for a filtering parameter means a longer list than it
+    asked for and no indication why.
+
+    Caught once on `bindableOnly`. This is the check that catches the next one.
+    """
+    from typing import Any
+
+    from api import create_app
+    from api.core.config import Environment, Settings
+
+    app = create_app(
+        Settings(
+            environment=Environment.LOCAL,
+            iap_audience="test-audience.apps.googleusercontent.com",
+        )
+    )
+
+    def walk(routes: list[Any]) -> list[Any]:
+        """Included routers are wrapper objects in this FastAPI version, so the
+        real routes are nested one level down. Walking only `app.routes` finds
+        no query parameters at all — and a check that inspects nothing passes."""
+        out: list[Any] = []
+        for route in routes:
+            inner = getattr(route, "original_router", None)
+            if inner is not None:
+                out.extend(walk(inner.routes))
+            else:
+                out.append(route)
+        return out
+
+    routes = walk(app.routes)
+    assert len(routes) > 10, "the route walk found almost nothing — it is not walking"
+
+    offenders = [
+        f"{route.path} ?{parameter.alias}"
+        for route in routes
+        if getattr(route, "dependant", None) is not None
+        for parameter in route.dependant.query_params
+        if "_" in parameter.alias
+    ]
+
+    assert offenders == [], (
+        "these query parameters are snake_case while the rest of the wire is "
+        "camelCase. Add Query(alias=...): " + ", ".join(offenders)
+    )
