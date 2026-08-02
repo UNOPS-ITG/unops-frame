@@ -20,9 +20,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from dataclasses import field as dc_field
+from typing import Any
 
 from lib.blueprint.model import Blueprint, Tier
 from lib.blueprint.registry import FieldTypeRegistry, get_registry
+from lib.grammar.analyse import analyse
+from lib.grammar.ast import ExpressionError, Scope, parse
 
 _IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
 
@@ -82,7 +85,72 @@ def validate_blueprint(bp: Blueprint, registry: FieldTypeRegistry | None = None)
     _check_permissions(bp, report)
     _check_lifecycle(bp, report)
     _check_naming(bp, report)
+    _check_expressions(bp, report)
     return report
+
+
+# Which scope each expression slot may read from. The rule this table encodes:
+# a value that is materialised, replicated or indexed may never be computed
+# above ROW_PARENT, because a stored value that varies by reader is not a value.
+_SLOT_SCOPE = {
+    "expression": Scope.ROW,          # formula fields are stored
+    "validation": Scope.ROW,          # runs on write, before a reader exists
+    "visible_when": Scope.ROW_PARENT,
+    "required_when": Scope.ROW_PARENT,
+    "read_only_when": Scope.ROW_PARENT,
+    "row_condition": Scope.ROW_PARENT_SUBJECT,  # permission rules see the principal
+}
+_SCOPE_RANK = {Scope.ROW: 0, Scope.ROW_PARENT: 1, Scope.ROW_PARENT_SUBJECT: 2}
+
+
+def _check_expressions(bp: Blueprint, r: ValidationReport) -> None:
+    """Parse every expression, and check what it reads against what its slot allows.
+
+    Expressions are stored as AST rather than as strings (BP-9), so this is a
+    structural check rather than a regex over user text — which is what makes it
+    trustworthy enough to gate a permission rule on.
+    """
+    known_fields = {f.id for f in bp.fields}
+
+    def check(raw: dict[str, Any] | None, slot: str, where: str, field_id: str | None = None) -> None:
+        if raw is None:
+            return
+        try:
+            expr = parse(raw)
+        except ExpressionError as exc:
+            r.add("expression", f"{where}: {exc}", field_id)
+            return
+
+        analysis = analyse(expr)
+        allowed = _SLOT_SCOPE[slot]
+        if _SCOPE_RANK[analysis.required_scope] > _SCOPE_RANK[allowed]:
+            r.add(
+                "expression-scope",
+                f"{where} may only read {allowed.value} scope, but this expression needs "
+                f"{analysis.required_scope.value}",
+                field_id,
+            )
+
+        for referenced in sorted(analysis.fields):
+            if referenced not in known_fields:
+                r.add("expression", f"{where} references unknown field {referenced!r}", field_id)
+
+    for f in bp.fields:
+        check(f.expression, "expression", "formula", f.id)
+        check(f.visible_when, "visible_when", "visible_when", f.id)
+        check(f.required_when, "required_when", "required_when", f.id)
+        check(f.read_only_when, "read_only_when", "read_only_when", f.id)
+        if f.validation and f.validation.condition:
+            check(f.validation.condition, "validation", "validation condition", f.id)
+
+    for i, rule in enumerate(bp.permissions):
+        check(rule.row_condition, "row_condition", f"rule[{i}] row condition")
+
+    for i, t in enumerate(bp.transitions):
+        # A transition gate is evaluated for a specific actor, so it sees the
+        # subject — but never an external system: no integration may block a
+        # transition (AU-10), so there is nothing here that can call out.
+        check(t.condition, "row_condition", f"transition[{i}] condition")
 
 
 def _check_field_identity(bp: Blueprint, reg: FieldTypeRegistry, r: ValidationReport) -> None:

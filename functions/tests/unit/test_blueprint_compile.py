@@ -144,7 +144,8 @@ def test_rule_referenced_fields_are_walked_out_of_the_ast() -> None:
                 principals=["group:risk-officers"],
                 actions=["read"],
                 row_condition={
-                    "type": "eq",
+                    "type": "binary",
+                    "op": "eq",
                     "left": {"type": "field", "id": "risk_type"},
                     "right": {"type": "literal", "value": "conduct"},
                 },
