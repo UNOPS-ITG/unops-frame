@@ -124,3 +124,53 @@ test.describe('the corporate catalogue', () => {
     await expect(page.locator('.relation__detail').first()).toBeVisible()
   })
 })
+
+test.describe('adding a row', () => {
+  test('creates through the one write path and offers only writable fields', async ({ page }) => {
+    await as(page, 'dev@unops.org', REGISTER)
+    await page.waitForSelector('canvas', { timeout: 20_000 })
+    await page.waitForTimeout(800)
+
+    await page.getByRole('button', { name: 'New row' }).click()
+    const dialog = page.getByRole('form', { name: /Add a row/ })
+    await expect(dialog).toBeVisible()
+
+    // Band 2, and this persona's grant caps at band 1. Absent rather than
+    // disabled: a disabled input for a field nobody will ever be allowed to
+    // fill is a permanent, unexplained dead end.
+    await expect(dialog.getByLabel('Owner rationale')).toHaveCount(0)
+
+    // Offered even though the row does not require it. A permission grant may
+    // be conditioned on ANY field — this register's create grant is conditioned
+    // on exposure, so a dialog that omitted it made creation impossible for a
+    // reason the user could not see.
+    await expect(dialog.getByLabel('Exposure (USD)')).toBeVisible()
+
+    const title = `E2E ${Date.now()}`
+    await dialog.getByLabel('Risk').fill(title)
+    await dialog.getByLabel('Status').selectOption({ label: 'Open' })
+    await dialog.getByLabel('Exposure (USD)').fill('4200')
+    await page.getByRole('button', { name: 'Add row' }).click()
+
+    await expect(dialog).toBeHidden({ timeout: 15_000 })
+  })
+
+  test('reports a refusal against the field rather than as a dead end', async ({ page }) => {
+    await as(page, 'dev@unops.org', REGISTER)
+    await page.waitForSelector('canvas', { timeout: 20_000 })
+    await page.waitForTimeout(800)
+
+    await page.getByRole('button', { name: 'New row' }).click()
+    const dialog = page.getByRole('form', { name: /Add a row/ })
+
+    // Above the register's declared maximum. The server refuses it and the
+    // dialog stays open carrying the message — a create that vanished with an
+    // error elsewhere would lose everything typed.
+    await dialog.getByLabel('Risk').fill('Refused on purpose')
+    await dialog.getByLabel('Exposure (USD)').fill('999999999')
+    await page.getByRole('button', { name: 'Add row' }).click()
+
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('alert').first()).toBeVisible({ timeout: 15_000 })
+  })
+})

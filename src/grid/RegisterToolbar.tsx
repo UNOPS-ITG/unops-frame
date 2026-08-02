@@ -36,6 +36,7 @@ export interface RegisterToolbarProps {
   onSelectView: (viewId: string | undefined) => void
   onImported: () => void
   onFilter: (filter: Record<string, unknown> | null) => void
+  onAddRow?: () => void
   /** Rendered at the end of the strip. The toolbar does not compute it: the
    * withheld count belongs to the page that fetched it, and a toolbar deriving
    * its own would be a second number that then has to agree with the first. */
@@ -50,6 +51,7 @@ export function RegisterToolbar({
   onSelectView,
   onImported,
   onFilter,
+  onAddRow,
   annotation,
 }: RegisterToolbarProps) {
   const [views, setViews] = useState<SavedView[]>([])
@@ -180,6 +182,16 @@ export function RegisterToolbar({
         )}
 
         <div className="register__toolbar-group">
+          {onAddRow && (
+            <>
+              <button type="button" className="btn btn--primary btn--sm" onClick={onAddRow}>
+                <Icon.Plus />
+                New row
+              </button>
+              <span className="register__divider" aria-hidden="true" />
+            </>
+          )}
+
           <button
             type="button"
             className="btn btn--ghost btn--sm"

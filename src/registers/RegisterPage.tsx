@@ -24,6 +24,7 @@ import { FrameGrid } from '@/grid/FrameGrid'
 import { RegisterToolbar } from '@/grid/RegisterToolbar'
 import { useRegister } from '@/grid/useRegister'
 import { isCorporateValue, type BlueprintField } from '@/grid/contract'
+import { NewRow } from './NewRow'
 import { RowDetail } from './RowDetail'
 import { Annotation, Empty, Failed, Loading } from './states'
 import './RegisterPage.css'
@@ -73,6 +74,7 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
   // the selection moves takes a third of the grid away from someone who was
   // only navigating, which makes the grid worse at the thing it is for.
   const [detailOpen, setDetailOpen] = useState(false)
+  const [adding, setAdding] = useState(false)
 
   const { blueprint, page, loading, error, rejection, loadMore, editCell, dismissRejection } =
     useRegister(workspaceId, blueprintId, {
@@ -169,6 +171,7 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
         onSelectView={selectView}
         onImported={onImported}
         onFilter={setFilter}
+        onAddRow={() => setAdding(true)}
         annotation={
           <>
             <button
@@ -267,6 +270,16 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
           />
         )}
       </div>
+
+      {adding && (
+        <NewRow
+          workspaceId={workspaceId}
+          blueprintId={blueprintId}
+          blueprint={blueprint}
+          onCreated={() => setGeneration((g) => g + 1)}
+          onClose={() => setAdding(false)}
+        />
+      )}
 
       {picking !== null && (
         <CorporatePicker

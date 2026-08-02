@@ -388,6 +388,63 @@ def test_the_blueprint_endpoint_reports_what_the_store_can_actually_sort(
     assert body["slotPressure"]["num"] == "1/8"
 
 
+BANDED = {
+    **BLUEPRINT,
+    "permissions": [
+        {"principals": ["*"], "actions": ["read", "create", "update"],
+         "effect": "allow", "max_band": 1},
+    ],
+}
+"""The demo register's shape: a grant that reaches the ordinary fields and stops
+below the sensitive one."""
+
+
+def test_the_blueprint_endpoint_says_which_fields_this_caller_may_write(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    """A label the server computed, so a create form can omit a field nobody
+    will ever be allowed to fill rather than offering a dead end.
+
+    It is not a gate and must never become one: the write path still evaluates
+    every field on every write, which the next test asserts by ignoring this
+    flag entirely.
+    """
+    # An unbanded grant reaches everything, so everything is writable. Asserted
+    # so a bug that returned `false` everywhere could not pass the banded case
+    # by accident.
+    everything = {f["id"]: f for f in client.get(f"{BASE}").json()["fields"]}
+    assert all(f["writable"] for f in everything.values())
+
+    db.seed(f"workspaces/{WS}/blueprints/{BP_ID}", BANDED)
+    capped = {f["id"]: f for f in client.get(f"{BASE}").json()["fields"]}
+
+    assert capped["title"]["writable"] is True
+    # Band 2, above the cap. Never writable on any row, so offering it in a
+    # create form is a permanent, unexplained dead end.
+    assert capped["rationale"]["writable"] is False
+
+
+def test_the_writable_flag_is_a_label_and_not_the_enforcement(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    """A client that ignores it is refused exactly as before.
+
+    This is what keeps PM-4 true: the flag exists so a form can be built, and
+    the decision that matters is still made in one place on the write path. If
+    this ever starts passing because the FLAG blocked the write, the client has
+    become a second evaluator.
+    """
+    db.seed(f"workspaces/{WS}/blueprints/{BP_ID}", BANDED)
+    _seed_rows(db, 1)
+
+    response = client.patch(f"{BASE}/rows/r0000", json={"values": {"rationale": "mine now"}})
+
+    assert response.status_code == 403
+    assert response.json()["fields"] == ["rationale"]
+    stored = db.docs[f"workspaces/{WS}/rows/{BP_ID}/items/r0000"]["values"]
+    assert stored["rationale"] == "sealed"
+
+
 def test_the_openapi_document_narrows_values_to_the_blueprints_fields(
     client: TestClient,
 ) -> None:

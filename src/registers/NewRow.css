@@ -1,0 +1,93 @@
+/* The add-a-row dialog. Shares `.picker__backdrop` with the corporate picker,
+   because two different scrims over the same app is two different products. */
+
+.new-row {
+  display: flex;
+  flex-direction: column;
+  width: min(28rem, calc(100vw - var(--spacing-8)));
+  max-height: 80vh;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.new-row__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.new-row__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.new-row__close {
+  margin-inline-start: auto;
+}
+
+.new-row__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  overflow-y: auto;
+}
+
+.new-row__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.new-row__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.new-row__required {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+}
+
+.new-row__help,
+.new-row__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+  margin: 0;
+}
+
+.new-row__error {
+  font-size: var(--font-size-xs);
+  color: var(--color-brand-error);
+}
+
+.new-row__message {
+  margin: 0;
+  padding: 0 var(--spacing-4) var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-brand-error);
+}
+
+.new-row__actions {
+  display: flex;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.new-row__pick {
+  justify-content: flex-start;
+  width: 100%;
+}

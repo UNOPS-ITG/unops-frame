@@ -132,6 +132,13 @@ export interface BlueprintField {
    * control that silently does nothing. */
   readonly sortable: boolean
   readonly filterable: boolean
+  /** Whether this principal could EVER write this field on this register.
+   *
+   * A label the server computed, not a decision made here: the write path still
+   * evaluates every field on every write. It exists so a create form can omit a
+   * field nobody will ever be allowed to fill, rather than offering a
+   * permanent, unexplained dead end. */
+  readonly writable: boolean
   readonly options: readonly { key: string; label: string }[] | null
   readonly default: unknown
   readonly helpText: string | null

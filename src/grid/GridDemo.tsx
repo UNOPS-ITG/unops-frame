@@ -70,6 +70,7 @@ function f(
     default: null,
     helpText: null,
     dimension: null,
+  writable: true,
     ...over,
   }
 }

@@ -22,6 +22,7 @@ const field = (over: Partial<BlueprintField> = {}): BlueprintField => ({
   default: null,
   helpText: null,
   dimension: null,
+  writable: true,
   ...over,
 })
 

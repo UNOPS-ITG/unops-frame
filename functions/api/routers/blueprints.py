@@ -22,6 +22,9 @@ from api.dependencies.auth import CurrentUser
 from api.schemas.base import ResponseSchema
 from lib.blueprint.compile import CompiledBlueprint
 from lib.blueprint.store import BlueprintNotFound, list_blueprints, load_compiled
+from lib.permissions.evaluate import compile_rules, writable_at_blueprint_level
+from lib.permissions.model import Principal
+from lib.principals import resolve_principal
 
 router = APIRouter(tags=["blueprints"])
 
@@ -60,6 +63,16 @@ class FieldOut(ResponseSchema):
     default: Any = None
     help_text: str | None = None
 
+    writable: bool = True
+    """Whether this principal could EVER write this field on this register.
+
+    A label the server computed, not a decision the client makes: the write path
+    still evaluates every field on every write, and a client that ignored this
+    and sent the field anyway is refused exactly as before. It exists so a
+    create form can omit a field nobody will ever be allowed to fill, rather
+    than offering a permanent, unexplained dead end.
+    """
+
     dimension: str | None = None
     """Which corporate dimension a `corporate_reference` field points at
     (PRD 14).
@@ -91,7 +104,8 @@ def list_workspace_blueprints(
 ) -> list[BlueprintOut]:
     from lib.blueprint.compile import compile_cached
 
-    return [_out(compile_cached(bp)) for bp in list_blueprints(db, workspace_id)]
+    principal = resolve_principal(db, workspace_id, user)
+    return [_out(compile_cached(bp), principal) for bp in list_blueprints(db, workspace_id)]
 
 
 @router.get("/workspaces/{workspace_id}/blueprints/{blueprint_id}")
@@ -99,13 +113,21 @@ def get_blueprint(
     workspace_id: str, blueprint_id: str, user: CurrentUser, db: Db
 ) -> BlueprintOut:
     try:
-        return _out(load_compiled(db, workspace_id, blueprint_id))
+        return _out(
+            load_compiled(db, workspace_id, blueprint_id),
+            resolve_principal(db, workspace_id, user),
+        )
     except BlueprintNotFound as exc:
         raise NotFoundError(f"No Blueprint {blueprint_id!r}") from exc
 
 
-def _out(compiled: CompiledBlueprint) -> BlueprintOut:
+def _out(compiled: CompiledBlueprint, principal: Principal | None = None) -> BlueprintOut:
     bp = compiled.blueprint
+    writable = (
+        writable_at_blueprint_level(compile_rules(compiled), principal, compiled)
+        if principal is not None
+        else frozenset(compiled.fields)
+    )
     return BlueprintOut(
         id=compiled.id,
         name=bp.name,
@@ -133,6 +155,7 @@ def _out(compiled: CompiledBlueprint) -> BlueprintOut:
                 ),
                 default=cf.definition.default,
                 help_text=cf.definition.help_text,
+                writable=fid in writable and not cf.definition.read_only,
                 dimension=cf.definition.dimension,
             )
             for fid, cf in compiled.fields.items()

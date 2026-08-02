@@ -229,6 +229,48 @@ def may_at_blueprint_level(
     return any(r.effect == "allow" and action in r.actions for r in candidates)
 
 
+def writable_at_blueprint_level(
+    rule_set: CompiledRuleSet,
+    principal: Principal,
+    compiled: Any = None,
+) -> frozenset[str]:
+    """Fields this principal could EVER write on this register.
+
+    The same "could ever" shape as `may_at_blueprint_level`, and for the same
+    reason: a grant conditioned on a field value does not match an empty row, so
+    evaluating one would report an empty writable set for a principal who can in
+    fact write plenty of rows.
+
+    It exists so a create form can omit fields nobody will ever be allowed to
+    fill. That is rendering a decision the server made, not making one — the
+    write path still evaluates every field on every write, and a client that
+    ignored this and sent the field anyway would be refused exactly as before.
+    Nothing here is a gate; it is a label.
+
+    Denies are honoured, unconditional ones only. A conditional deny may or may
+    not apply to the row being created, and treating "sometimes denied" as
+    "never writable" would hide a field the user can legitimately fill.
+    """
+    candidates = rule_set.for_principal(principal)
+
+    writable: set[str] = set()
+    denied: set[str] = set()
+
+    for rule in candidates:
+        scoped = _fields_for(rule, rule_set, compiled)
+        if rule.effect == "deny":
+            if rule.condition is not None:
+                continue
+            if rule.field_ids is not None or rule.max_band is not None:
+                denied |= scoped
+            else:
+                denied |= rule_set.all_field_ids
+        elif rule.actions & {Action.UPDATE, Action.CREATE, Action.IMPORT}:
+            writable |= scoped
+
+    return frozenset(writable - denied)
+
+
 def _subject_scope() -> Any:
     from lib.grammar.ast import Scope
 
