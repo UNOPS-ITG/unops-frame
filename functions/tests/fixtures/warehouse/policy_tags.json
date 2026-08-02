@@ -1,0 +1,182 @@
+[
+ {
+  "Column_Policy_Tag": "Level 1 Audit",
+  "Column_Policy_Tag_Description": "Level 1 - Audit Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/1736099912239543879",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 1 Finance",
+  "Column_Policy_Tag_Description": "Level 1 - Finance Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/5635434959392313305",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 1 Human Resources",
+  "Column_Policy_Tag_Description": "Level 1 - Human Resources Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/1702871154497511327",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 1 Procurement",
+  "Column_Policy_Tag_Description": "Level 1 - Procurement Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/8969706027522393276",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 1 Project",
+  "Column_Policy_Tag_Description": "Level 1 - Project Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/2698653559223306452",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 1 Transactional",
+  "Column_Policy_Tag_Description": "Level 1 - Transactional Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/2566335752298904463",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 2 Audit",
+  "Column_Policy_Tag_Description": "Level 2 - Audit Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/1736099912239543879",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 2 Finance",
+  "Column_Policy_Tag_Description": "Level 2 - Finance Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/8241548958035369331",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 2 Human Resources",
+  "Column_Policy_Tag_Description": "Level 2 - Human Resources Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/5288723747026815836",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 2 Procurement",
+  "Column_Policy_Tag_Description": "Level 2 - Procurement Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/3088682731500677754",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 2 Project",
+  "Column_Policy_Tag_Description": "Level 2 - Project Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/7405546636507634458",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 2 Transactional",
+  "Column_Policy_Tag_Description": "Level 2 - Transactional Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/7013042756243012974",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 3 Audit",
+  "Column_Policy_Tag_Description": "Level 3 - AuditConfidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/1333467763826270895",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 3 Finance",
+  "Column_Policy_Tag_Description": "Level 3 - FinanceConfidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/5250407541599762456",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 3 Human Resources",
+  "Column_Policy_Tag_Description": "Level 3 - Human ResourcesConfidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/7907788490000050830",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 3 Procurement",
+  "Column_Policy_Tag_Description": "Level 3 - ProcurementConfidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/7531606981325032209",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 3 Project",
+  "Column_Policy_Tag_Description": "Level 3 - ProjectConfidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/6539414862386549610",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 3 Transactional",
+  "Column_Policy_Tag_Description": "Level 3 - Transactional Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/969298534203878694",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 4 Audit",
+  "Column_Policy_Tag_Description": "Level 4 - AuditConfidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/6135962060113651795",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 4 Finance",
+  "Column_Policy_Tag_Description": "Level 4 - FinanceConfidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/952978198737314530",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 4 Human Resources",
+  "Column_Policy_Tag_Description": "Level 4 - Human Resources Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/1889090558273392231",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 4 Procurement",
+  "Column_Policy_Tag_Description": "Level 4 - Procurement Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/1267374420650397629",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 4 Project",
+  "Column_Policy_Tag_Description": "Level 4 - Project Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/7014727871330562784",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 4 Transactional",
+  "Column_Policy_Tag_Description": "Level 4 - Transactional Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/2259217442107232299",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 5 Audit",
+  "Column_Policy_Tag_Description": "Level 5 - Audit Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/461883221436606593",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 5 Finance",
+  "Column_Policy_Tag_Description": "Level 5 - Finance Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/2284097889380749322",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 5 Human Resources",
+  "Column_Policy_Tag_Description": "Level 5 - Human Resources Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/2924139067534022583",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 5 Procurement",
+  "Column_Policy_Tag_Description": "Level 5 - Procurement Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/3321154411599242382",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 5 Project",
+  "Column_Policy_Tag_Description": "Level 5 - Project Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/4240834234523559442",
+  "Enabled_Flag": "YES"
+ },
+ {
+  "Column_Policy_Tag": "Level 5 Transactional",
+  "Column_Policy_Tag_Description": "Level 5 - Transactional Confidential Data Access",
+  "Data_Security_Policy_Tag": "projects/544727762964/locations/eu/taxonomies/5884514198775263826/policyTags/8116712951136874986",
+  "Enabled_Flag": "YES"
+ }
+]
