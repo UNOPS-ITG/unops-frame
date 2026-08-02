@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+# Full-tree rather than lint-staged, deliberately: lint-staged passes explicit
+# staged paths, which is fragile on Windows, and the tree is small enough that
+# the difference is not worth the flakiness.
+#
+# The fitness suite runs here rather than only in CI because its whole purpose
+# is to stop an architectural violation being written, not to report one after
+# it has been merged and built on.
+
+set -e
+
+echo "› lint"
+npm run lint --silent
+
+echo "› typecheck"
+npm run typecheck --silent
+
+echo "› architectural fitness"
+npm run fitness --silent
+
+echo "✓ pre-commit checks passed"

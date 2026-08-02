@@ -1,0 +1,95 @@
+/* ==========================================================================
+   Utility Classes
+
+   Low-level layout / helper utilities referenced by the brand-design-tokens
+   rule. Token-driven; framework-agnostic so they can be used alongside or
+   instead of Tailwind utilities.
+   ========================================================================== */
+
+@layer utilities {
+  /* ── Flex layout ── */
+  .flex-row      { display: flex; flex-direction: row; }
+  .flex-col      { display: flex; flex-direction: column; }
+  .flex-center   { display: flex; align-items: center; justify-content: center; }
+  .flex-between  { display: flex; align-items: center; justify-content: space-between; }
+  .flex-1        { flex: 1 1 0%; }
+  .flex-shrink-0 { flex-shrink: 0; }
+
+  /* ── Alignment ── */
+  .items-start  { align-items: flex-start; }
+  .items-center { align-items: center; }
+  .items-end    { align-items: flex-end; }
+
+  /* ── Gap ── */
+  .gap-1 { gap: var(--spacing-1); }
+  .gap-2 { gap: var(--spacing-2); }
+  .gap-3 { gap: var(--spacing-3); }
+  .gap-4 { gap: var(--spacing-4); }
+  .gap-6 { gap: var(--spacing-6); }
+  .gap-8 { gap: var(--spacing-8); }
+
+  /* ── Sizing ── */
+  .w-full  { width: 100%; }
+  .h-full  { height: 100%; }
+  .min-h-0 { min-height: 0; }
+
+  /* ── Centered, width-limited page containers ── */
+  .container-sm,
+  .container-md,
+  .container-lg,
+  .container-xl {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: var(--spacing-4);
+  }
+  .container-sm { max-width: var(--layout-sm); }
+  .container-md { max-width: var(--layout-md); }
+  .container-lg { max-width: var(--layout-lg); }
+  .container-xl { max-width: var(--layout-xl); }
+
+  /* ── Text ── */
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .line-clamp-2,
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-2 { -webkit-line-clamp: 2; line-clamp: 2; }
+  .line-clamp-3 { -webkit-line-clamp: 3; line-clamp: 3; }
+
+  /* ── Accessibility ── */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ── Scrollable region with brand-tinted thin scrollbar ── */
+  .scrollable {
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  }
+  .scrollable::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollable::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+  }
+  .scrollable::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: var(--radius-full);
+  }
+}

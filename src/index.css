@@ -1,0 +1,49 @@
+/* Frame stylesheet entry point.
+ *
+ * Order is load-bearing and must not be rearranged casually:
+ *
+ *   1. tailwindcss           — the framework, before anything that bridges to it
+ *   2. brand-tokens.css      — every other file's inputs; also, its four theme
+ *                              blocks (light / dark / grey / auto) have identical
+ *                              specificity and resolve by source order, so
+ *                              splitting or reordering them silently breaks dark
+ *   3. frame-grid-tokens.css — extends the tokens for dense-grid work (Stage 1)
+ *   4. tailwind-bridge.css   — makes Tailwind utilities emit var() references so
+ *                              they follow [data-theme] (Stage 1)
+ *   5. component layers      — buttons, forms, utilities
+ *   6. view-transitions.css  — last; only affects the theme-switch wipe
+ */
+
+@import 'tailwindcss';
+@import './styles/brand-tokens.css';
+@import './styles/buttons.css';
+@import './styles/forms.css';
+@import './styles/utilities.css';
+@import './styles/view-transitions.css';
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Numeric columns must not jitter between rows. Inter ships proportional
+   figures by default, which is fine for prose and wrong for a grid. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Keyboard focus is never removed, only restyled — the grid is keyboard-first
+   (GR-1) and WCAG 2.1 AA is a release gate (GR-10). */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--color-focus-ring);
+}

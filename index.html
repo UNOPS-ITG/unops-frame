@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frame</title>
+    <script>
+      // Runs before first paint so the theme does not flash on reload.
+      //
+      // The one trap worth the comment: "auto" is the ABSENCE of data-theme,
+      // not a value. brand-tokens.css selects the auto branch with
+      // :root:not([data-theme]) inside a prefers-color-scheme query, so writing
+      // data-theme="auto" matches no theme block, silently pins light, and
+      // disables system following. Remove the attribute instead.
+      ;(function () {
+        try {
+          var pref = localStorage.getItem('frame-theme') || 'system'
+          var root = document.documentElement
+          if (pref === 'light' || pref === 'grey' || pref === 'dark') {
+            root.setAttribute('data-theme', pref)
+          } else {
+            root.removeAttribute('data-theme')
+          }
+        } catch (_) {
+          /* private mode, storage disabled: fall through to system */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
