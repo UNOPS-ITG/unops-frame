@@ -26,6 +26,7 @@ from dataclasses import field as dc_field
 from typing import TYPE_CHECKING, Any
 
 from lib.grammar.ast import (
+    AllowListRef,
     Binary,
     BinaryOp,
     Expr,
@@ -71,8 +72,18 @@ class QueryPlan:
             self.reasons.append(reason)
 
 
-def compile_query(expr: Expr | None, compiled: CompiledBlueprint) -> QueryPlan:
-    """Split an expression into store filters and an in-memory residual."""
+def compile_query(
+    expr: Expr | None,
+    compiled: CompiledBlueprint,
+    allow_lists: dict[str, frozenset[str]] | None = None,
+) -> QueryPlan:
+    """Split an expression into store filters and an in-memory residual.
+
+    ``allow_lists`` are the acting principal's PM-2a scopes. They are resolved
+    HERE rather than left as a residual, because expanding them to a literal set
+    is exactly what makes the allow-list shape affordable at grid scale.
+    """
+    allow_lists = allow_lists or {}
     plan = QueryPlan()
     if expr is None:
         return plan
@@ -82,7 +93,7 @@ def compile_query(expr: Expr | None, compiled: CompiledBlueprint) -> QueryPlan:
     array_clause_used = False
 
     for term in conjuncts:
-        pushed, uses_array = _try_push(term, compiled, plan, array_clause_used)
+        pushed, uses_array = _try_push(term, compiled, plan, array_clause_used, allow_lists)
         if pushed:
             array_clause_used = array_clause_used or uses_array
         else:
@@ -119,7 +130,11 @@ _RANGE_OPS = {
 
 
 def _try_push(
-    term: Expr, compiled: CompiledBlueprint, plan: QueryPlan, array_clause_used: bool
+    term: Expr,
+    compiled: CompiledBlueprint,
+    plan: QueryPlan,
+    array_clause_used: bool,
+    allow_lists: dict[str, frozenset[str]],
 ) -> tuple[bool, bool]:
     """Returns (pushed, used_the_array_clause)."""
 
@@ -168,8 +183,16 @@ def _try_push(
     # --- membership: the PM-2a allow-list shape --------------------------
     if isinstance(term, In) and isinstance(term.value, FieldRef):
         cf = compiled.field(term.value.id)
-        literals = [o.value for o in term.options if isinstance(o, Literal_)]
-        if cf and cf.eq_token_prefix and len(literals) == len(term.options):
+        literals: list[Any] = []
+        for option in term.options:
+            if isinstance(option, Literal_):
+                literals.append(option.value)
+            elif isinstance(option, AllowListRef):
+                # The whole reason PM-2a exists: an allow-list resolves to a
+                # literal set at query time, so this shape is ALWAYS
+                # push-downable where a general attribute expression is not.
+                literals.extend(sorted(allow_lists.get(option.field, ())))
+        if cf and cf.eq_token_prefix and literals:
             if array_clause_used:
                 plan.note(f"{term.value.id}: array clause already used by another term")
                 return False, False

@@ -71,6 +71,25 @@ class SubjectRef(_Node):
     attribute: Literal["email", "subject", "groups", "now"]
 
 
+class AllowListRef(_Node):
+    """PM-2a. The set of values this principal is scoped to for a named field.
+
+    A first-class node rather than a pseudo-field, because principal data is not
+    row data: putting it in the field namespace would make the Blueprint
+    validator either reject it or — worse — accept a rule referencing a field
+    that does not exist.
+
+    It is also the reason this node exists at all: an ``IN`` against an
+    allow-list is the one condition shape that is *always* push-downable, since
+    it expands to a literal set at query time. A general attribute expression is
+    not, which is what makes the difference between affordable and unaffordable
+    at grid scale.
+    """
+
+    type: Literal["allow_list"] = "allow_list"
+    field: str
+
+
 class BinaryOp(StrEnum):
     EQ = "eq"
     NEQ = "neq"
@@ -150,6 +169,7 @@ Expr = Union[  # noqa: UP007 - pydantic discriminated unions need the explicit f
     FieldRef,
     ParentFieldRef,
     SubjectRef,
+    AllowListRef,
     Binary,
     Logical,
     Not,

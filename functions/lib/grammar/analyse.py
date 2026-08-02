@@ -25,6 +25,7 @@ from datetime import datetime
 from typing import Any
 
 from lib.grammar.ast import (
+    AllowListRef,
     Binary,
     BinaryOp,
     Call,
@@ -49,6 +50,7 @@ class Analysis:
     fields: set[str] = dc_field(default_factory=set)
     parent_fields: set[str] = dc_field(default_factory=set)
     subject_attributes: set[str] = dc_field(default_factory=set)
+    allow_lists: set[str] = dc_field(default_factory=set)
     functions: set[str] = dc_field(default_factory=set)
     max_depth: int = 0
 
@@ -60,7 +62,7 @@ class Analysis:
         reaches for the acting principal is refused at save rather than
         producing a stored value that differs per reader.
         """
-        if self.subject_attributes:
+        if self.subject_attributes or self.allow_lists:
             return Scope.ROW_PARENT_SUBJECT
         if self.parent_fields:
             return Scope.ROW_PARENT
@@ -83,6 +85,11 @@ def _walk(node: Expr, out: Analysis, depth: int) -> None:
             out.parent_fields.add(node.id)
         case SubjectRef():
             out.subject_attributes.add(node.attribute)
+        case AllowListRef():
+            # Principal data, deliberately NOT a row field: reporting it as one
+            # would make the child re-stamp fan-out denormalise a field that
+            # does not exist on the parent.
+            out.allow_lists.add(node.field)
         case Call():
             out.functions.add(node.fn.value)
             for arg in node.args:
@@ -149,6 +156,10 @@ def _say(node: Expr, labels: dict[str, str]) -> str:
         case ParentFieldRef():
             label = labels.get(node.id, node.id.replace("_", " "))
             return f"the parent's {label}"
+
+        case AllowListRef():
+            label = labels.get(node.field, node.field.replace("_", " "))
+            return f"the {label}s you are assigned to"
 
         case SubjectRef():
             return {

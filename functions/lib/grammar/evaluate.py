@@ -35,6 +35,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from lib.grammar.ast import (
+    AllowListRef,
     Binary,
     BinaryOp,
     Call,
@@ -91,6 +92,9 @@ class Context:
     parent: dict[str, Any] | None = None
     subject: Subject | None = None
     scope: Scope = Scope.ROW
+    allow_lists: dict[str, frozenset[str]] | None = None
+    """PM-2a. Materialised per principal outside this module."""
+
     now: datetime | None = None
     """Injected rather than read from the clock, so evaluation is deterministic
     and a test can pin 'today'."""
@@ -160,6 +164,16 @@ def evaluate(expr: Expr, ctx: Context) -> Any:
                 return UNKNOWN
             got = getattr(ctx.subject, expr.attribute, None)
             return UNKNOWN if got is None else got
+
+        case AllowListRef():
+            if ctx.scope is not Scope.ROW_PARENT_SUBJECT:
+                raise ScopeViolation(
+                    f"allow_list {expr.field!r} is principal data, readable only in a "
+                    "permission rule, view filter, automation condition or search term"
+                )
+            if ctx.allow_lists is None:
+                return UNKNOWN
+            return ctx.allow_lists.get(expr.field, frozenset())
 
         case Binary():
             return _binary(expr, ctx)
