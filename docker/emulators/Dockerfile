@@ -1,10 +1,15 @@
 # The Firebase emulator suite. There is no official image, so this is node plus a JRE
 # (the Firestore and Pub/Sub emulators are Java) plus firebase-tools.
-FROM node:22-bookworm-slim
+# trixie rather than bookworm: Debian 12 ships JDK 17 and has no openjdk-21 package,
+# and firebase-tools@15 will require 21.
+FROM node:22-trixie-slim
 
+# JDK 21, not 17: firebase-tools@15 drops support for Java below 21, and the current
+# CLI already warns about it on every start. Taking it now costs nothing and avoids
+# a forced bump at whatever moment we next need to move the pin.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      openjdk-17-jre-headless \
+      openjdk-21-jre-headless \
       curl \
       ca-certificates \
  && rm -rf /var/lib/apt/lists/*
