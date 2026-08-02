@@ -23,7 +23,7 @@ import '@glideapps/glide-data-grid/dist/index.css'
 
 import { useGridTheme } from '../styles/useGridTheme'
 import { toGlideTheme } from './glideTheme'
-import { toGridCell, cellDescription } from './cells'
+import { toGridCell } from './cells'
 import type { Blueprint, BlueprintField, Row, RowPage } from './contract'
 
 export interface FrameGridProps {
@@ -200,5 +200,3 @@ function GridAnnouncer({ blueprint, page }: { blueprint: Blueprint; page: RowPag
     </div>
   )
 }
-
-export { cellDescription }

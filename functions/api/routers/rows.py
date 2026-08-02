@@ -244,7 +244,7 @@ def _envelopes_since(
     precisely so nothing infers order from them, and a relay that sorted by id
     would deliver a Tuesday edit before a Monday one.
     """
-    query = db.collection(outbox).order_by("at", "asc")
+    query = db.collection(outbox).order_by("at", "ASCENDING")
     envelopes = [snapshot.to_dict() or {} for snapshot in query.limit(limit * 4).stream()]
 
     if since is not None:

@@ -94,7 +94,14 @@ class FakeQuery:
         q._filters.append((path, op, value))
         return q
 
-    def order_by(self, field: str, direction: str = "asc") -> FakeQuery:
+    def order_by(self, field: str, direction: str = "ASCENDING") -> FakeQuery:
+        # The real client raises on "asc"/"desc". A fake that accepted them
+        # would pass every test and 500 on the first real request — which is
+        # exactly what it did, once.
+        if direction not in {"ASCENDING", "DESCENDING"}:
+            raise AssertionError(
+                f"Firestore rejects direction {direction!r}; use ASCENDING or DESCENDING"
+            )
         q = self._clone()
         q._order.append((field, direction))
         return q
@@ -117,10 +124,10 @@ class FakeQuery:
         ]
         rows = [(p, d) for p, d in rows if all(_passes(d, f) for f in self._filters)]
 
-        for field, direction in reversed(self._order or [("__name__", "asc")]):
+        for field, direction in reversed(self._order or [("__name__", "ASCENDING")]):
             rows.sort(
                 key=lambda item, f=field: _sort_key(item, f),
-                reverse=direction == "desc",
+                reverse=direction == "DESCENDING",
             )
 
         if self._after is not None:
@@ -195,7 +202,7 @@ class FakeCollectionRef:
     def where(self, path: str, op: str, value: Any) -> FakeQuery:
         return FakeQuery(self._store, self.path, self._depth).where(path, op, value)
 
-    def order_by(self, field: str, direction: str = "asc") -> FakeQuery:
+    def order_by(self, field: str, direction: str = "ASCENDING") -> FakeQuery:
         return FakeQuery(self._store, self.path, self._depth).order_by(field, direction)
 
     def limit(self, count: int) -> FakeQuery:

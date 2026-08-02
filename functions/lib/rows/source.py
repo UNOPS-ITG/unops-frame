@@ -18,6 +18,11 @@ from lib.grammar.compile_query import QueryPlan
 if TYPE_CHECKING:
     from lib.blueprint.compile import CompiledBlueprint
 
+# The Firestore client rejects "asc"/"desc" outright. Mapped here, at the store
+# boundary, so the rest of Frame — the wire schema, saved views, the reader —
+# speaks the short form a user would write in a URL.
+_DIRECTION = {"asc": "ASCENDING", "desc": "DESCENDING"}
+
 
 class FirestoreRowSource:
     def __init__(self, db: Any, workspace_id: str, compiled: CompiledBlueprint) -> None:
@@ -42,14 +47,15 @@ class FirestoreRowSource:
 
         if order_by is not None:
             field, direction = order_by
-            query = query.order_by(field, direction=direction)
+            resolved = _DIRECTION[direction]
+            query = query.order_by(field, direction=resolved)
             if field != "__name__":
                 # A secondary order on the document id, always. Without it two
                 # rows sharing a slot value have no defined order between them,
                 # and a cursor landing on that boundary either repeats a row or
                 # skips one — intermittently, under concurrent writes, which is
                 # the hardest kind of pagination bug to reproduce.
-                query = query.order_by("__name__", direction=direction)
+                query = query.order_by("__name__", direction=resolved)
 
         if after is not None:
             query = query.start_after(_cursor_document(after, order_by))

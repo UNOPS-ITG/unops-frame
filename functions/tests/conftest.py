@@ -17,6 +17,25 @@ from fastapi.testclient import TestClient
 from api.core.config import Environment, Settings, get_settings
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _ignore_local_env_file() -> Iterator[None]:
+    """Cut ``Settings`` off from ``config/.env`` for the whole run.
+
+    The claim above — that tests must not depend on a developer's env file —
+    was aspirational until this fixture existed, and the day someone created a
+    real ``config/.env`` five unrelated tests started failing with messages
+    about the dev auth bypass. The failure is especially expensive because it
+    looks exactly like a code bug: the file is gitignored, so it is invisible in
+    a diff and absent on CI.
+    """
+    original = Settings.model_config.get("env_file")
+    Settings.model_config["env_file"] = None
+    try:
+        yield
+    finally:
+        Settings.model_config["env_file"] = original
+
+
 @pytest.fixture(autouse=True)
 def _clear_settings_cache() -> Iterator[None]:
     """``get_settings`` is lru_cached, so a test that changes the environment
