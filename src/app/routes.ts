@@ -17,6 +17,8 @@ export type Route =
   | { kind: 'workspace'; workspaceId: string }
   | { kind: 'register'; workspaceId: string; blueprintId: string; viewId?: string }
   | { kind: 'fields'; workspaceId: string; blueprintId: string }
+  | { kind: 'recipes'; workspaceId: string; blueprintId: string }
+  | { kind: 'inbox'; workspaceId: string }
   | { kind: 'corporate'; workspaceId: string }
   | { kind: 'tokens' }
   | { kind: 'harness' }
@@ -45,10 +47,12 @@ export function parseRoute(hash: string): Route {
     const workspaceId = segments[1]
 
     if (segments[2] === 'corporate') return { kind: 'corporate', workspaceId }
+    if (segments[2] === 'inbox') return { kind: 'inbox', workspaceId }
 
     if (segments[2] === 'b' && segments[3]) {
       const blueprintId = segments[3]
       if (segments[4] === 'fields') return { kind: 'fields', workspaceId, blueprintId }
+      if (segments[4] === 'recipes') return { kind: 'recipes', workspaceId, blueprintId }
       if (segments[4] === 'v' && segments[5]) {
         return { kind: 'register', workspaceId, blueprintId, viewId: segments[5] }
       }
@@ -91,6 +95,8 @@ export const href = {
   register: (ws: string, bp: string) => `#/w/${ws}/b/${bp}`,
   view: (ws: string, bp: string, view: string) => `#/w/${ws}/b/${bp}/v/${view}`,
   fields: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/fields`,
+  recipes: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/recipes`,
+  inbox: (ws: string) => `#/w/${ws}/inbox`,
   corporate: (ws: string) => `#/w/${ws}/corporate`,
   tokens: () => '#/tokens',
   harness: () => '#/harness',

@@ -37,6 +37,11 @@ export interface RegisterToolbarProps {
   onImported: () => void
   onFilter: (filter: Record<string, unknown> | null) => void
   onAddRow?: () => void
+  /** The register's named intake form (FM-1), when one exists. Rendered
+   * beside "New row" under the form's own name — "Report a risk" is an act
+   * someone recognises as theirs; "Open form" is furniture. */
+  formName?: string
+  onOpenForm?: () => void
   /** Rendered at the end of the strip. The toolbar does not compute it: the
    * withheld count belongs to the page that fetched it, and a toolbar deriving
    * its own would be a second number that then has to agree with the first. */
@@ -52,6 +57,8 @@ export function RegisterToolbar({
   onImported,
   onFilter,
   onAddRow,
+  formName,
+  onOpenForm,
   annotation,
 }: RegisterToolbarProps) {
   const [views, setViews] = useState<SavedView[]>([])
@@ -188,6 +195,12 @@ export function RegisterToolbar({
                 <Icon.Plus />
                 New row
               </button>
+              {onOpenForm !== undefined && formName !== undefined && (
+                <button type="button" className="btn btn--secondary btn--sm" onClick={onOpenForm}>
+                  <Icon.Fields />
+                  {formName}
+                </button>
+              )}
               <span className="register__divider" aria-hidden="true" />
             </>
           )}

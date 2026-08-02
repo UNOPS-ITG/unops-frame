@@ -144,6 +144,11 @@ U9's remaining two moments, U15's theme menu, U18 (focus-visible audit over
 the new components), and the inline select editor the chips now make more
 visible (editing a status cell still opens a free-text overlay whose value is
 the label rather than the option key — pre-existing, now more noticeable).
+*Update 2026-08-02, spine build:* the **status column specifically** no
+longer reaches that overlay — the workflow-bound state cell is intercepted
+and opens the row's workflow panel, because a transition is an action, not
+a cell edit (AU-10). The general select-editor gap remains open for
+ordinary selects.
 
 ### Rubric realignment (same day, after review against ai-bob)
 

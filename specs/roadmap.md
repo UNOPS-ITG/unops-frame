@@ -15,20 +15,21 @@ the grid is the front door, the application loop is the product.**
 Staged per the owner's frontend-first directive (2026-08-02): frontend on
 fixture JSON → vision verification → then engines and APIs.
 
-- **The application spine, frontend on fixtures** — the whole loop
-  *visible* in the register experience, fed by hard-coded JSON shaped
-  like the intended API contracts: a generated form with a child section
-  (FM-1..FM-3), workflow states and transition actions in the grid and
-  row detail (AU-10), the sentence-style recipe builder and starter
-  gallery (AU-14, AU-16 expression parameters in the sentence UI), the
-  pending-task/approval inbox (AU-4/AU-4a), the activity drawer, and a
-  fleet-style extension rendering (BP-28 one-to-one fields as columns).
-  All inside the register experience, never a sibling module. *next*
-  (fixtures are commitworthy — they are the draft API contract).
-- **Vision verification checkpoint** — the owner walks the fixture-fed
-  product and confirms it feels like the vision. **Gate: no spine
-  engine/backend code before this passes.** *blocked on the frontend
-  above, by design.*
+- **The application spine, frontend on fixtures** — **built** (2026-08-02):
+  fixture contracts in `src/fixtures/spine/` (each file names the PRD ids
+  whose API shape it drafts), generated form with repeatable child section
+  submitting real rows on the `form` channel, transition-driven state
+  column (cell opens the workflow panel — never a text overlay), gated
+  approvals raising pending tasks with AU-15 self-approval blocking,
+  activity drawer with withheld deltas and automation attribution,
+  sentence-rendered recipes with AU-16 expression chips, inbox with badge,
+  BP-28 extension rendering. Evidence: `npm run verify` green, all 19
+  e2e green, scripted loop smoke passed (form → land → transition →
+  approval → AU-15 block). Surfaces wear an "engine preview" pill.
+- **Vision verification checkpoint** — **ready to run**: the owner walks
+  `specs/pilots/vision-walkthrough.md` against the seeded register and
+  says whether it feels like the vision. **Gate: no spine engine/backend
+  code before this passes.**
 - **Governance render layer** — GR-6/PM-5 polish and PM-14's trace
   surface; the server side is real (`functions/lib/permissions/` green
   this session), so this rides with the fixture build and demos at the

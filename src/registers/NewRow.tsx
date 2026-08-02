@@ -171,7 +171,7 @@ export function NewRow({
                 )}
               </span>
 
-              <Input
+              <FieldInput
                 field={field}
                 value={values[field.id]}
                 onChange={(v) => setValues((prev) => ({ ...prev, [field.id]: v }))}
@@ -226,7 +226,10 @@ export function NewRow({
   )
 }
 
-function Input({
+/** Shared with the generated form (FM-1): one input-per-field-type mapping,
+ * so a field renders identically in the quick dialog and the intake form and
+ * the two cannot drift. */
+export function FieldInput({
   field,
   value,
   onChange,

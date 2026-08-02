@@ -129,6 +129,32 @@ export const Icon = {
       <path d="M2.5 7.4 8 2.8l5.5 4.6V13a.6.6 0 0 1-.6.6H9.8V9.8H6.2v3.8H3.1a.6.6 0 0 1-.6-.6z" />
     </Svg>
   ),
+  /** Automation: the recipe bolt. */
+  Bolt: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M8.8 2 3.5 9h3.2l-.9 5 5.7-7H8.2z" />
+    </Svg>
+  ),
+  /** The pending-task inbox: one tray, both classes (AU-4/AU-4a). */
+  Inbox: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M2.5 9.5 4 3.9a.8.8 0 0 1 .8-.6h6.4a.8.8 0 0 1 .8.6l1.5 5.6" />
+      <path d="M2.5 9.5h3.2l.7 1.6h3.2l.7-1.6h3.2V12a1.3 1.3 0 0 1-1.3 1.3H3.8A1.3 1.3 0 0 1 2.5 12z" />
+    </Svg>
+  ),
+  /** Activity: a clock rewound. */
+  History: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M3.2 5A6 6 0 1 1 2.2 8" />
+      <path d="M2.2 4.2V8h3.6M8 5.4V8l2.2 1.4" />
+    </Svg>
+  ),
+  /** A transition: from here to there. */
+  ArrowRight: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M2.5 8h11M9.5 4l4 4-4 4" />
+    </Svg>
+  ),
   /**
    * The sidebar collapse toggle — Bob's exact glyph (a panel icon, filled),
    * copied rather than redrawn so the two products' chrome reads as one

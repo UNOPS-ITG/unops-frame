@@ -24,6 +24,8 @@ import { FrameGrid } from '@/grid/FrameGrid'
 import { RegisterToolbar } from '@/grid/RegisterToolbar'
 import { useRegister } from '@/grid/useRegister'
 import { isCorporateValue, type BlueprintField } from '@/grid/contract'
+import { spineFor, useSpineStore } from '@/fixtures/spine/store'
+import { GeneratedForm } from '@/spine/GeneratedForm'
 import { NewRow } from './NewRow'
 import { RowDetail } from './RowDetail'
 import { Annotation, Empty, Failed, Loading } from './states'
@@ -75,6 +77,15 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
   // only navigating, which makes the grid worse at the thing it is for.
   const [detailOpen, setDetailOpen] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+
+  // The register's spine — workflow, forms, recipes — fixture-fed while the
+  // engines are built frontend-first. Null on registers without one.
+  const spine = spineFor(blueprintId)
+  // Spine actions (a transition, an approval) perform real writes; folding
+  // the store's generation into the page's makes the grid refetch after
+  // them, exactly as it does after an import.
+  const spineGeneration = useSpineStore((s) => s.generation)
   // The landing beat: after a create, the register scrolls to the new row and
   // flashes it once. Without it the dialog closes and nothing on screen says
   // where — or whether — the row landed.
@@ -82,7 +93,7 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
 
   const { blueprint, page, loading, error, rejection, loadMore, editCell, dismissRejection } =
     useRegister(workspaceId, blueprintId, {
-      generation,
+      generation: generation + spineGeneration,
       filter,
       ...(viewId === undefined ? {} : { viewId }),
     })
@@ -122,6 +133,14 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
    */
   const onOpenCell = useCallback(
     (rowId: string, field: BlueprintField): boolean => {
+      // The state cell is deliberately not text-editable: a transition is an
+      // action with gates and side effects (AU-10), not a value someone
+      // types. Opening the cell opens the row's workflow panel instead.
+      if (spine !== null && field.id === spine.workflow.stateField) {
+        setSelectedRowId(rowId)
+        setDetailOpen(true)
+        return true
+      }
       if (field.storage !== 'corporate_ref') return false
       if (field.readOnly) return true
       if (dimensionOf(field) === null) {
@@ -134,7 +153,7 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
       setPicking({ rowId, field })
       return true
     },
-    [],
+    [spine],
   )
 
   const applyPick = useCallback(
@@ -184,6 +203,9 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
         onImported={onImported}
         onFilter={setFilter}
         onAddRow={() => setAdding(true)}
+        {...(spine !== null && spine.forms[0] !== undefined
+          ? { formName: spine.forms[0].name, onOpenForm: () => setFormOpen(true) }
+          : {})}
         annotation={
           <>
             <button
@@ -279,12 +301,27 @@ export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageP
 
         {detailOpen && (
           <RowDetail
+            workspaceId={workspaceId}
             blueprint={blueprint}
             row={selectedRow}
             onClose={() => setDetailOpen(false)}
           />
         )}
       </div>
+
+      {formOpen && spine !== null && spine.forms[0] !== undefined && (
+        <GeneratedForm
+          workspaceId={workspaceId}
+          blueprint={blueprint}
+          spine={spine}
+          form={spine.forms[0]}
+          onCreated={(rowId) => {
+            setFlashRowId(rowId)
+            setGeneration((g) => g + 1)
+          }}
+          onClose={() => setFormOpen(false)}
+        />
+      )}
 
       {adding && (
         <NewRow

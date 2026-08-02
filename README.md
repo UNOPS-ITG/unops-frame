@@ -99,8 +99,12 @@ found only here.
 | **The application** | sidebar, register, row detail, Blueprint fields, corporate catalogue; one typed router |
 | **Corporate data** | the scheduled sweep, the disclosure classifier, four SQL templates, the BigQuery connector, the picker, and per-page batched resolution |
 
-Not yet built: forms, automations, document generation, the AI layer, reporting, notifications,
-search.
+Not yet built: the forms/automation/workflow **engines**, document generation, the AI layer,
+reporting, notifications, search. Their **frontends exist as a fixture-fed preview** (the
+application spine: generated form with child sections, transition-driven states, approvals inbox,
+sentence-rendered recipes, activity drawer — `src/spine/`, contracts in `src/fixtures/spine/`),
+pending the vision-verification checkpoint (`specs/pilots/vision-walkthrough.md`); row writes made
+from those surfaces are real, everything else on them is labelled "engine preview".
 
 ### The surfaces
 

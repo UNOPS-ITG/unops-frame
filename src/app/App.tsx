@@ -16,6 +16,9 @@ import { useThemeStore } from '@/styles/theme'
 import { GridDemo } from '@/grid/GridDemo'
 import { CorporatePage } from '@/corporate/CorporatePage'
 import { RegisterPage } from '@/registers/RegisterPage'
+import { InboxPage } from '@/spine/InboxPage'
+import { RecipesPage } from '@/spine/RecipesPage'
+import { spineFor } from '@/fixtures/spine/store'
 import { AppShell } from './AppShell'
 import { FieldsPage } from './FieldsPage'
 import { TokenGallery } from './TokenGallery'
@@ -66,6 +69,16 @@ function Page({ route }: { route: Route }) {
       )
     case 'fields':
       return <FieldsPage workspaceId={route.workspaceId} blueprintId={route.blueprintId} />
+    case 'recipes':
+      return (
+        <RecipesPage
+          workspaceId={route.workspaceId}
+          blueprintId={route.blueprintId}
+          spine={spineFor(route.blueprintId)}
+        />
+      )
+    case 'inbox':
+      return <InboxPage workspaceId={route.workspaceId} />
     case 'corporate':
       return <CorporatePage workspaceId={route.workspaceId} />
     case 'workspace':
@@ -87,6 +100,10 @@ function titleOf(route: Route): string {
       return 'Register'
     case 'fields':
       return 'Fields'
+    case 'recipes':
+      return 'Automations'
+    case 'inbox':
+      return 'Inbox'
     case 'corporate':
       return 'Corporate data'
     default:
@@ -97,13 +114,22 @@ function titleOf(route: Route): string {
 function actionsFor(route: Route) {
   if (route.kind === 'register') {
     return (
-      <a className="btn btn--secondary btn--sm" href={href.fields(route.workspaceId, route.blueprintId)}>
-        <Icon.Fields />
-        Fields
-      </a>
+      <>
+        <a
+          className="btn btn--secondary btn--sm"
+          href={href.recipes(route.workspaceId, route.blueprintId)}
+        >
+          <Icon.Bolt />
+          Automations
+        </a>
+        <a className="btn btn--secondary btn--sm" href={href.fields(route.workspaceId, route.blueprintId)}>
+          <Icon.Fields />
+          Fields
+        </a>
+      </>
     )
   }
-  if (route.kind === 'fields') {
+  if (route.kind === 'fields' || route.kind === 'recipes') {
     return (
       <a
         className="btn btn--secondary btn--sm"

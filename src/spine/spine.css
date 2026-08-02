@@ -1,0 +1,940 @@
+/* The application spine's shared vocabulary.
+ *
+ * One idea rendered three ways: the loop is LEGIBLE. A recipe is an English
+ * sentence whose parameters are typed chips; a transition is a named doorway
+ * whose gate is visible and wears the governance colour; activity is a human
+ * diff with its actor and channel attached. Everything speaks through the
+ * token system — a state names a status ROLE, never a colour, so all three
+ * themes come for free. */
+
+/* --- the preview pill ---------------------------------------------------- */
+
+/* Honesty marker for fixture-fed surfaces, in the product's own transparency
+ * idiom (the withheld chip's quieter sibling). It disappears with the
+ * fixtures; nothing else may depend on it. */
+.spine-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+
+/* --- slot chips: the sentence's typed parameters ------------------------- */
+
+.slot {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05em 0.45em;
+  border-radius: var(--chip-radius);
+  font-size: 0.92em;
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  white-space: nowrap;
+}
+
+.slot--field {
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-text);
+}
+
+.slot--value {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.slot--principal {
+  background: var(--color-status-special-bg);
+  color: var(--color-status-special-text);
+}
+
+.slot--form {
+  background: var(--color-status-active-bg);
+  color: var(--color-status-active-text);
+}
+
+/* AU-16: an expression parameter is code and dresses as code — the one slot
+ * kind that must never read as prose, because it is the contract itself. */
+.slot--expression {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-family-mono);
+  font-size: 0.85em;
+  font-weight: var(--font-weight-normal);
+}
+
+/* --- state chips --------------------------------------------------------- */
+
+.state-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--chip-gap);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  font-size: var(--chip-font-size);
+  font-weight: var(--chip-font-weight);
+  white-space: nowrap;
+}
+
+.state-chip::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+.state-chip--danger { background: var(--color-status-danger-bg); color: var(--color-status-danger-text); }
+.state-chip--progress { background: var(--color-status-progress-bg); color: var(--color-status-progress-text); }
+.state-chip--active { background: var(--color-status-active-bg); color: var(--color-status-active-text); }
+.state-chip--draft { background: var(--color-status-draft-bg); color: var(--color-status-draft-text); }
+.state-chip--warning { background: var(--color-status-warning-bg); color: var(--color-status-warning-text); }
+.state-chip--closed { background: var(--color-status-closed-bg); color: var(--color-status-closed-text); }
+
+.state-chip--hero {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-1) var(--spacing-3);
+}
+
+/* --- the workflow panel (row detail) ------------------------------------- */
+
+.workflow {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-sunken);
+}
+
+.workflow__now {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-block-end: var(--spacing-2);
+}
+
+.workflow__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.workflow__doors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+/* A doorway: the whole row is the button, the destination is a chip, the
+ * gate is named. Hover slides the arrow — the one micro-interaction, because
+ * a doorway should feel like it goes somewhere. */
+.door {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.door:hover:not(:disabled) {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+
+.door:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.door:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.door__arrow {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.door:hover:not(:disabled) .door__arrow {
+  transform: translateX(2px);
+}
+
+.door__verb {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+}
+
+/* The gate wears governance, exactly like the withheld chip — the user has
+ * already learned that colour means "a rule is standing here". */
+.door__gate {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--color-governance-bg);
+  border: 1px solid var(--color-governance-border);
+  color: var(--color-governance-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.door__gate-glyph {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.door__why {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: var(--spacing-1) 0 0;
+}
+
+.workflow__terminal {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.workflow__notice {
+  margin-block-start: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.workflow__notice--error {
+  color: var(--color-brand-error);
+}
+
+/* --- the detail panel's tabs --------------------------------------------- */
+
+.detail-tabs {
+  display: flex;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-4) 0;
+}
+
+.detail-tabs__tab {
+  padding: var(--spacing-1) var(--spacing-3);
+  border: 0;
+  border-block-end: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.detail-tabs__tab:hover {
+  color: var(--color-text);
+}
+
+.detail-tabs__tab[aria-selected='true'] {
+  color: var(--color-text);
+  border-block-end-color: var(--color-brand-primary);
+}
+
+.detail-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- the activity feed --------------------------------------------------- */
+
+.feed {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-6);
+}
+
+.feed__entry {
+  position: relative;
+  padding-inline-start: var(--spacing-5);
+  padding-block: var(--spacing-2);
+}
+
+/* The rail: a hairline the dots sit on, so five entries read as one story. */
+.feed__entry::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0.32rem;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border-subtle);
+}
+
+.feed__entry:first-child::before { top: 0.9rem; }
+.feed__entry:last-child::before { bottom: auto; height: 0.9rem; }
+
+.feed__dot {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.65rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-surface);
+}
+
+.feed__dot--change { background: var(--color-brand-primary); }
+.feed__dot--governance { background: var(--color-governance-text); }
+.feed__dot--access { background: var(--color-status-warning-text); }
+
+.feed__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.feed__actor {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.feed__channel {
+  padding: 0 0.4em;
+  border-radius: var(--chip-radius);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* An automation's act is attributed in the automation's colour: "a machine
+ * did this, and here is which one" at a glance. */
+.feed__channel--automation {
+  background: var(--color-status-special-bg);
+  border-color: transparent;
+  color: var(--color-status-special-text);
+}
+
+.feed__summary {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0.1rem 0 0;
+}
+
+.feed__deltas {
+  margin: var(--spacing-1) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.feed__delta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-wrap: wrap;
+}
+
+.feed__delta-field {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.feed__delta-arrow {
+  color: var(--color-text-muted);
+}
+
+.feed__withheld {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 0 0.4em;
+  border-radius: var(--chip-radius);
+  background: var(--grid-cell-restricted-bg);
+  color: var(--grid-cell-restricted-text);
+}
+
+/* --- the generated form -------------------------------------------------- */
+
+.gform {
+  display: flex;
+  flex-direction: column;
+  width: min(38rem, 94vw);
+  max-height: min(46rem, 92vh);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.gform__header {
+  padding: var(--spacing-4) var(--spacing-5) var(--spacing-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.gform__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-block-end: var(--spacing-1);
+}
+
+.gform__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.gform__intro {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  max-width: 44ch;
+}
+
+.gform__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-2) var(--spacing-5) var(--spacing-4);
+}
+
+.gform__section {
+  padding-block: var(--spacing-3);
+}
+
+.gform__section + .gform__section {
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.gform__section-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-1);
+}
+
+.gform__section-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--spacing-2);
+}
+
+.gform__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--spacing-3);
+}
+
+.gform__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.gform__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.gform__required {
+  color: var(--color-brand-error);
+  font-size: var(--font-size-xs);
+}
+
+.gform__help {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.gform__error {
+  font-size: var(--font-size-xs);
+  color: var(--color-brand-error);
+}
+
+/* FM-3's child section: a small table that grows. The stagger on an added
+ * row is the form's one motion moment — a line item should visibly join. */
+.gform__children {
+  margin-block-start: var(--spacing-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.gform__children-head,
+.gform__child {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: var(--spacing-2);
+  align-items: center;
+  padding: var(--spacing-1) var(--spacing-2);
+}
+
+.gform__children-head {
+  background: var(--color-surface-sunken);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.gform__child {
+  border-block-start: 1px solid var(--color-border-subtle);
+  animation: child-join var(--transition-base) ease-out;
+}
+
+@keyframes child-join {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gform__child {
+    animation: none;
+  }
+}
+
+.gform__add-child {
+  width: 100%;
+  padding: var(--spacing-2);
+  border: 0;
+  border-block-start: 1px dashed var(--color-border);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-brand-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+}
+
+.gform__add-child:hover {
+  background: var(--color-hover);
+}
+
+.gform__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-5);
+  border-block-start: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-sunken);
+}
+
+/* FM-7 stated on the form itself: what submitting DOES. A form that says
+ * where the row lands is the difference between intake and a message. */
+.gform__landing {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.gform__message {
+  padding: var(--spacing-2) var(--spacing-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-brand-error);
+}
+
+/* --- pages shared (inbox, recipes) --------------------------------------- */
+
+.spine-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-10);
+}
+
+.spine-page__inner {
+  max-width: var(--layout-md);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.spine-page__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.spine-page__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  margin: 0;
+}
+
+.spine-page__lede {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  max-width: 62ch;
+}
+
+.spine-page__section {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: var(--spacing-4) 0 0;
+}
+
+/* --- recipe cards -------------------------------------------------------- */
+
+.recipe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.recipe__top {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.recipe__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.recipe__trigger {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding: 0 0.5em;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--chip-radius);
+  white-space: nowrap;
+}
+
+/* The sentence IS the automation. Set a size up from body so it reads as the
+ * card's content rather than its caption. */
+.recipe__sentence {
+  font-size: var(--font-size-base);
+  line-height: 1.9;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.recipe__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.recipe__meta-spacer {
+  flex: 1;
+}
+
+/* The enable switch: the estate's checkbox dressed as what it means. */
+.recipe__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.recipe__track {
+  width: 1.9rem;
+  height: 1.05rem;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  position: relative;
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.recipe__track::after {
+  content: '';
+  position: absolute;
+  top: 0.14rem;
+  inset-inline-start: 0.14rem;
+  width: 0.77rem;
+  height: 0.77rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--transition-fast);
+}
+
+.recipe__switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.recipe__switch input:checked + .recipe__track {
+  background: var(--color-brand-primary);
+}
+
+.recipe__switch input:checked + .recipe__track::after {
+  transform: translateX(0.84rem);
+}
+
+.recipe__switch input:focus-visible + .recipe__track {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+/* --- pending-task cards -------------------------------------------------- */
+
+.task {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-subtle);
+  border-inline-start: 3px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+/* A waiting approval carries the governance colour and breathes, once —
+ * the inbox's high-impact moment, and it stops the moment it is decided. */
+.task--approval.task--waiting {
+  border-inline-start-color: var(--color-governance-text);
+  animation: task-arrive 0.5s ease-out;
+}
+
+.task--update.task--waiting {
+  border-inline-start-color: var(--color-status-info-text);
+}
+
+@keyframes task-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task--approval.task--waiting {
+    animation: none;
+  }
+}
+
+.task--done {
+  opacity: 0.65;
+}
+
+.task__top {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.task__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.task__kind--approval {
+  background: var(--color-governance-bg);
+  border: 1px solid var(--color-governance-border);
+  color: var(--color-governance-text);
+}
+
+.task__kind--update {
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-text);
+}
+
+.task__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.task__when {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.task__detail {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.task__meta {
+  display: flex;
+  gap: var(--spacing-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.task__meta strong {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.task__asks {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.task__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-block-start: var(--spacing-1);
+}
+
+/* AU-15 rendered: the reason the buttons are dead, beside them, in the
+ * governance voice. A disabled control without its reason is a bug report. */
+.task__blocked {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-governance-text);
+}
+
+.task__decided {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+/* --- sidebar badge ------------------------------------------------------- */
+
+.sidebar__badge {
+  margin-inline-start: auto;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding-inline: 0.3rem;
+  border-radius: var(--radius-full);
+  background: var(--color-governance-bg);
+  border: 1px solid var(--color-governance-border);
+  color: var(--color-governance-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- extension provenance (BP-28) ---------------------------------------- */
+
+.detail__ext-note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ext-table {
+  margin-block-start: var(--spacing-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+}
+
+.ext-table__head,
+.ext-table__row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2);
+}
+
+.ext-table__head {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.ext-table__row {
+  border-block-start: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}

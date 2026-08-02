@@ -9,6 +9,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { listBlueprints, type BlueprintSummary } from '@/api/client'
+import { useSpineStore, waitingCount } from '@/fixtures/spine/store'
 import { useThemeStore, type ThemePreference } from '@/styles/theme'
 import { Icon } from './icons'
 import { href, type Route } from './routes'
@@ -195,6 +196,8 @@ function Sidebar({
           <Icon.Home className="sidebar__icon" />,
         )}
 
+        <InboxLink workspaceId={workspaceId} active={route.kind === 'inbox'} collapsed={collapsed} />
+
         <section className="sidebar__section">
           {!collapsed && (
             <h2 className="sidebar__heading">
@@ -274,6 +277,36 @@ function Sidebar({
 
       <UserArea collapsed={collapsed} />
     </nav>
+  )
+}
+
+/**
+ * The inbox entry, with what is waiting counted on it (AU-4a: approvals and
+ * update requests are one pending-task record, so this is ONE number).
+ * Separate from the `item` helper only because of the badge; the collapsed
+ * behaviour is identical.
+ */
+function InboxLink({
+  workspaceId,
+  active,
+  collapsed,
+}: {
+  workspaceId: string
+  active: boolean
+  collapsed: boolean
+}) {
+  const count = useSpineStore((s) => waitingCount(s.tasks))
+  const label = count > 0 ? `Inbox, ${count} waiting` : 'Inbox'
+  return (
+    <a
+      className={`sidebar__link${active ? ' sidebar__link--active' : ''}`}
+      href={href.inbox(workspaceId)}
+      {...(collapsed ? { title: label, 'aria-label': label } : {})}
+    >
+      <Icon.Inbox className="sidebar__icon" />
+      {!collapsed && <span className="sidebar__label">Inbox</span>}
+      {!collapsed && count > 0 && <span className="sidebar__badge">{count}</span>}
+    </a>
   )
 }
 
