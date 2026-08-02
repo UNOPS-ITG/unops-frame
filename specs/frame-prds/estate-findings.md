@@ -243,6 +243,42 @@ descriptions, no keys, no policy tags — where `INFORMATION_SCHEMA` and `Metada
 
 ---
 
+## unops-datahub (the warehouse catalogue)
+
+Not an application, but a system Frame now depends on, and the metadata below is consumed by
+`ai-bob`, Prism, `unops-external-dataservice` and Frame.
+
+**W-1 · `Column_Type = MEASURE` marks identifier columns · MEDIUM · verified**
+`Metadata_Api.Datahub_Data_Dictionary` declares a `Column_Type` of `DIMENSION` or `MEASURE` per
+column, and it is the only machine-readable statement of a column's role — so every consumer that
+wants "the numbers on this fact" reads it. On `Facts_Api.Asset_Transactions` it marks both `Period`
+(INT64, an accounting period identifier) and `Voucher_No` (INT64, a document number) as `MEASURE`,
+alongside genuine amounts like `Amount` and `Asset_Depreciation_Amount`.
+
+`MEASURE` is evidently being used to mean "numeric", not "additive". Any consumer that offers every
+`MEASURE` column as something to sum will produce a total of period numbers and a total of voucher
+numbers, and both look like money in a chart. `Period` is additionally a *grain* column — it appears
+as a dimension key on the same table's relationships — so it is simultaneously declared a measure and
+used as a key.
+
+Verified by reading the dictionary rows for that table directly. Frame is only lightly exposed
+because it never aggregates — it would display a period number where a figure was expected, which is
+visibly odd rather than silently wrong — but a BI tool consuming the same field will not be.
+
+Worth raising with the data team as either a definition fix (`MEASURE` should mean additive) or an
+additional column (`Additive_Flag`), since the ambiguity cannot be resolved downstream: no consumer
+can tell `Voucher_No` from `Amount` by type alone.
+
+**W-2 · Four of eight `Metadata_Api` views are undocumented in the estate · LOW · verified**
+Every consumer found in the estate filters `WHERE Dataset_Name = 'Dimensions_Api'`, so
+`Datahub_Table_Reference`'s 2,780 `Fact → Dimension` edges and 849 `Dimension → Dimension` edges are
+present, maintained, and unused. Two separate teams (`ai-bob`, Prism) built weaker relationship
+inference instead — one by stripping `_id` suffixes and matching names, the other by declaring
+foreign-key fields that are never populated. This is a discoverability problem rather than a defect,
+but the cost of it is two private, worse copies of a graph that already exists.
+
+---
+
 ## Estate-wide
 
 **X-1 · No BigQuery cost controls in any repository · HIGH · verified**

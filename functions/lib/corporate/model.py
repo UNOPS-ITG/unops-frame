@@ -87,6 +87,15 @@ class Measure(_Strict):
     """A numeric column on a fact, at the fact's declared grain.
 
     Never an aggregate. Frame reads the value that is already there.
+
+    **Declared, and not always additive.** Upstream `Column_Type = MEASURE`
+    means "numeric", not "may be summed": on `Facts_Api.Asset_Transactions` it
+    marks `Period` (an accounting period) and `Voucher_No` (a document number)
+    alongside real amounts. Frame is only lightly exposed because it never
+    aggregates — the worst case is a period number displayed where a figure was
+    expected, which is visibly odd rather than silently wrong. A tool that
+    summed every declared measure would produce a total of voucher numbers.
+    Recorded as W-1 in `specs/frame-prds/estate-findings.md`.
     """
 
     name: str
