@@ -96,10 +96,29 @@ found only here.
 | **Master-detail** | PM-3 composition, parent ceiling applied last |
 | **Import / export** | callers of the single write path; withheld counts travel with the file |
 | **The grid** | `FrameGrid` over Glide Data Grid, brand-tokened, withheld cells legible |
-| **Corporate data** | the scheduled sweep, the disclosure classifier, four SQL templates, the BigQuery connector |
+| **The application** | sidebar, register, row detail, Blueprint fields, corporate catalogue; one typed router |
+| **Corporate data** | the scheduled sweep, the disclosure classifier, four SQL templates, the BigQuery connector, the picker, and per-page batched resolution |
 
 Not yet built: forms, automations, document generation, the AI layer, reporting, notifications,
 search.
+
+### The surfaces
+
+| Route | |
+| --- | --- |
+| `#/w/:ws` | the workspace: what has been published |
+| `#/w/:ws/b/:bp` | a register — grid, toolbar, filter, import, export, row detail, add a row |
+| `#/w/:ws/b/:bp/v/:view` | the same register through a saved view |
+| `#/w/:ws/b/:bp/fields` | the compiled Blueprint: types, rules, sensitivity, index slots |
+| `#/w/:ws/corporate` | the swept catalogue, the disclosure of each relation and why, the BigQuery connection |
+| `#/harness`, `#/tokens` | the grid performance harness and the design-token gallery |
+
+Two rules the UI keeps that are easy to lose. **Nothing in the client decides access** — a restricted
+stub, a withheld count and a `writable` flag are all decisions the server made and the client
+renders; a client that ignores any of them is refused by the write path exactly as before. And
+**every class name is checked**: `tools/fitness/class-names.test.ts` fails the build on a class that
+is used and never defined, because CSS silently ignores a selector that never matches and the first
+report of `btn-secondary` was a screenshot of the running product.
 
 Corporate data is complete except for what needs GCP provisioning — see
 `specs/frame-prds/gcp-provisioning.md`. The probe runs three of its four checks; the fourth needs a

@@ -129,17 +129,30 @@ exactly the floor's grants can distinguish "everyone may read this" from "you ma
 project, and nothing else. Its value comes entirely from what it does *not* have, so any additional
 grant silently destroys it — this is worth stating in whatever provisions it.
 
-**Waiting on it.** Every relation is classified `entitled`. That is the correct and safe outcome —
-`classify` treats an unperformed check as a failure, because an unanswered audience question is not a
-negative answer — but it means:
-- no dimension is mirrored, so every lookup would be a live per-user warehouse query;
-- the `open` fast path exists and is completely untested;
+**Waiting on it.** All 555 swept dimensions are classified `entitled`. That is the correct and safe
+outcome — `classify` treats an unperformed check as a failure, because an unanswered audience
+question is not a negative answer — but it means:
+- no dimension is mirrored, so every lookup is a live per-user warehouse query;
+- the `open` fast path exists and is completely untested against real data;
 - the measured premise that ~96% of dimension columns are `Level 0` cannot be converted into actual
   performance.
 
+It is now visible rather than theoretical. With the read path resolving references, a
+`corporate_reference` column on a real dimension renders as PM-5 restricted stubs for anyone without
+a BigQuery consent, and as a live per-user query for anyone with one. Nothing renders from a
+snapshot, because no dimension is allowed to have one.
+
 **Already built and waiting.** `Probe.floor_principal_sees_all_rows` and the comparison logic in
 `classify`. The probe reports it as unperformed with a reason naming exactly this gap, and that
-reason is visible on every relation through `GET /workspaces/{ws}/corporate/dimensions`.
+reason is visible on every relation through `GET /workspaces/{ws}/corporate/dimensions` and on the
+corporate-data page in the browser.
+
+**How the snapshot path is exercised meanwhile.** `npm run seed` writes one `open` dimension,
+`Demo_Api.Agency`, beside whatever the sweep found, and points the demo register's `agency` field at
+it. It is labelled as a development fixture in the catalogue's own
+`classification_reasons`, so nobody can mistake it for a probe result. It exists because the
+snapshot, staleness and orphan treatments would otherwise never render anywhere — and an
+untested rendering path is one that is wrong the first time it matters.
 
 ---
 
