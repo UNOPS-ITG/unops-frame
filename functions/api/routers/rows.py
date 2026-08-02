@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, Query, Request, Response
 
 from api.core.exceptions import (
     AuthorizationError,
@@ -29,6 +29,9 @@ from api.schemas.rows import (
     DeltaOut,
     DeltaPageOut,
     DeltaPollIn,
+    ImportErrorOut,
+    ImportIn,
+    ImportResultOut,
     PagePlanOut,
     QueryIn,
     RowOut,
@@ -55,6 +58,12 @@ from lib.rows.source import FirestoreRowSource
 from lib.rows.writer import WriteConflict, WriteContext, WriteRejected, write_row
 
 router = APIRouter(tags=["rows"])
+
+MAX_EXPORT_ROWS = 20_000
+"""One export, one page. Above this the answer is a scheduled report (RP-11),
+not a longer request: a synchronous export that takes minutes is one a proxy
+terminates half-written, and a truncated CSV is indistinguishable from a
+complete one."""
 
 
 def _db(request: Request) -> Any:
@@ -162,6 +171,131 @@ def list_rows(
         raise RequestValidationError(f"Invalid cursor: {exc}") from exc
 
     return _page_out(page, compiled)
+
+
+@router.post("/workspaces/{workspace_id}/blueprints/{blueprint_id}/rows/import")
+def import_rows(
+    workspace_id: str,
+    blueprint_id: str,
+    user: CurrentUser,
+    db: Db,
+    request: Request,
+    body: ImportIn,
+) -> ImportResultOut:
+    """Bulk import. A CALLER of the write path, never a second one.
+
+    Every row gets the same validation, the same audit class and the same events
+    as a row typed into the grid. ``dryRun`` is the default shape of the client
+    flow rather than an option nobody uses: an import that reports its failures
+    only after writing half the file is one the user cannot safely retry.
+    """
+    from lib.permissions.evaluate import may_at_blueprint_level
+    from lib.permissions.model import Action
+    from lib.rows.importer import build_chunks, plan_import
+    from lib.rows.writer import commit_import
+
+    compiled = _compiled(db, workspace_id, blueprint_id)
+    principal = resolve_principal(db, workspace_id, user)
+    rule_set = compile_rules(compiled)
+
+    if not (
+        may_at_blueprint_level(rule_set, principal, Action.IMPORT)
+        or may_at_blueprint_level(rule_set, principal, Action.CREATE)
+    ):
+        raise AuthorizationError("You do not have permission to import into this register")
+
+    # Field-level writability still comes from an evaluated Decision — the gate
+    # above answers "may you import at all", not "which fields may you set".
+    decision = evaluate_row(rule_set, principal, {"values": {}}, compiled=compiled)
+
+    plan = plan_import(body.csv, compiled, decision)
+
+    ctx = WriteContext(
+        workspace_id=workspace_id,
+        blueprint_id=blueprint_id,
+        actor=principal.subject,
+        channel="import",
+        correlation_id=getattr(request.state, "correlation_id", None),
+    )
+
+    written = 0
+    # Nothing is written while ANY row is invalid. A partially applied import is
+    # the worst outcome: the user cannot tell which rows landed, and re-running
+    # duplicates the ones that did.
+    if not body.dry_run and plan.ok and plan.rows:
+        written = commit_import(build_chunks(plan, compiled, ctx), ctx, compiled.id, db=db)
+
+    return ImportResultOut(
+        dry_run=body.dry_run,
+        parsed_rows=plan.total_lines,
+        valid_rows=len(plan.rows),
+        written_rows=written,
+        unmapped_columns=plan.unmapped_columns,
+        errors=[
+            ImportErrorOut(line=e.line, field_id=e.field_id, message=e.message, code=e.code)
+            for e in plan.errors[:200]
+        ],
+        truncated_errors=max(0, len(plan.errors) - 200),
+    )
+
+
+@router.post("/workspaces/{workspace_id}/blueprints/{blueprint_id}/rows/export")
+def export_rows(
+    workspace_id: str,
+    blueprint_id: str,
+    user: CurrentUser,
+    db: Db,
+    body: Annotated[QueryIn, Body()] = QueryIn(),
+) -> Response:
+    """Export as CSV.
+
+    A distinct action from read, and an audited one: a user who may read a
+    register on screen has not thereby been granted the right to take a copy of
+    it home.
+    """
+    from lib.permissions.evaluate import may_at_blueprint_level
+    from lib.permissions.model import Action
+    from lib.rows.export import to_csv
+
+    compiled = _compiled(db, workspace_id, blueprint_id)
+    principal = resolve_principal(db, workspace_id, user)
+    rule_set = compile_rules(compiled)
+
+    # Rule-level, not evaluated against an empty row: a grant conditioned on a
+    # field value does not match a row with no values, so the obvious gate
+    # refuses a principal who can in fact see plenty of rows.
+    if not (
+        may_at_blueprint_level(rule_set, principal, Action.EXPORT)
+        or may_at_blueprint_level(rule_set, principal, Action.READ)
+    ):
+        raise AuthorizationError("You do not have permission to export this register")
+
+    try:
+        page = read_page(
+            compiled, rule_set, principal,
+            FirestoreRowSource(db, workspace_id, compiled),
+            PageRequest(
+                limit=MAX_EXPORT_ROWS,
+                filter=parse(body.filter) if body.filter else None,
+                sort=tuple(SortSpec(s.field_id, s.direction) for s in body.sort),
+            ),
+        )
+    except InvalidCursor as exc:
+        raise RequestValidationError(f"Invalid cursor: {exc}") from exc
+
+    csv_text = to_csv(page.rows, compiled, page.annotation)
+    return Response(
+        content=csv_text,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{compiled.id}.csv"',
+            # The annotation, in a header as well as in the file, so a
+            # programmatic consumer can read it without parsing the trailer.
+            "X-Frame-Rows-Visible": str(page.annotation.visible),
+            "X-Frame-Rows-Withheld": str(page.annotation.withheld),
+            "X-Frame-Count-Certainty": page.annotation.certainty,
+        },
+    )
 
 
 @router.post("/workspaces/{workspace_id}/blueprints/{blueprint_id}/rows/deltas")

@@ -418,6 +418,87 @@ def test_the_openapi_document_is_versioned_with_the_blueprint(client: TestClient
     assert doc["info"]["version"] == "3"
 
 
+# --- import and export ---------------------------------------------------
+
+
+def test_an_import_defaults_to_a_dry_run(client: TestClient, db: FakeFirestore) -> None:
+    """An import that reports its failures only after writing half the file is
+    one the user cannot safely retry."""
+    body = client.post(f"{BASE}/rows/import", json={
+        "csv": "Title,Status\nImported one,open\nImported two,closed\n",
+    }).json()
+
+    assert body["dryRun"] is True
+    assert body["validRows"] == 2
+    assert body["writtenRows"] == 0
+    assert db.paths_under(f"workspaces/{WS}/rows/{BP_ID}/items/") == []
+
+
+def test_a_committed_import_writes_rows_through_the_write_path(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    """Same validation, same audit class, same events as a row typed into the
+    grid — which is the whole of BP-4's claim."""
+    body = client.post(f"{BASE}/rows/import", json={
+        "csv": "Title,Status,Amount\nImported one,open,100\nImported two,closed,200\n",
+        "dryRun": False,
+    }).json()
+
+    assert body["writtenRows"] == 2
+    assert len(db.paths_under(f"workspaces/{WS}/rows/{BP_ID}/items/")) == 2
+    assert db.one(f"workspaces/{WS}/audit/")["channel"] == "import"
+    assert len(db.one("outbox/")["events"]) == 2
+
+
+def test_nothing_is_written_while_any_row_is_invalid(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    """A partially applied import is the worst outcome: the user cannot tell
+    which rows landed, and re-running duplicates the ones that did."""
+    body = client.post(f"{BASE}/rows/import", json={
+        "csv": "Title,Amount\nFine,100\n,200\n",
+        "dryRun": False,
+    }).json()
+
+    assert body["writtenRows"] == 0
+    assert any(e["code"] == "required" for e in body["errors"])
+    assert db.paths_under(f"workspaces/{WS}/rows/{BP_ID}/items/") == []
+
+
+def test_an_import_reports_columns_it_could_not_match(client: TestClient) -> None:
+    body = client.post(f"{BASE}/rows/import", json={
+        "csv": "Title,Nonsense\nx,y\n",
+    }).json()
+    assert body["unmappedColumns"] == ["Nonsense"]
+
+
+def test_an_export_returns_csv_with_the_annotation_in_a_header(
+    client: TestClient, db: FakeFirestore
+) -> None:
+    db.seed(f"workspaces/{WS}/blueprints/{BP_ID}", {
+        **BLUEPRINT,
+        "permissions": [
+            {"principals": ["*"], "actions": ["read", "export"], "effect": "allow",
+             "max_band": 0,
+             "row_condition": {"type": "binary", "op": "lt",
+                               "left": {"type": "field", "id": "amount"},
+                               "right": {"type": "literal", "value": 3}}},
+        ],
+    })
+    _seed_rows(db, 5)
+
+    response = client.post(f"{BASE}/rows/export", json={})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert response.headers["x-frame-rows-visible"] == "3"
+    assert response.headers["x-frame-rows-withheld"] == "2"
+    # And in the file itself, because a CSV has nowhere else to put it.
+    assert "2 further row(s)" in response.text
+    # The restricted band exports as withheld, never as blank.
+    assert "(withheld)" in response.text
+
+
 # --- the delta channel ---------------------------------------------------
 
 

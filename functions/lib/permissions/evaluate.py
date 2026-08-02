@@ -173,7 +173,16 @@ def evaluate_row(
         allowed |= rule.actions
         if Action.READ in rule.actions:
             readable |= scoped_fields
-        if Action.UPDATE in rule.actions:
+
+        # CREATE and IMPORT contribute to the writable set as well as UPDATE.
+        #
+        # A grant to create rows IS a grant to write the fields it is scoped to,
+        # and reading writability from UPDATE alone leaves a create-only grant
+        # with an empty writable set. The visible consequence was that field
+        # scoping had to be skipped entirely on create to make creation work at
+        # all — which meant a principal who could not write a restricted field on
+        # an existing row could populate it on a new one.
+        if rule.actions & {Action.UPDATE, Action.CREATE, Action.IMPORT}:
             writable |= scoped_fields
 
     # A deny at any scope beats every allow.
@@ -197,6 +206,27 @@ def evaluate_row(
         masked=False,
         deciding_rule=best_deny.name if best_deny and not allowed else None,
     )
+
+
+def may_at_blueprint_level(
+    rule_set: CompiledRuleSet, principal: Principal, action: Action
+) -> bool:
+    """Could this principal EVER perform this action on this register?
+
+    A cheap gate in front of per-row evaluation, never a replacement for it. It
+    exists because the obvious implementation — evaluate against an empty row —
+    is wrong in a way that is easy to ship: a grant conditioned on a field value
+    does not match a row with no values, so the gate refuses a principal who can
+    in fact see plenty of rows. That failure looks like a permission bug to the
+    user and like correct behaviour to whoever wrote the gate.
+
+    So: an explicit deny of the action closes the door, and otherwise any allow
+    carrying the verb opens it. Every row is still evaluated individually.
+    """
+    candidates = rule_set.for_principal(principal)
+    if any(r.effect == "deny" and action in r.actions and r.condition is None for r in candidates):
+        return False
+    return any(r.effect == "allow" and action in r.actions for r in candidates)
 
 
 def _subject_scope() -> Any:

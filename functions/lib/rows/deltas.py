@@ -167,20 +167,12 @@ def may_subscribe(
 ) -> bool:
     """Whether this principal may open a room at all.
 
-    A Blueprint-level read grant, evaluated against an empty row: someone with
-    no possible read on the register should not hold an open connection to it,
-    even one that would emit nothing. Per-row evaluation still happens on every
-    delta — this is a cheap gate in front of it, not a replacement for it.
+    Someone with no possible read on the register should not hold an open
+    connection to it, even one that would emit nothing. Per-row evaluation still
+    happens on every delta — this is a cheap gate in front of it.
     """
+    from lib.permissions.evaluate import may_at_blueprint_level
     from lib.permissions.model import Action
 
-    decision = evaluate_row(rule_set, principal, {"values": {}}, compiled=compiled)
-    if Action.READ in decision.allowed:
-        return True
-
-    # A rule whose row condition happens not to match an empty row must not
-    # close the door: the register may still hold rows this principal can see.
-    return any(
-        rule.effect == "allow" and Action.READ in rule.actions
-        for rule in rule_set.for_principal(principal)
-    )
+    del compiled  # the gate is rule-level; per-row evaluation uses the Blueprint
+    return may_at_blueprint_level(rule_set, principal, Action.READ)

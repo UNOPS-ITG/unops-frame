@@ -82,7 +82,12 @@ def validate_write(
             # round-tripped stub blank a field on the next save.
             outcome.rejected_fields.append(field_id)
             continue
-        if not is_create and field_id not in decision.writable_fields:
+        if field_id not in decision.writable_fields:
+            # Enforced on CREATE as well as update. Skipping it on create let a
+            # principal who may not write a restricted field on an existing row
+            # populate it on a new one — an escalation reachable by anyone who
+            # could add a row at all, and one that leaves no trace because the
+            # value is simply there from the start.
             outcome.rejected_fields.append(field_id)
             continue
         if cf.definition.read_only:

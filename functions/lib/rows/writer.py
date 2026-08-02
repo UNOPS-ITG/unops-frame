@@ -318,6 +318,46 @@ def write_row(
     return run_in_transaction(body, db=client)
 
 
+def commit_import(chunks: list[Any], ctx: WriteContext, blueprint_id: str, db: Any | None = None) -> int:
+    """Commit prepared import chunks. Lives here because this is the only module
+    allowed to touch row storage, and the fitness suite enforces that.
+
+    The importer plans; this writes. Splitting them that way is what lets the
+    whole of import validation be tested with no store at all, and it keeps the
+    "every channel is a caller" rule true rather than aspirational — an importer
+    that wrote rows itself would be the second write path by another name.
+
+    Each chunk is its own transaction. A file larger than one transaction cannot
+    be atomic against Firestore, so the honest design is chunks that each
+    succeed or fail whole, with the count returned — not a promise of atomicity
+    the store cannot keep.
+    """
+    from lib.firestore import run_in_transaction
+    from lib.paths import audit_entry, outbox_envelope
+    from lib.paths import row as row_path
+
+    client = db if db is not None else _default_db()
+    written = 0
+
+    for chunk in chunks:
+        def body(txn: Any, chunk: Any = chunk) -> int:
+            for row_id, document in chunk.documents:
+                txn.set(row_path(client, ctx.workspace_id, blueprint_id, row_id), document)
+            txn.set(
+                audit_entry(client, ctx.workspace_id, uuid.uuid4().hex),
+                chunk.audit.to_document(),
+            )
+            txn.set(
+                outbox_envelope(client, chunk.envelope.envelope_id),
+                chunk.envelope.to_document(),
+            )
+            return len(chunk.documents)
+
+        written += run_in_transaction(body, db=client)
+
+    return written
+
+
 def _default_db() -> Any:
     from lib.firestore import get_db
 

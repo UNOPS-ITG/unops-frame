@@ -119,6 +119,42 @@ class RowWriteOut(ResponseSchema):
     values: dict[str, Any]
 
 
+class ImportIn(RequestSchema):
+    csv: str
+    dry_run: bool = True
+    """Defaults to a dry run, and the client flow is built around it.
+
+    An import that reports its failures only after writing half the file is one
+    the user cannot safely retry — they cannot tell which rows landed, and
+    re-running duplicates the ones that did.
+    """
+
+
+class ImportErrorOut(ResponseSchema):
+    line: int
+    """1-based including the header, so it matches what the user sees in Excel."""
+
+    field_id: str | None = None
+    message: str
+    code: str
+
+
+class ImportResultOut(ResponseSchema):
+    dry_run: bool
+    parsed_rows: int
+    valid_rows: int
+    written_rows: int
+    unmapped_columns: list[str] = Field(default_factory=list)
+    """Columns in the file matching no field. Reported rather than ignored: a
+    mis-exported file whose columns silently vanish produces rows that look
+    complete and are not."""
+
+    errors: list[ImportErrorOut] = Field(default_factory=list)
+    truncated_errors: int = 0
+    """How many more there were. A response listing 40,000 errors helps nobody,
+    and one that silently shows the first 200 as if they were all is worse."""
+
+
 class DeltaOut(ResponseSchema):
     """Identifiers only. A consumer that needs a value refetches it under its
     own identity, which is what keeps the delta channel from being a second

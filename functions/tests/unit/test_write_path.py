@@ -20,7 +20,7 @@ from lib.blueprint.model import (
     ValidationRule,
     ViewDefaults,
 )
-from lib.permissions.model import Action, Decision
+from lib.permissions.model import Action, Decision, Principal
 from lib.rows.audit import WITHHELD, AuditClass, diff, trim_deltas
 from lib.rows.outbox import EventType, assert_no_row_bodies, build_envelope
 from lib.rows.writer import (
@@ -108,6 +108,52 @@ def test_writing_an_unwritable_field_is_refused_by_name_not_silently_reverted() 
             stored=_stored(), decision=LIMITED, now=NOW,
         )
     assert "owner_rationale" in str(exc.value)
+
+
+def test_a_creator_cannot_populate_a_field_they_may_not_write() -> None:
+    """The escalation that field scoping on update alone leaves open.
+
+    Someone who may not write a restricted field on an existing row could
+    otherwise set it on a NEW one — reachable by anyone able to add a row at
+    all, and leaving no trace, because the value is simply there from the start.
+    """
+    with pytest.raises(WriteRejected) as exc:
+        prepare_write(
+            COMPILED, CTX, row_id=None,
+            submitted_values={"title": "New", "owner_rationale": "fabricated"},
+            stored=None,
+            decision=Decision(
+                allowed=frozenset({Action.READ, Action.CREATE}),
+                readable_fields=ALL_FIELDS - {"owner_rationale"},
+                writable_fields=ALL_FIELDS - {"owner_rationale"},
+                restricted_fields=frozenset({"owner_rationale"}),
+            ),
+            now=NOW,
+        )
+    assert exc.value.code == "forbidden_fields"
+    assert "owner_rationale" in str(exc.value)
+
+
+def test_a_create_grant_makes_its_fields_writable() -> None:
+    """The other half: reading writability from UPDATE alone leaves a
+    create-only grant unable to write anything, which is why the check used to
+    be skipped on create in the first place."""
+    from lib.blueprint.model import Blueprint
+    from lib.permissions.evaluate import compile_rules, evaluate_row
+
+    doc = BP.model_dump()
+    doc["permissions"] = [
+        {"principals": ["*"], "actions": ["read", "create"], "effect": "allow"}
+    ]
+    compiled = compile_blueprint(Blueprint.model_validate(doc))
+    decision = evaluate_row(
+        compile_rules(compiled),
+        Principal(subject="u1", email="maya@unops.org"),
+        {"values": {}},
+        compiled=compiled,
+    )
+
+    assert decision.writable_fields == frozenset(compiled.fields)
 
 
 def test_an_unwritable_fields_stored_value_survives_a_partial_write() -> None:
