@@ -12,11 +12,11 @@ the grid is the front door, the application loop is the product.**
 
 ## Now
 
-- **The paper catalog** — express every intake/workflow/automation need of
-  the three pilot registers as AU-1 records on paper; ≥80% must fit the
-  closed vocabulary. *next* (PRD 04 open question 4; owner + pilot teams;
-  one day, zero code). Gate: no `functions/lib/automations/` code before
-  this answers. It is the discovery run's riskiest-assumption test.
+- **The automation engine** — AU-1..AU-7 execution over the shipped
+  outbox, with AU-15..AU-17 from day one; then AU-14's recipe gallery.
+  *next → unblocked* (the paper catalog **passed** 2026-08-02: 97% of
+  automation-shaped pilot needs expressible, zero scripting demands —
+  `specs/pilots/paper-catalog.md`; engine code cleared to start).
 - **The application spine, forms leg** — generated forms with one child
   section, landing through the existing writer/children path (FM-1, FM-2,
   FM-3, FM-7). *next* (specified P1; substrate shipped: `rows/writer.py`,
@@ -32,25 +32,25 @@ the grid is the front door, the application loop is the product.**
 
 ## Next (ordered)
 
-1. **Automation engine + starter recipes** — AU-1..AU-7 execution over the
-   shipped outbox, then AU-14's code-first gallery; AU-15 self-approval
-   default from day one. Enters Now when the paper catalog passes.
-   (PRD 04; `functions/lib/rows/outbox.py` shipped, engine absent.)
-2. **Workflow transitions executing** — AU-10 state machine over the
+1. **Workflow transitions executing** — AU-10 state machine over the
    existing WorkflowState/Transition metadata, conditions as grammar ASTs.
    (PRD 04; metadata shipped in `blueprint/model.py`, engine absent.)
-3. **Catalog + overlay implementation** — BP-15/BP-16 tiers and promotion
-   skeleton, BP-19 bind-not-copy with the overlay merge in
-   `blueprint/compile.py`, BP-27 convergence report. The steward estate
-   view rides on this. (PRD 01; spec complete, no tier/catalog code.)
-4. **GR-9 performance harness at 50k** — table stakes under the
+2. **Catalog + overlay + application templates** — BP-15/BP-16 tiers and
+   promotion skeleton, BP-19 bind-not-copy with the overlay merge in
+   `blueprint/compile.py`, BP-27 convergence report, then **AC-7
+   application templates (now P2 by owner decision)** — the fleet pilot
+   (asset + overlay) is the proof case, and PRD 01 open question 4
+   (overlay child collections) must be decided before its template is
+   authored. The steward estate view rides on this. (PRDs 01, 10.)
+3. **GR-9 performance harness at 50k** — table stakes under the
    reframing, kept because the competitive window ("every capability
    intact at 50k rows") is open now and Smartsheet's roadmap closes it.
    (`npm run perf` exists and asserts 50k responsiveness; the measured
    CI budget harness per GR-9/PRD 11 does not. Not re-run this session.)
-5. **Reference-path formulas + rollups** — BP-9a/BP-10 over the shipped
-   grammar; shared substrate with the automation conditions. (PRD 01.)
-6. **Fitness tripwires for the refusals** — no per-row-grant primitive,
+4. **Reference-path formulas + rollups** — BP-9a/BP-10 over the shipped
+   grammar; shared substrate with the automation conditions, and the
+   pilots lean on both (paper catalog C5, P7, A8). (PRD 01.)
+5. **Fitness tripwires for the refusals** — no per-row-grant primitive,
    no cell-formula site, no row-move endpoint; vacuously green today,
    tripwires when migration tooling lands. (Cluster E; `tools/fitness/`.)
 
@@ -65,9 +65,8 @@ the grid is the front door, the application loop is the product.**
 - **AI layer** (PRD 08): AI-1/AI-2 assists P1 behind the estate gateway;
   AI-12 NL-to-recipe P2; AI-13 usage visibility P3; MCP surface (AI-10)
   P3 — with transparency annotations, the differentiated part.
-- **App Composer** (PRD 10, P3) — with open question 4 live: whether an
-  AC-6 template slice pulls to P2 so the spine ships packaged. Owner
-  decides; vision §9 change if yes.
+- **App Composer** (PRD 10): full composer (AC-1..AC-5) stays P3;
+  AC-7 application templates moved to P2 (owner decision, see Next #2).
 - **Bound Sheets** (IN-7..9, P2/P3), **Smartsheet migration tooling**
   (P3, feeds the O3b/O6 migration-guide plays).
 
@@ -85,18 +84,26 @@ the grid is the front door, the application loop is the product.**
 
 Nothing in Now or Next is GCP-blocked; the spine is entirely local work.
 
-## Changes this update
+## Changes this update (2026-08-02, second edition — owner decisions landed)
 
-- **Created** this file (first edition) from the five sources.
-- **Absorbed** the discovery run: PRD amendments AU-14, AU-15, PM-14,
-  BP-27, AI-12, AI-13; PRD 04 anti-metering; PRD 10 marketplace refusal
-  + phasing question; corrections to the Frappe analysis record.
-- **Added to Now**: the paper catalog (riskiest assumption first), the
-  forms leg, the governance render layer — the application-spine
-  direction per the owner's reframing (`00-scope.md` Reframing section).
-- **Demoted**: grid polish from thesis to table stakes — GR-9 harness
-  stays at Next #4 on competitive-window grounds, ux-refresh Tier 2
-  items continue as hygiene, but the "grid is the product" framing no
-  longer drives ordering. Vision §10 amendment proposed in
-  `30-handoff.md`, not applied — owner's call.
+- **The paper catalog ran and passed** the same day it entered Now:
+  44 needs from the four named pilots (contract, asset, project, fleet —
+  supplied by the owner), 97% of automation-shaped needs expressible,
+  zero scripting demands. `specs/pilots/paper-catalog.md`. The
+  automation engine moved from gated to **Now**.
+- **Two vocabulary refinements adopted** from the catalog's findings:
+  AU-16 computed action parameters, AU-17 sweep-trigger semantics.
+- **The vision amendment applied** (owner decision): §10's first risk is
+  now "the application loop is the product; the grid is the front door";
+  §9 Phase 1 names the four pilots; §9 Phase 2 gains application
+  templates.
+- **AC-7 application templates specified at P2** (owner decision closing
+  PRD 10 OQ4); fleet-as-asset-plus-overlay is the proof case, which
+  turned PRD 01 OQ4 (overlay child collections) from hypothetical to
+  blocking-before-template-authoring.
+- **New open question**: PRD 04 OQ4 (carried-attribute refreshes vs
+  `row.updated` triggers), surfaced by pilot need C11.
+- **Prior edition** (same day): created the file; absorbed the discovery
+  run's amendments (AU-14/15, PM-14, BP-27, AI-12/13, anti-metering,
+  marketplace refusal); demoted grid polish to table stakes.
 - **No cuts** this update.

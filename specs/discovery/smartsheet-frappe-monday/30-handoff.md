@@ -56,6 +56,13 @@ semantics degenerate into marketplaces. §4's pillar ordering and §9's
 phasing survive unchanged; PRD 10 OQ4 carries the one phasing question.
 Say the word and I'll draft the full edit.
 
+**Update, same day: both parked decisions taken by the owner and
+applied.** The vision §10 risk is amended, §9 names the four pilot
+registers and gains AC-7 application templates at P2 (closing PRD 10
+OQ4), and the paper catalog ran against the owner-supplied pilots and
+**passed** (`specs/pilots/paper-catalog.md`) — adding AU-16/AU-17 to
+PRD 04 and clearing the automation engine to build.
+
 ## First build step
 
 1. **The paper catalog** (PRD 04 OQ4) — one day, zero code, kills or
