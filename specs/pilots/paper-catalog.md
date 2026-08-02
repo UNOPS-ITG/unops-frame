@@ -86,15 +86,15 @@ the vision's own canonical example, now in a real pilot.
 ## 4 · Fleet management
 
 Shape: **the asset register plus vehicle-specific additions** — the
-owner's own framing, and the AC-7/BP-19 proof case: fleet adopts the
-asset template and overlays vehicle fields (plate, odometer, service
-interval) and a maintenance-log child collection. That last item is
-exactly PRD 01 open question 4's scenario (overlays currently cannot add
-child collections → fleet would fork); evidence appended there.
+owner's own framing, and the AC-7/BP-28 proof case: fleet adopts the
+asset template with the base locked, extending it with vehicle fields
+(plate, odometer, service interval — a one-to-one extension rendered as
+columns) and a maintenance-log child collection (one-to-many). No fork,
+no upstream change.
 
 | # | Need | Expression | Verdict |
 |---|---|---|---|
-| F1 | Fleet register derived from asset register | AC-7 template + BP-19 overlay; governance, not automation | mech:BP-19/AC-7 |
+| F1 | Fleet register derived from asset register | AC-7 template + BP-28 extensions; governance, not automation | mech:BP-28/AC-7 |
 | F2 | Service due by date → maintenance row + notify | date-field approaching → create row + notify | AU-1 |
 | F3 | Service due by odometer → same | row updated (odometer) → cond `odometer >= next_service_km` → create row + notify | AU-1 |
 | F4 | On service completion, set next service point from current reading | state changed → set field `next_service_km = odometer + service_interval` — **requires a computed parameter**, now AU-16 | AU-1\* |
@@ -135,18 +135,19 @@ engine (`functions/lib/automations/`) is cleared to build.
    P3's shape) want elapsed-in-state; all assemblable via stamped dates,
    all cleaner as the P2 primitive. The lean is now evidence-backed.
 4. **The N10 guard, stated for the pilots.** "Aggregated fact data" for
-   contracts and projects means measures the warehouse already publishes
-   **at contract/project grain** — Frame reads the column, never
-   computes it (vision N10). Before the contract pilot starts: verify
-   against `Metadata_Api` that amount-paid / amount-committed exist at
-   contract grain and budget/expenditure at project grain. Any that do
-   not are mart requests to the data platform team, raised now, because
-   their lead time is the pilot's critical path.
+   contracts and projects means measures the warehouse publishes **at
+   contract/project grain** — Frame reads the column, never computes it
+   (vision N10). Amount-paid and amount-committed must exist at contract
+   grain, budget and expenditure at project grain; verify against
+   `Metadata_Api` before the contract pilot starts.
 5. **Carried attributes arrive early or the contract pilot stalls.**
    C2/C6 and the project figures lean on PRD 14's P2 half (carried
    attributes, relationship-constrained pickers). The cheap half (open
    dimension lookups) is Phase 1; the contract register is the argument
    for pulling carried attributes to the front of Phase 2.
-6. **Fleet is the overlay test.** F1 needs an overlay that adds a child
-   collection — PRD 01 OQ4's exact scenario, now with a named pilot
-   attached instead of a hypothetical.
+6. **Fleet is the extension test.** F1 originally exposed PRD 01's
+   overlay-child-collection question; the owner resolved it the other
+   way around (BP-28): the adopted base is locked and *all* additions —
+   one-to-one field extensions and one-to-many child tables — are
+   workspace-local structures rendered transparently. Fleet adopts asset
+   without forking, by design.

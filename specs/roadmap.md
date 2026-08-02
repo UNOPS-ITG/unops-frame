@@ -12,36 +12,42 @@ the grid is the front door, the application loop is the product.**
 
 ## Now
 
-- **The automation engine** — AU-1..AU-7 execution over the shipped
-  outbox, with AU-15..AU-17 from day one; then AU-14's recipe gallery.
-  *next → unblocked* (the paper catalog **passed** 2026-08-02: 97% of
-  automation-shaped pilot needs expressible, zero scripting demands —
-  `specs/pilots/paper-catalog.md`; engine code cleared to start).
-- **The application spine, forms leg** — generated forms with one child
-  section, landing through the existing writer/children path (FM-1, FM-2,
-  FM-3, FM-7). *next* (specified P1; substrate shipped: `rows/writer.py`,
-  `rows/children.py`, BP-3a in metaschema — backend suite green this
-  session). Lands inside the register grid experience, never as a
-  sibling module (the ideation's binding concession, `20-ideation.md`).
-- **Governance render layer** — PM-14's flag-gated decision trace (the
-  evaluator already computes and discards it), simulate-as-user on the
-  generic blueprints router, withheld-count polish. *in progress*
-  (`functions/lib/permissions/evaluate.py` built and green; trace surface
-  not started; grid already renders withheld cells legibly per README).
-  Cheap, and it is the wedge made visible.
+Staged per the owner's frontend-first directive (2026-08-02): frontend on
+fixture JSON → vision verification → then engines and APIs.
+
+- **The application spine, frontend on fixtures** — the whole loop
+  *visible* in the register experience, fed by hard-coded JSON shaped
+  like the intended API contracts: a generated form with a child section
+  (FM-1..FM-3), workflow states and transition actions in the grid and
+  row detail (AU-10), the sentence-style recipe builder and starter
+  gallery (AU-14, AU-16 expression parameters in the sentence UI), the
+  pending-task/approval inbox (AU-4/AU-4a), the activity drawer, and a
+  fleet-style extension rendering (BP-28 one-to-one fields as columns).
+  All inside the register experience, never a sibling module. *next*
+  (fixtures are commitworthy — they are the draft API contract).
+- **Vision verification checkpoint** — the owner walks the fixture-fed
+  product and confirms it feels like the vision. **Gate: no spine
+  engine/backend code before this passes.** *blocked on the frontend
+  above, by design.*
+- **Governance render layer** — GR-6/PM-5 polish and PM-14's trace
+  surface; the server side is real (`functions/lib/permissions/` green
+  this session), so this rides with the fixture build and demos at the
+  same checkpoint. *in progress.*
 
 ## Next (ordered)
 
-1. **Workflow transitions executing** — AU-10 state machine over the
-   existing WorkflowState/Transition metadata, conditions as grammar ASTs.
-   (PRD 04; metadata shipped in `blueprint/model.py`, engine absent.)
-2. **Catalog + overlay + application templates** — BP-15/BP-16 tiers and
-   promotion skeleton, BP-19 bind-not-copy with the overlay merge in
-   `blueprint/compile.py`, BP-27 convergence report, then **AC-7
-   application templates (now P2 by owner decision)** — the fleet pilot
-   (asset + overlay) is the proof case, and PRD 01 open question 4
-   (overlay child collections) must be decided before its template is
-   authored. The steward estate view rides on this. (PRDs 01, 10.)
+1. **The spine engines, behind the checkpoint** — the automation engine
+   (AU-1..AU-7 + AU-14..AU-17 over the shipped outbox; the paper catalog
+   passed, so the vocabulary is proven), the forms backend (FM-1..FM-3,
+   FM-7 through the existing writer/children path), and AU-10 transition
+   execution — replacing the Now-stage fixtures with the API shapes they
+   drafted. Enters Now the day the vision verification passes.
+2. **Catalog + extensions + application templates** — BP-15/BP-16 tiers
+   and promotion skeleton, BP-19 bind-not-copy (tighten-only overrides),
+   **BP-28 locked-base workspace extensions** (owner decision), BP-27
+   convergence report, then **AC-7 application templates (P2)** — the
+   fleet pilot (asset + extensions) is the proof case. The steward
+   estate view rides on this. (PRDs 01, 10.)
 3. **GR-9 performance harness at 50k** — table stakes under the
    reframing, kept because the competitive window ("every capability
    intact at 50k rows") is open now and Smartsheet's roadmap closes it.
@@ -84,7 +90,22 @@ the grid is the front door, the application loop is the product.**
 
 Nothing in Now or Next is GCP-blocked; the spine is entirely local work.
 
-## Changes this update (2026-08-02, second edition — owner decisions landed)
+## Changes this update (2026-08-02, third edition — method and model decisions)
+
+- **Frontend-first staging adopted** (owner directive): Now is rebuilt
+  around it — spine frontend on fixture JSON, then a **vision
+  verification checkpoint** gating all spine engine/backend work.
+  Written into the product-discovery and session-planning skills.
+- **BP-28 locked-base workspace extensions** (owner decision): adopted
+  org Blueprints are never modified; all additions are one-to-one or
+  one-to-many extension tables rendered transparently. Supersedes
+  BP-19's added-fields overlay kind; resolves PRD 01 former OQ4; fleet
+  adopts asset without forking.
+- **Warehouse data requirements now stated plainly** (owner feedback):
+  the paper catalog's grain checks are assertions, not inter-team risk
+  items.
+
+## Prior update (2026-08-02, second edition — owner decisions landed)
 
 - **The paper catalog ran and passed** the same day it entered Now:
   44 needs from the four named pilots (contract, asset, project, fleet —

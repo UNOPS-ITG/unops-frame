@@ -30,6 +30,16 @@ know you'll cut, and honest carryover.**
 4. **Scope comes from the artifacts**, not from memory: `specs/roadmap.md`
    (Now column), `specs/ux-refresh.md` open items, the PRD phase tags, and
    `gcp-provisioning.md` for what *cannot* be scoped locally.
+5. **New surfaces are staged frontend-first** (owner directive,
+   2026-08-02): frontend built against hard-coded JSON fixtures shaped
+   like the intended API contract → an explicit **vision verification**
+   checkpoint where the owner confirms it feels right → only then the
+   engine/backend, swapping fixtures for API shapes. Plan the checkpoint
+   as a real session boundary: a P0's done-when may legitimately be
+   "owner has seen it and confirmed the feel", and backend items for that
+   surface do not enter a plan before the checkpoint has passed. Fixtures
+   are commitworthy artifacts (they *are* the draft API contract), not
+   throwaway scaffolding.
 
 ## Workflow
 

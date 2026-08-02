@@ -137,6 +137,18 @@ discovery inputs map in directly:
 Then write `30-handoff.md`: the PRD (or amended ids), what changed in
 `00-prd-index.md`, the first build step, and anything parked.
 
+**The first build step is frontend-first** (owner directive, 2026-08-02):
+(a) build the frontend of the new surface first; (b) feed it hard-coded
+JSON fixtures *shaped like the intended API contract*, so replacement is
+mechanical rather than a rework; (c) stop for **vision verification** —
+the owner confirms the product *feels* like what they have in mind before
+any engine or backend work starts; (d) only then build functionality and
+swap fixtures for API shapes as they evolve. A discovery run that hands
+off straight into backend build has skipped the cheapest moment to catch
+a vision misalignment — which is exactly what a pipeline grounded in
+competitor evidence is most at risk of (building what the market has
+instead of what the owner means).
+
 ## Phase 5 — Close the loop (small, do not skip)
 
 - Load **`roadmap-update`** and slot the new work into
