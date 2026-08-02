@@ -13,23 +13,33 @@
   overflow: hidden;
 }
 
+/* The ink band: dialogs wear the same frame as the app, so a modal reads as
+   part of the product rather than a system prompt. */
 .new-row__header {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-3) var(--spacing-4);
-  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-shell-bg);
+  color: var(--color-shell-text);
 }
 
 .new-row__title {
   font-family: var(--font-family-display);
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
   margin: 0;
 }
 
 .new-row__close {
   margin-inline-start: auto;
+  color: var(--color-shell-text-secondary);
+}
+
+.new-row__close:hover:not(:disabled) {
+  background: var(--color-shell-hover);
+  color: var(--color-shell-text);
 }
 
 .new-row__fields {
@@ -54,10 +64,15 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* Amber chip, not muted prose: "required" is the one word in the form the
+   user cannot afford to skim past. */
 .new-row__required {
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--chipcat-2-bg);
+  color: var(--chipcat-2-text);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-normal);
-  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
 }
 
 .new-row__help,

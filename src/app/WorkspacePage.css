@@ -20,11 +20,33 @@
   gap: var(--spacing-5);
 }
 
+.workspace__hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.workspace__headline {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  margin: 0;
+}
+
 .workspace__lead {
   max-width: var(--layout-md);
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+}
+
+.workspace__footnote {
+  max-width: var(--layout-md);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
 }
 
@@ -91,6 +113,43 @@
 .register-card__meta {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.register-card__tier {
+  margin-inline-start: var(--spacing-2);
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--color-chip-bg);
+  border: 1px solid var(--color-chip-border);
+  color: var(--color-chip-text);
+  font-weight: var(--font-weight-medium);
+}
+
+/* The new-register affordance: dashed, quiet, honest. */
+.register-card--new {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+}
+
+.register-card--new:hover {
+  border-color: var(--color-brand-primary);
+  box-shadow: none;
+  background: var(--color-hover);
+}
+
+.register-card__icon--new {
+  background: transparent;
+  border: 1px dashed var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.register-card--new:hover .register-card__icon--new {
+  color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
 }
 
 .register-card__chevron {

@@ -211,7 +211,10 @@ export function CorporatePicker({
           {!busy && !truncated && rows !== null && rows.length > 0 && (
             <span>{rows.length} matches</span>
           )}
-          <span style={{ marginInlineStart: 'auto' }}>Resolved in your own context</span>
+          <span className="picker__context">
+            <Icon.Warehouse />
+            Resolved in your own context
+          </span>
         </div>
       </div>
     </div>

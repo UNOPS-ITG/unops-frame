@@ -182,8 +182,9 @@ async function seedCorporateDemo() {
     id: 'Demo_Api.Agency',
     dataset: 'Demo_Api',
     table: 'Agency',
-    label: 'Agency (development fixture)',
-    description: 'Seeded locally so the corporate cell treatments are visible.',
+    label: 'Agency',
+    description:
+      'A demonstration dimension Frame seeds for local development, so the corporate cell treatments render before a real open dimension exists.',
     business_domain: 'Demo',
     business_key: 'Agency_Code',
     effective_date_column: null,

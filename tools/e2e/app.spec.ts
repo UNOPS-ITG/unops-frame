@@ -100,7 +100,9 @@ test.describe('the corporate catalogue', () => {
 
     await expect(page.getByText(/BigQuery (not )?connected/)).toBeVisible()
 
-    const count = page.getByText(/dimensions$/)
+    // The section count specifically — the domain group headers also end in
+    // "dimensions" now, so a bare text match resolves to ten elements.
+    const count = page.locator('.corporate__count').first()
     await expect(count).toHaveText(/^(\d+) of \1 dimensions$/, { timeout: 20_000 })
 
     await page.getByLabel('Search the catalogue').fill('agency')
@@ -117,11 +119,26 @@ test.describe('the corporate catalogue', () => {
     // "Why can I not pick from this?" is otherwise unanswerable without
     // re-running a probe with credentials the asker does not have.
     await as(page, 'dev@unops.org', '/#/w/ws-demo/corporate')
-    await expect(page.getByText(/dimensions$/)).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('.corporate__count').first()).toBeVisible({ timeout: 20_000 })
 
+    // Searching opens the matched domain sections; cards live inside them now.
+    // Wait for the NARROWED count before clicking: until the search fetch
+    // lands, the open sections still show the previous full list, and a click
+    // on a card from that render targets a component the refetch is about to
+    // unmount — the detail opens and then vanishes under the test.
+    await page.getByLabel('Search the catalogue').fill('absence balance')
+    await expect(page.locator('.corporate__count').first()).toHaveText(/^1 of /, {
+      timeout: 15_000,
+    })
     const card = page.locator('.relation__trigger').first()
     await card.click()
-    await expect(page.locator('.relation__detail').first()).toBeVisible()
+
+    const detail = page.locator('.relation__detail').first()
+    await expect(detail).toBeVisible()
+    // The greeting is a human sentence; the probe transcript is one click away.
+    await expect(detail).toContainText(/resolve live|snapshot/)
+    await detail.getByText('Why this classification?').click()
+    await expect(detail).toContainText(/floor principal|probe|policy/)
   })
 })
 

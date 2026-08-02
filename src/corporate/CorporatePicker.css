@@ -31,13 +31,24 @@
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-3) var(--spacing-4);
-  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-shell-bg);
+  color: var(--color-shell-text);
+}
+
+.picker__header .btn--ghost {
+  color: var(--color-shell-text-secondary);
+}
+
+.picker__header .btn--ghost:hover:not(:disabled) {
+  background: var(--color-shell-hover);
+  color: var(--color-shell-text);
 }
 
 .picker__title {
   font-family: var(--font-family-display);
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
   margin: 0;
   min-width: 0;
 }
@@ -115,6 +126,20 @@
   color: var(--color-text-muted);
 }
 
+/* "Resolved in your own context" is a FEATURE — the one no vendor can match —
+   not fine print. It wears the corporate-data teal. */
+.picker__context {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-inline-start: auto;
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--color-corporate-bg);
+  color: var(--color-corporate-text);
+  font-weight: var(--font-weight-medium);
+}
+
 .picker__message {
   padding: var(--spacing-5) var(--spacing-4);
   text-align: center;
@@ -125,4 +150,9 @@
 
 .picker__message--error {
   color: var(--color-brand-error);
+}
+
+.picker__context svg {
+  width: 0.75rem;
+  height: 0.75rem;
 }

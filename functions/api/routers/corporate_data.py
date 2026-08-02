@@ -126,12 +126,14 @@ class FactOut(ResponseSchema):
 
 
 DEFAULT_CATALOGUE_PAGE = 60
-MAX_CATALOGUE_PAGE = 200
+MAX_CATALOGUE_PAGE = 1000
 """How much of the catalogue one request returns.
 
-Sixty because a browse page is scanned, not read: past roughly a screenful and a
-half, nobody is reading, they are searching — and the search is what should be
-made good rather than the list made longer.
+The default stays small — a browse page is scanned, not read. The ceiling
+admits the whole slim catalogue in one request (measured: 555 dimensions
+without their column lists is ~45 KB), because the catalogue page groups by
+business domain, and grouping needs the full set — a domain section computed
+over a truncated page would show counts that are quietly wrong.
 """
 
 
@@ -492,8 +494,12 @@ def list_dimensions(
     ]
     matched.sort(key=lambda d: d.label.lower())
 
+    # Slim: no attributes AND no classification reasons. The reasons are probe
+    # transcripts, and they are heavy — with them, the full list is 417 KB;
+    # without, 45 KB. The detail endpoint carries them for the card that is
+    # actually opened.
     return DimensionListOut(
-        items=[_dimension_out(d, attributes=False) for d in matched[:limit]],
+        items=[_dimension_out(d, attributes=False, reasons=False) for d in matched[:limit]],
         total=len(dimensions),
         matched=len(matched),
     )
@@ -514,7 +520,7 @@ def list_facts(
     matched.sort(key=lambda f: f.label.lower())
 
     return FactListOut(
-        items=[_fact_out(f, measures=False) for f in matched[:limit]],
+        items=[_fact_out(f, measures=False, reasons=False) for f in matched[:limit]],
         total=len(facts),
         matched=len(matched),
     )
@@ -751,7 +757,9 @@ def _load_catalogue(db: Any, workspace_id: str) -> Catalogue:
     return load_catalogue(db, workspace_id)
 
 
-def _dimension_out(dimension: Dimension, *, attributes: bool = True) -> DimensionOut:
+def _dimension_out(
+    dimension: Dimension, *, attributes: bool = True, reasons: bool = True
+) -> DimensionOut:
     """Rendered from the stored classification.
 
     Not re-classified here. The sweep ran the probe with credentials this
@@ -768,7 +776,7 @@ def _dimension_out(dimension: Dimension, *, attributes: bool = True) -> Dimensio
         business_key=dimension.business_key,
         disclosure=dimension.disclosure.value,
         bindable=dimension.bindable,
-        reasons=dimension.classification_reasons,
+        reasons=dimension.classification_reasons if reasons else [],
         attributes=[
             AttributeOut(
                 name=a.name,
@@ -785,7 +793,7 @@ def _dimension_out(dimension: Dimension, *, attributes: bool = True) -> Dimensio
     )
 
 
-def _fact_out(fact: Fact, *, measures: bool = True) -> FactOut:
+def _fact_out(fact: Fact, *, measures: bool = True, reasons: bool = True) -> FactOut:
     restricted = set(fact.restricted_columns)
     return FactOut(
         id=fact.id,
@@ -796,7 +804,7 @@ def _fact_out(fact: Fact, *, measures: bool = True) -> FactOut:
         grain=fact.grain,
         disclosure=fact.disclosure.value,
         bindable=fact.bindable,
-        reasons=fact.classification_reasons,
+        reasons=fact.classification_reasons if reasons else [],
         measures=[
             MeasureOut(
                 name=m.name,

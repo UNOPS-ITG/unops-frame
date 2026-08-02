@@ -64,9 +64,12 @@ export function CorporatePage({ workspaceId }: CorporatePageProps) {
       // Everything in the catalogue, not only what is bindable. A list that
       // silently omits the relation someone is looking for sends them to ask a
       // human why it is missing; showing it with its reason answers that here.
+      // The full slim catalogue (no column lists — ~45 KB measured), because
+      // the page groups by business domain and a section computed over a
+      // truncated page shows counts that are quietly wrong.
       Promise.all([
-        listDimensions(workspaceId, { bindableOnly: false, q: term }, controller.signal),
-        listFacts(workspaceId, { bindableOnly: false, q: term }, controller.signal),
+        listDimensions(workspaceId, { bindableOnly: false, q: term, limit: 1000 }, controller.signal),
+        listFacts(workspaceId, { bindableOnly: false, q: term, limit: 1000 }, controller.signal),
       ])
         .then(([d, f]) => {
           if (controller.signal.aborted) return
@@ -133,12 +136,12 @@ export function CorporatePage({ workspaceId }: CorporatePageProps) {
               title="Master data"
               page={dimensions}
               noun="dimension"
+              searching={term.trim() !== ''}
               lead="A Blueprint field can look up any of these. Frame stores the key and,
                 where the label is disclosable to everyone, a snapshot of it — which is
                 what lets the grid filter, sort, group, export and search without touching
                 the warehouse."
-            >
-              {dimensions.items.map((d) => (
+              renderItem={(d) => (
                 <RelationCard
                   key={d.id}
                   workspaceId={workspaceId}
@@ -150,25 +153,22 @@ export function CorporatePage({ workspaceId }: CorporatePageProps) {
                       : 'no business key — cannot be bound'
                   }
                 />
-              ))}
-            </Section>
+              )}
+            />
 
             <Section
               title="Corporate figures"
               page={facts}
               noun="fact"
+              searching={term.trim() !== ''}
               lead={
                 <>
                   Read at the grain the data team declared, never computed.{' '}
-                  <strong>Frame never aggregates</strong>: it composes no GROUP BY, no
-                  JOIN and no aggregation on any path, so a number here is the number the
-                  warehouse holds. If a figure does not exist at a grain, that is a mart
-                  request to the data platform team — they own the definition and Frame
-                  does not.
+                  <strong>Frame never aggregates</strong>: a number here is the number
+                  the warehouse holds.
                 </>
               }
-            >
-              {facts.items.map((f) => (
+              renderItem={(f) => (
                 <RelationCard
                   key={f.id}
                   workspaceId={workspaceId}
@@ -180,8 +180,8 @@ export function CorporatePage({ workspaceId }: CorporatePageProps) {
                       : 'no declared grain — cannot be bound'
                   }
                 />
-              ))}
-            </Section>
+              )}
+            />
           </>
         )}
       </div>
@@ -189,20 +189,38 @@ export function CorporatePage({ workspaceId }: CorporatePageProps) {
   )
 }
 
-function Section({
+/**
+ * A catalogue section, grouped by business domain.
+ *
+ * 556 identical cards in one wall was the review's sharpest structural
+ * finding. The data team already assigns every relation to a business domain,
+ * so the catalogue speaks that language: eight scannable headers instead of
+ * five hundred cards. Domains start collapsed; a search opens every matched
+ * domain, because a result hidden behind a closed header is a search that
+ * looks like it found nothing.
+ */
+function Section<T extends RelationLike>({
   title,
   page,
   noun,
   lead,
-  children,
+  searching,
+  renderItem,
 }: {
   title: string
-  page: CataloguePage<unknown>
+  page: CataloguePage<T>
   noun: string
   lead: React.ReactNode
-  children: React.ReactNode
+  searching: boolean
+  renderItem: (item: T) => React.ReactNode
 }) {
-  const hidden = page.matched - page.items.length
+  const domains = new Map<string, T[]>()
+  for (const item of page.items) {
+    const domain = item.businessDomain ?? 'Unassigned'
+    const bucket = domains.get(domain)
+    if (bucket) bucket.push(item)
+    else domains.set(domain, [item])
+  }
 
   return (
     <section>
@@ -219,23 +237,38 @@ function Section({
           No {noun} matches.
         </p>
       ) : (
-        <>
-          <div className="relations" style={{ marginBlockStart: 'var(--spacing-3)' }}>
-            {children}
-          </div>
-          {hidden > 0 && (
-            // Said out loud. A truncated list that does not admit it reads as
-            // the whole answer, and someone concludes the thing they wanted is
-            // not in the warehouse.
-            <p className="corporate__more">
-              {hidden.toLocaleString()} more {noun}
-              {hidden === 1 ? '' : 's'} match — narrow the search to see them.
-            </p>
-          )}
-        </>
+        <div className="corporate__domains">
+          {[...domains.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([domain, items]) => (
+              // Keyed on the search state as well as the name: `open` on
+              // <details> is only an INITIAL value, so without the key a
+              // search could never re-open a section the user had collapsed.
+              <details key={`${domain}-${searching}`} className="domain" open={searching}>
+                <summary className="domain__summary">
+                  <Icon.Chevron className="domain__chevron" />
+                  <span className="domain__name">{domain}</span>
+                  <span className="domain__count">
+                    {items.length.toLocaleString()} {items.length === 1 ? noun : `${noun}s`}
+                  </span>
+                </summary>
+                <div className="relations">{items.map(renderItem)}</div>
+              </details>
+            ))}
+        </div>
       )}
     </section>
   )
+}
+
+/**
+ * Upstream catalogue text arrives with U+FFFD replacement characters where the
+ * warehouse's own descriptions were mis-encoded ("OPS ��� FTA"). The original
+ * bytes are gone — the honest render is a dash, not a guess, and definitely
+ * not the replacement glyph, which reads as a Frame rendering bug.
+ */
+function clean(text: string): string {
+  return text.replace(/�+/g, '–')
 }
 
 interface RelationLike {
@@ -261,25 +294,33 @@ function RelationCard({
   detail: string
 }) {
   const [open, setOpen] = useState(false)
-  const [columns, setColumns] = useState<string[] | null>(null)
+  const [loaded, setLoaded] = useState<{ columns: string[]; reasons: string[] } | null>(null)
 
-  // Fetched on expand rather than with the list. The columns are the bulk of
-  // the payload and almost nobody opens a card, so listing them eagerly is
-  // paying the whole cost for the rare case.
+  // Fetched on expand rather than with the list. Columns and the classifier's
+  // reasons are the bulk of the payload — the reasons are probe transcripts,
+  // and carrying them on every list row made the browse payload 417 KB — and
+  // almost nobody opens a card, so listing them eagerly pays the whole cost
+  // for the rare case.
   const expand = () => {
     setOpen((o) => !o)
-    if (columns !== null) return
+    if (loaded !== null) return
 
     const load =
       kind === 'dimension'
-        ? getDimension(workspaceId, relation.id).then((d) =>
-            d.attributes.map((a) => `${a.label}${a.restricted ? ' (restricted)' : ''}`),
-          )
-        : getFact(workspaceId, relation.id).then((f) =>
-            f.measures.map((m) => `${m.label}${m.restricted ? ' (restricted)' : ''}`),
-          )
+        ? getDimension(workspaceId, relation.id).then((d) => ({
+            columns: d.attributes.map(
+              (a) => `${clean(a.label)}${a.restricted ? ' (restricted)' : ''}`,
+            ),
+            reasons: d.reasons,
+          }))
+        : getFact(workspaceId, relation.id).then((f) => ({
+            columns: f.measures.map(
+              (m) => `${clean(m.label)}${m.restricted ? ' (restricted)' : ''}`,
+            ),
+            reasons: f.reasons,
+          }))
 
-    load.then(setColumns).catch(() => setColumns([]))
+    load.then(setLoaded).catch(() => setLoaded({ columns: [], reasons: [] }))
   }
 
   return (
@@ -295,7 +336,7 @@ function RelationCard({
             "Absence Code Table" and described "Absence Code Table". Printing
             both makes every card look like a rendering bug. */}
         {relation.description && relation.description !== relation.label && (
-          <span className="relation__description">{relation.description}</span>
+          <span className="relation__description">{clean(relation.description)}</span>
         )}
 
         <span className="relation__meta">
@@ -307,19 +348,38 @@ function RelationCard({
 
       {open && (
         <div className="relation__detail">
-          {/* Why it landed where it did. Recorded by the classifier rather than
-              reconstructed here — re-deriving it in the client would be a second
-              implementation of the one thing that must have only one. */}
-          {relation.reasons.map((reason) => (
-            <span key={reason}>· {reason}</span>
-          ))}
-          {!relation.bindable && <span>· Not currently bindable.</span>}
-          {relation.dataSteward && <span>· Steward: {relation.dataSteward}</span>}
-          {columns === null ? (
-            <span>· Loading columns…</span>
-          ) : columns.length > 0 ? (
-            <span>· {columns.join(', ')}</span>
+          {/* One human sentence, not the probe transcript. The raw classifier
+              output ("probe error: could not read row access policies…") is
+              operator telemetry, and dumping it on a Blueprint author was the
+              review's sharpest craft finding. It stays one click away — the
+              classifier recorded it precisely so "why?" is answerable — but it
+              is an answer to a question, not the greeting. */}
+          <p className="relation__verdict">
+            {relation.disclosure === 'open'
+              ? 'Anyone signed in may see these values, so Frame serves them from its own snapshot at grid speed.'
+              : 'Access varies by person — or could not be confirmed for everyone — so values resolve live in your own BigQuery context and are never cached.'}
+            {!relation.bindable && ' Not currently bindable.'}
+          </p>
+
+          {relation.dataSteward && (
+            <span className="relation__fact">Steward: {relation.dataSteward}</span>
+          )}
+          {loaded === null ? (
+            <span className="relation__fact">Loading…</span>
+          ) : loaded.columns.length > 0 ? (
+            <span className="relation__fact">{loaded.columns.join(', ')}</span>
           ) : null}
+
+          {loaded !== null && loaded.reasons.length > 0 && (
+            <details className="relation__why">
+              <summary>Why this classification?</summary>
+              {loaded.reasons.map((reason) => (
+                <span key={reason} className="relation__fact">
+                  · {clean(reason)}
+                </span>
+              ))}
+            </details>
+          )}
         </div>
       )}
     </div>

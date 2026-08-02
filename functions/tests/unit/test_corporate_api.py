@@ -159,7 +159,10 @@ def test_an_unbindable_dimension_is_hidden_by_default_and_says_why_when_shown(
     assert shown["total"] > hidden["total"]
     unbindable = [d for d in shown["items"] if not d["bindable"]]
     assert unbindable
-    assert all(d["reasons"] for d in unbindable)
+    # The WHY lives on the detail endpoint — reasons are probe transcripts and
+    # carrying them on every list row made the browse payload 417 KB.
+    detail = author.get(f"{BASE}/dimensions/{unbindable[0]['id']}").json()
+    assert detail["reasons"]
 
 
 def test_the_catalogue_is_searched_and_paged_on_the_server(author: TestClient) -> None:
@@ -202,7 +205,9 @@ def test_an_unclassified_relation_is_not_public(author: TestClient) -> None:
     from disclosing anything."""
     body = author.get(f"{BASE}/dimensions").json()
     assert all(d["disclosure"] == "entitled" for d in body["items"])
-    assert all(d["reasons"] for d in body["items"])
+    # Each still says why, one detail call away.
+    first = author.get(f"{BASE}/dimensions/{body['items'][0]['id']}").json()
+    assert first["reasons"]
 
 
 def test_a_dimensions_restricted_attributes_are_marked(author: TestClient) -> None:
