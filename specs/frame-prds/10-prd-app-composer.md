@@ -6,7 +6,7 @@ The payoff of the Blueprint model: compose views, forms, dashboards, and pages i
 
 ## Scope
 
-In: app definition, page types, navigation, audience scoping, branding, publishing, app-level analytics. Out: new data capabilities (apps compose existing surfaces only; if a capability is missing, it is built in its home PRD, never as an app special case). Out in v1: external unauthenticated apps beyond forms and status pages (P3 decision point).
+In: app definition, page types, navigation, audience scoping, branding, publishing, app-level analytics. Out: new data capabilities (apps compose existing surfaces only; if a capability is missing, it is built in its home PRD, never as an app special case). Out in v1: external unauthenticated apps beyond forms and status pages (P3 decision point). Out permanently: a third-party app runtime or marketplace — the strongest platform competitor needs 850+ marketplace apps because a semantically empty board cannot finish the job (87% of its enterprise accounts install apps to close gaps, by its own published figures), and hosting third-party code would re-import every review, sandboxing and permission problem Frame's composition model exists to avoid. Extension pressure routes to the MCP surface (AI-10) and the published event contract (AU-8), where external logic runs outside Frame's process under its own service identity.
 
 ## Functional requirements
 
@@ -31,3 +31,4 @@ Everything: PRDs 01 through 09 supply the composable surfaces. The composer ship
 1. External authenticated apps (partner logins beyond magic links): identity architecture decision with the PPP experience as prior art; deliberately deferred.
 2. Whether apps can embed Playbook conversational surfaces as a page type; attractive for domain apps, sequenced after MCP maturity.
 3. Custom domains per app (grants.unops.org style): estate DNS and certificate policy conversation, not a product blocker.
+4. Whether a thin template slice of the composer — AC-6's gallery restricted to surfaces that exist at P2 (views, forms, the record page) — should pull forward to P2, so the application spine (PRDs 03/04) ships *packaged* as adoptable applications rather than as loose features. Raised by the August 2026 discovery run under the owner's reframing (application completeness over grid emphasis, `specs/discovery/smartsheet-frappe-monday/00-scope.md`); it is a vision §9 phasing change, so the repo owner decides, with steward input on what the catalog would list.

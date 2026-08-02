@@ -39,3 +39,14 @@ Status legend: superior · partial · absent · planned (PRD-only) · blocked by
 **Where Frappe's mechanism is refused on purpose.** Per-DocType controller files, Server Script, and DocShare are the three mechanisms Frame's invariants forbid — and in each case Frappe's own code concedes the danger (Server Script disabled by default behind a site-config flag; the forum's fail-open User Permission incident; controllers making "zero code" a marketing claim rather than an architectural fact). Frame's versions of these outcomes — declarative rules in one evaluator, a closed action vocabulary, allow-lists inside compiled conditions — are the product thesis. The fitness suite is what keeps a future contributor from helpfully reintroducing the Frappe shape.
 
 **The two-implementations finding is the headline.** Frappe's declarative permissions stop at role × permlevel × owner × equality allow-lists; everything genuinely attribute-based lives in paired hooks — a Python predicate for single documents and a raw-SQL fragment for lists — that nothing keeps consistent. Frame's single compiled rule set feeding both `evaluate_row` and `compile_query` is, verified against the actual Frappe source this session, a real architectural advance over the reference implementation rather than a marketing restatement of it.
+
+## Post-synthesis correction (2026-08-02, pipeline phase 4)
+
+The "Customization overlay" row's status of **absent** is wrong against the
+current PRD set: BP-19 (PRD 01) already specifies bind-not-copy catalog
+adoption *with* workspace overlays — added namespaced fields plus
+tighten-only property and permission overrides, merged once at metadata
+load — and PRD 01's decisions log records it as resolved August 2026
+against exactly this Frappe evidence. The row is correct only about code
+(`functions/lib/blueprint/` has no overlay implementation yet). What this
+run genuinely added is BP-27, overlay *convergence reporting*.

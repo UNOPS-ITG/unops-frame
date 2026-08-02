@@ -130,6 +130,8 @@ Firestore layout: a subscribing workspace stores an overlay at `workspaces/{ws}/
 
 **BP-20 (P2).** Duplicate pressure: when a user creates a new team-tier Blueprint, the engine runs the similarity scan and, above a threshold, suggests the catalog entry instead ("This looks like Vendor Register, used by 14 teams"). Suggestion, never a block.
 
+**BP-27 (P2).** Overlay convergence. The engine reports, per catalog entry, where subscribing workspaces' overlays (BP-19) have independently converged — the same added field name, the same tightened property — with workspace counts, surfaced to the steward as fold-in candidates feeding the BP-17 working file and the next upstream version. Overlays are structured records, so convergence is a query, not telemetry archaeology. This is the catalog's growth loop: an overlay three workspaces wrote independently is the estate telling the steward what the base Blueprint is missing, and without the report that signal accrues silently per workspace — the reference implementation's equivalent overlay records accumulate per site for years precisely because nothing aggregates them upstream. The report is a suggestion surface only; folding a field in remains an ordinary BP-12 version with BP-17 review where required.
+
 ### Lifecycle
 
 **BP-21 (P2).** Lifecycle policies per Blueprint: retention period, archival rules (archived rows leave active indexes but remain auditable), freeze (row becomes immutable, e.g. after approval), and legal hold override. Enforcement is server-side and logged. For Blueprints declaring the submittable lifecycle (BP-22), submission *is* the freeze mechanism and correction happens through amendment (BP-24), never through unfreeze-edit-refreeze.
@@ -199,3 +201,7 @@ Resolved August 2026, following a review against the Frappe Framework source and
 - **Catalog adoption binds rather than copies** (BP-19), because fork-with-subscription reproduces inside Frame the Control Center pathology the vision criticises.
 - **Expressions persist as AST, never strings** (BP-9), because eight consumers make a later text migration untenable.
 - **Conditional field behaviour is declared once on the field** (BP-3a) rather than separately in the form builder and the layout editor, which also closes the hole where conditional requiredness went unenforced on the API and import paths.
+
+Resolved August 2026, following the three-competitor discovery run (`specs/discovery/smartsheet-frappe-monday/`):
+
+- **Overlay convergence reporting** (BP-27) closes the loop BP-19's bind-not-copy adoption opened: the overlay mechanism was already specified here before the run; what the Frappe evidence added is that overlays without upstream aggregation diverge silently for years.

@@ -24,6 +24,10 @@ In: native assist features, the AI gateway, the promotion review assistant, MCP 
 
 **AI-6 (P1).** Gateway: native assists call models through the standard estate gateway (model choice, logging, cost attribution per workspace, prompt retention per governance). No direct model calls from the client; the gateway applies our data handling rules (restricted-marked fields excluded from prompts unless the feature explicitly requires and the user's export permission allows).
 
+**AI-12 (P2).** Recipe authoring from language: a described rule ("when an invoice over 50,000 arrives, get finance approval and notify the requester") yields a complete draft automation record — trigger from the AU-2 vocabulary, conditions in the shared grammar, actions from the AU-3 closed vocabulary — rendered in the sentence-style editor (AU-14's surface) for review before activation, with AI-2's plain-language readback. Where the described behaviour exceeds the closed vocabulary, the assist says so and names the sanctioned route (AU-3a); it never emits script and never proposes an action outside the vocabulary, so the boundary the platform enforces is the same one the assist teaches. One grammar and one closed vocabulary are what make this generation target checkable — the same request against an open-ended workflow builder has no validatable output shape.
+
+**AI-13 (P3).** Usage visibility: workspace owners see their workspace's AI-assist and automation usage — assist counts and cost attribution from the AI-6 gateway, run volume from AU-6 — as attribution, never as a meter (PRD 04 anti-requirements). The incumbent ships the equivalent as an admin spend dashboard because usage is billing; Frame keeps the visibility, which is how a workspace notices a runaway pattern before operations does, without the toll.
+
 ### Governance boundary
 
 **AI-7 (P1).** Anything autonomous, scheduled, bulk-affecting beyond a reviewed change set, or in a flagged domain routes to Playbook: Frame surfaces "run as a Playbook process" where users try to stretch native assists past the boundary, deep-linking into Playbook registration. The boundary is enforced in product, not just documented.

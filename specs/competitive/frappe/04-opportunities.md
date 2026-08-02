@@ -127,3 +127,12 @@ the reasons).
 1. **Permission explainability** → `functions/lib/permissions/evaluate.py` + PRD 05 → first experiment: flag-gated decision trace from `evaluate_row`, then a simulate-as-user endpoint on the generic blueprints router.
 2. **Adopt-with-overlay** (the Property Setter lesson, governed) → `functions/lib/blueprint/compile.py` + PRD 01 → first experiment: PRD amendment plus a compile-time base+overlay merge spike with a fitness test that overlays can never weaken permissions.
 3. **Grammar-based workflow conditions + no-self-approval + impersonation audit** → `functions/lib/blueprint/model.py`, `functions/lib/rows/audit.py`, PRD 04/05 → first experiment: extend `WorkflowTransition` with a grammar `condition` and `allow_self_approval`, validated by `lib/grammar/analyse.py` at Blueprint save.
+
+## Post-synthesis correction (2026-08-02, pipeline phase 4)
+
+O2 ("adopt-with-overlay") overstated the gap: BP-19 already specifies the
+governed overlay (see the correction in `03-gap-matrix.md`). O2's residual
+value landed as **BP-27 (overlay convergence reporting)** in PRD 01; the
+rest of O2 is build work against an existing spec, not a spec gap. O1 and
+O3 landed as PM-14 (PRD 05) and AU-15 + PRD 04 open question 4
+respectively.

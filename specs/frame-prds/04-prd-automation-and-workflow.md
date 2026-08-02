@@ -24,6 +24,10 @@ In: automation model, trigger and action vocabulary, execution engine, the domai
 
 Approvals (AU-4) and update requests are two classes of **one pending-task record**, not two mechanisms. That is what makes "what is waiting on me" a single query, makes elapsed-time-in-state a single measurement (which is what open question 3 is really asking for), and makes NT-5's cross-channel resolution mechanically true rather than separately implemented per class.
 
+**AU-14 (P1).** Starter recipes. The platform ships a code-first gallery of recipe templates: complete AU-1 records — trigger, grammar conditions, ordered actions — with named parameters and a sentence-style rendering ("when {date field} is {n} days away, notify {recipient}"). Templates are validated in CI against the trigger and action vocabularies, so a vocabulary change that orphans a template fails the build, never a user. Instantiating a recipe copies it into the workspace as an ordinary AU-1 automation the team owns and edits; afterwards nothing distinguishes it from a hand-built one. The strongest automation product in the field is ahead on packaging, not engine — its recipe gallery is a decade of accreted templates over the same automation-as-data shape AU-1 already commits to — and a gallery of records is the one part of that moat that is cheap to hold, because it is configuration, not capability. AI-1's drafted Blueprints and catalog register patterns may name recommended recipes, so a new register arrives with its obvious automations one click away rather than blank.
+
+**AU-15 (P1).** No self-approval by default. An approval action (AU-4) and a role-gated transition (AU-10) declare `allow_self_approval`, default false. Under the default, the principal whose action created the pending task — directly, or as the actor of the triggering event — cannot be its deciding principal, even where group or role membership would otherwise qualify them; the attempt is rejected naming this mechanism, and the rejection is audited. Segregation of duties is the point of an approval, and a permissive default makes every approval chain's integrity depend on per-team configuration diligence. The reference implementation ships exactly this guard in its workflow engine, which is evidence the strict default is livable in ERP-grade practice.
+
 **AU-5 (P1).** Execution: automation runs are asynchronous (Pub/Sub dispatch, Cloud Tasks for scheduled and delayed work), idempotent per triggering event, with retry and dead-letter.
 
 **Loop protection is a named platform guarantee, not an implementation detail:** an automation's own writes are tagged and do not re-trigger the same automation, and cross-automation cascade depth is capped (default 5) with the run halted and flagged beyond it. Both reference implementations are weaker here — one has only local re-entrancy flags and no global cascade cap, the other prevents loops bluntly by refusing sheet-changing actions when the trigger cell holds a cross-sheet formula — so this is a place where the design is ahead rather than catching up, and it should not be quietly traded away for throughput.
@@ -60,15 +64,20 @@ The evidence for keeping tier one closed is stronger than the PRD originally cla
 
 **AU-13 (P2).** Resilience: if Workflow Studio is unavailable, Frame events queue in Pub/Sub and processes catch up; rows show process status as "unavailable" rather than stale data presented as fresh; nothing in Frame blocks.
 
+## Anti-requirements
+
+**No metering.** Automation and workflow execution is never quota'd: no per-workspace run allowance, no per-tier action count, no billable meter on any path. The incumbents meter because automation is their monetization surface — one sells action quotas per month per plan tier, the other caps runs per sheet and per month — and a team that hits an arbitrary allowance mid-month routes around the platform with the tools it was hired away from. Frame has no seats and no plan tiers to defend, so it inherits none of that design pressure. Load and abuse are governed by engineering budgets instead: AU-5 loop protection and cascade caps, NT-10 storm control, AU-6 owner-facing observability, and per-workspace cost attribution on the AI-6 pattern (visibility per AI-13, attribution never billing). Degradation under pressure is queueing and catch-up per the availability NFR, never a denied allowance.
+
 ## Dependencies
 
-PRD 01 (blueprint states in metadata, shared grammar), PRD 05 (transition gating, service principals), PRD 07 (generate-document action), PRD 09 (Chat and email dispatch, webhook signing).
+PRD 01 (blueprint states in metadata, shared grammar), PRD 05 (transition gating, service principals), PRD 07 (generate-document action), PRD 08 (AI-12 recipe authoring targets AU-14's surface), PRD 09 (Chat and email dispatch, webhook signing).
 
 ## Open questions
 
 1. Cross-workspace automations (trigger in one workspace, action in another): defer to P3; the honest use cases so far are better served by the event contract plus a consuming service.
 2. Approval delegation and out-of-office routing: integrate with a central delegation registry or per-approval fallback only? Proposal: per-approval fallback in P1, delegation registry with HR data in P3 — noting that the organizational directory is itself a corporate dimension (PRD 14), so the registry may be a read rather than a build.
 3. SLA clocks as a platform primitive (elapsed time in state, business-hours aware) vs assembled from date triggers. Leaning primitive in P2, and AU-4a's single pending-task record is what makes it one measurement rather than one per class.
+4. Whether the AU-2/AU-3 launch vocabularies cover the pilot registers' real needs. To be answered *before* engine build by the paper catalog: express every intake/workflow/automation need of the three Phase-1 pilot registers as AU-1 records on paper; pass is ≥80% expressible, with each failure classified as vocabulary gap (code-first addition per AU-3a route 1), Workflow-Studio-shaped (graduation territory), or scripting-shaped (refused, and the refusal documented). This is the riskiest assumption of the August 2026 discovery run (`specs/discovery/smartsheet-frappe-monday/20-ideation.md`) — if the closed vocabulary cannot cover real needs, tier one forks toward either per-type code or an open builder, both of which are walls. Owner: repo owner with the pilot teams; due before any `functions/lib/automations/` code lands.
 
 ## Decisions log
 
@@ -77,3 +86,9 @@ Resolved August 2026:
 - **No external system blocks a transition** (AU-10). Folded in rather than left to be discovered, because the first procurement request for a synchronous funds check would otherwise have decided it.
 - **Where scripting pressure goes** is now specified (AU-3a) rather than only refused, after confirming that both reference implementations treat scripting as an operator capability rather than a team feature.
 - **Approvals and update requests are one pending-task record**, which is what makes elapsed-time-in-state a single primitive.
+
+Resolved August 2026, following the three-competitor discovery run (Smartsheet, Frappe, Monday.com — `specs/discovery/smartsheet-frappe-monday/`):
+
+- **Recipes are a gallery of records, not a builder capability** (AU-14), after verifying that the market leader's automation advantage is template accretion over the same automation-as-data architecture.
+- **Self-approval is blocked by default** (AU-15), adopted from the Frappe workflow engine's verified guard.
+- **No metering is an anti-requirement, not an accident** — recorded explicitly after documenting both incumbents' quota models.
