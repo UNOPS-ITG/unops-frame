@@ -8,6 +8,17 @@ analytics, chat); here **the repo is the tracker**, so every skill grounds its
 claims in files, suites and commands, in the same evidence-first house style
 `competitive-analysis` established.
 
+## The master pipeline
+
+**`product-discovery`** chains the set end to end: research one or more SaaS
+products (`competitive-analysis` per product, parallelized for several) →
+cross-competitor synthesis (its own step) → grounded ideation
+(`product-brainstorming`) → a buildable Frame PRD (`write-prd`) → a roadmap
+slot (`roadmap-update`). Artifacts land in `specs/discovery/<topic>/` with
+per-competitor sets in `specs/competitive/`; the PRD itself lands in
+`specs/frame-prds/` with the others. Invoke it when you want the whole arc
+from "look at these products" to "something I can build from".
+
 ## Upstream coverage map
 
 | Upstream (plugin) | Here | Adaptation in one line |
