@@ -42,9 +42,11 @@ export function RegisterView({ workspaceId, blueprintId, viewId }: RegisterViewP
   // one source is both simpler and more honest than patching three things that
   // have to agree.
   const [generation, setGeneration] = useState(0)
+  const [filter, setFilter] = useState<Record<string, unknown> | null>(null)
   const { blueprint, page, loading, error, rejection, loadMore, editCell, dismissRejection } =
     useRegister(workspaceId, blueprintId, {
       generation,
+      filter,
       ...(viewId === undefined ? {} : { viewId }),
     })
   const persona = globalThis.sessionStorage?.getItem('frame-dev-persona')
@@ -111,9 +113,11 @@ export function RegisterView({ workspaceId, blueprintId, viewId }: RegisterViewP
       <RegisterToolbar
         workspaceId={workspaceId}
         blueprintId={blueprintId}
+        blueprint={blueprint}
         activeViewId={viewId}
         onSelectView={selectView}
         onImported={onImported}
+        onFilter={setFilter}
       />
 
       {rejection !== null && (

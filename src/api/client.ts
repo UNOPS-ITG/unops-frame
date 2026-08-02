@@ -164,6 +164,36 @@ export function listViews(workspaceId: string, blueprintId: string): Promise<Sav
   return request(`/workspaces/${workspaceId}/blueprints/${blueprintId}/views`)
 }
 
+export interface NewView {
+  name: string
+  scope?: 'personal' | 'shared' | 'default'
+  filter?: Record<string, unknown> | null
+  sort?: { fieldId: string; direction: 'asc' | 'desc' }[]
+}
+
+/**
+ * Save a view.
+ *
+ * Defaults to `personal`, because a view saved to try something out should not
+ * appear in a colleague's list. Sharing is a separate, deliberate act.
+ */
+export function createView(
+  workspaceId: string,
+  blueprintId: string,
+  view: NewView,
+): Promise<SavedView> {
+  return request(`/workspaces/${workspaceId}/blueprints/${blueprintId}/views`, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: view.name,
+      scope: view.scope ?? 'personal',
+      filter: view.filter ?? null,
+      sort: view.sort ?? [],
+      columns: [],
+    }),
+  })
+}
+
 /**
  * Rows through a saved view.
  *

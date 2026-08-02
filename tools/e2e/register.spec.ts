@@ -55,6 +55,55 @@ test.describe('the governed register', () => {
   })
 })
 
+test.describe('the filter builder', () => {
+  test('narrows the register and states the new withheld count', async ({ page }) => {
+    await as(page, 'dev@unops.org', REGISTER)
+    const status = page.getByRole('status').first()
+    const before = await status.textContent()
+
+    await page.getByRole('button', { name: 'Filter' }).click()
+    await page.getByRole('button', { name: 'Add condition' }).click()
+    await page.getByLabel('Field').selectOption({ label: 'Status' })
+    await page.getByLabel('Value').selectOption({ label: 'Open' })
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await page.waitForTimeout(1_500)
+
+    const after = await status.textContent()
+    expect(after).not.toBe(before)
+    // The count moves with the filter. A withheld count that did not would be a
+    // wrong number the reader trusts.
+    expect(after).toContain('withheld')
+  })
+
+  test('survives applying, so a half-typed view name is not lost', async ({ page }) => {
+    // The page used to blank while refetching, which unmounted the toolbar and
+    // took the filter panel with it every time the user pressed Apply.
+    await as(page, 'dev@unops.org', REGISTER)
+    await page.getByRole('button', { name: 'Filter' }).click()
+    await page.getByRole('button', { name: 'Add condition' }).click()
+    await page.getByLabel('Value').fill('anything')
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await page.waitForTimeout(1_500)
+
+    await expect(page.getByLabel('View name')).toBeVisible()
+  })
+
+  test('saves a filter as a view that then appears in the list', async ({ page }) => {
+    await as(page, 'dev@unops.org', REGISTER)
+    await page.getByRole('button', { name: 'Filter' }).click()
+    await page.getByRole('button', { name: 'Add condition' }).click()
+    await page.getByLabel('Field').selectOption({ label: 'Status' })
+    await page.getByLabel('Value').selectOption({ label: 'Open' })
+
+    const name = `E2E ${Date.now()}`
+    await page.getByLabel('View name').fill(name)
+    await page.getByRole('button', { name: 'Save view' }).click()
+    await page.waitForTimeout(1_500)
+
+    await expect(page.locator('select').first()).toContainText(name)
+  })
+})
+
 test.describe('import', () => {
   test('previews before it writes, and refuses to write a file with a bad row', async ({ page }) => {
     await as(page, 'dev@unops.org', REGISTER)

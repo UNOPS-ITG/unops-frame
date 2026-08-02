@@ -65,6 +65,10 @@ export interface RegisterOptions {
    * withheld count all move together, so refetching everything is both simpler
    * and more honest than patching three things that must agree. */
   generation?: number
+  /** An ad-hoc filter, as a shared-grammar AST. Ignored when a saved view is
+   * open: the view carries the query, and quietly ANDing an unsaved filter into
+   * it would mean the URL no longer describes what is on screen. */
+  filter?: Record<string, unknown> | null
 }
 
 export function useRegister(
@@ -72,7 +76,8 @@ export function useRegister(
   blueprintId: string,
   options: RegisterOptions = {},
 ): RegisterState {
-  const { viewId, channel = 'grid', generation = 0 } = options
+  const { viewId, channel = 'grid', generation = 0, filter = null } = options
+  const filterKey = filter === null ? '' : JSON.stringify(filter)
   /**
    * One state object keyed by the register it describes.
    *
@@ -82,20 +87,36 @@ export function useRegister(
    * are on screen with the new register's header, and someone eventually
    * reports it as "the grid showed me another team's data".
    */
-  const key = `${workspaceId}/${blueprintId}/${viewId ?? ''}/${generation}`
+  const key = `${workspaceId}/${blueprintId}/${viewId ?? ''}/${generation}/${filterKey}`
+  /**
+   * The REGISTER a page belongs to, which is coarser than the key.
+   *
+   * The distinction decides whether stale rows may stay on screen while the
+   * next page loads. Within one register — a filter applied, a view opened, an
+   * import committed — showing the previous rows for a moment is right: blanking
+   * the page unmounts everything above it, which took the filter panel and any
+   * half-typed view name with it every time the user pressed Apply.
+   *
+   * Across registers it is not right, and the reason is not cosmetic: one render
+   * with the previous register's rows under the new register's header is
+   * eventually reported as "the grid showed me another team's data".
+   */
+  const registerKey = `${workspaceId}/${blueprintId}`
   const [loaded, setLoaded] = useState<{
     key: string
+    registerKey: string
     blueprint: Blueprint | null
     page: RowPage | null
     error: string | null
-  }>({ key: '', blueprint: null, page: null, error: null })
+  }>({ key: '', registerKey: '', blueprint: null, page: null, error: null })
   const [rejection, setRejection] = useState<CellRejection | null>(null)
 
   const settled = loaded.key === key
-  const blueprint = settled ? loaded.blueprint : null
-  const page = settled ? loaded.page : null
+  const sameRegister = loaded.registerKey === registerKey
+  const blueprint = settled || sameRegister ? loaded.blueprint : null
+  const page = settled || sameRegister ? loaded.page : null
   const error = settled ? loaded.error : null
-  const loading = !settled
+  const loading = !settled && !sameRegister
 
   // Refs rather than state: the poll loop reads these and must not be a reason
   // to re-subscribe, or every delta would tear down and rebuild the timer.
@@ -122,9 +143,16 @@ export function useRegister(
   const fetchPage = useCallback(
     (cursor: string | null = null) =>
       viewId === undefined
-        ? queryRows(workspaceId, blueprintId, { limit: 200, cursor })
+        ? queryRows(workspaceId, blueprintId, {
+            limit: 200,
+            cursor,
+            // Parsed from the key rather than closed over, so the callback is
+            // stable whenever the filter is unchanged — a new object identity
+            // on every render would refetch the register continuously.
+            ...(filterKey === '' ? {} : { filter: JSON.parse(filterKey) as Record<string, unknown> }),
+          })
         : readViewRows(workspaceId, blueprintId, viewId, { limit: 200, cursor }),
-    [workspaceId, blueprintId, viewId],
+    [workspaceId, blueprintId, viewId, filterKey],
   )
 
   useEffect(() => {
@@ -133,12 +161,13 @@ export function useRegister(
 
     Promise.all([getBlueprint(workspaceId, blueprintId), fetchPage()])
       .then(([bp, first]) => {
-        if (!cancelled) setLoaded({ key, blueprint: bp, page: first, error: null })
+        if (!cancelled) setLoaded({ key, registerKey, blueprint: bp, page: first, error: null })
       })
       .catch((e: unknown) => {
         if (cancelled) return
         setLoaded({
           key,
+          registerKey,
           blueprint: null,
           page: null,
           error: e instanceof Error ? e.message : 'Could not load the register',
@@ -148,7 +177,7 @@ export function useRegister(
     return () => {
       cancelled = true
     }
-  }, [workspaceId, blueprintId, key, fetchPage])
+  }, [workspaceId, blueprintId, key, registerKey, fetchPage])
 
   const refresh = useCallback(async () => {
     // A full refetch rather than a targeted one. Refetching only the changed

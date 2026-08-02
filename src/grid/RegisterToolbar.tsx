@@ -15,34 +15,65 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ApiError,
+  createView,
   exportCsv,
   importCsv,
   listViews,
   type ImportResult,
   type SavedView,
 } from '../api/client'
+import { FilterBuilder } from './FilterBuilder'
+import type { Blueprint } from './contract'
 
 export interface RegisterToolbarProps {
   workspaceId: string
   blueprintId: string
+  blueprint: Blueprint
   activeViewId?: string | undefined
   onSelectView: (viewId: string | undefined) => void
   onImported: () => void
+  onFilter: (filter: Record<string, unknown> | null) => void
 }
 
 export function RegisterToolbar({
   workspaceId,
   blueprintId,
+  blueprint,
   activeViewId,
   onSelectView,
   onImported,
+  onFilter,
 }: RegisterToolbarProps) {
   const [views, setViews] = useState<SavedView[]>([])
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [pendingCsv, setPendingCsv] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [filtering, setFiltering] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  const saveView = useCallback(
+    async (name: string, filter: Record<string, unknown> | null) => {
+      setBusy(true)
+      try {
+        const saved = await createView(workspaceId, blueprintId, { name, filter })
+        setViews((prev) => [...prev, saved])
+        // Its warnings, if any, are carried on the view rather than swallowed:
+        // a sort with no slot saves fine and behaves differently, and the person
+        // who later opens it is rarely the person who saved it.
+        setNotice(
+          saved.warnings.length > 0
+            ? `Saved "${saved.name}" — ${saved.warnings[0]?.message ?? ''}`
+            : `Saved "${saved.name}"`,
+        )
+      } catch (e) {
+        setNotice(e instanceof ApiError ? e.message : 'The view could not be saved')
+      } finally {
+        setBusy(false)
+      }
+    },
+    [workspaceId, blueprintId],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -139,6 +170,15 @@ export function RegisterToolbar({
           </label>
         )}
 
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          aria-expanded={filtering}
+          onClick={() => setFiltering((f) => !f)}
+        >
+          {filtering ? 'Hide filter' : 'Filter'}
+        </button>
+
         <span style={{ marginInlineStart: 'auto', display: 'flex', gap: '0.5rem' }}>
           <input
             ref={fileInput}
@@ -169,6 +209,23 @@ export function RegisterToolbar({
           </button>
         </span>
       </div>
+
+      {filtering && (
+        <div
+          style={{
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem',
+          }}
+        >
+          <FilterBuilder
+            blueprint={blueprint}
+            busy={busy}
+            onApply={onFilter}
+            onSaveView={(name, filter) => void saveView(name, filter)}
+          />
+        </div>
+      )}
 
       {notice !== null && (
         <div role="status" style={{ font: 'var(--text-body-small)', color: 'var(--color-text-secondary)' }}>
