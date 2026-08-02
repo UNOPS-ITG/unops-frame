@@ -279,8 +279,14 @@ def _out(view: SavedView, compiled: Any, subject: str) -> ViewOut:
         scope=view.scope.value,
         author=view.author,
         filter=view.filter,
-        sort=[s.model_dump(by_alias=True) for s in view.sort],
-        columns=[c.model_dump(by_alias=True) for c in view.columns],
+        # Camel-cased explicitly: these are nested plain models with no alias
+        # generator, so `by_alias` alone leaves them snake_case and the response
+        # ends up mixing conventions inside one envelope.
+        sort=[{"fieldId": s.field_id, "direction": s.direction} for s in view.sort],
+        columns=[
+            {"fieldId": c.field_id, "width": c.width, "hidden": c.hidden, "pinned": c.pinned}
+            for c in view.columns
+        ],
         group_by=view.group_by,
         row_height=view.row_height,
         blueprint_version=view.blueprint_version,

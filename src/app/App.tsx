@@ -14,10 +14,21 @@ import { TokenGallery } from './TokenGallery'
  */
 function readSurface(hash: string) {
   if (hash === '#tokens') return { kind: 'tokens' as const }
+  const view = /^#view\/([^/]+)\/([^/]+)\/([^/]+)$/.exec(hash)
+  const [, viewWs, viewBp, viewId] = view ?? []
+  if (viewWs !== undefined && viewBp !== undefined && viewId !== undefined) {
+    return { kind: 'register' as const, workspaceId: viewWs, blueprintId: viewBp, viewId }
+  }
+
   const register = /^#register\/([^/]+)\/([^/]+)$/.exec(hash)
   const [, workspaceId, blueprintId] = register ?? []
   if (workspaceId !== undefined && blueprintId !== undefined) {
-    return { kind: 'register' as const, workspaceId, blueprintId }
+    return {
+      kind: 'register' as const,
+      workspaceId,
+      blueprintId,
+      viewId: undefined as string | undefined,
+    }
   }
   return { kind: 'demo' as const }
 }
@@ -39,7 +50,13 @@ export function App() {
     case 'tokens':
       return <TokenGallery />
     case 'register':
-      return <RegisterView workspaceId={surface.workspaceId} blueprintId={surface.blueprintId} />
+      return (
+        <RegisterView
+          workspaceId={surface.workspaceId}
+          blueprintId={surface.blueprintId}
+          {...(surface.viewId === undefined ? {} : { viewId: surface.viewId })}
+        />
+      )
     default:
       return <GridDemo />
   }

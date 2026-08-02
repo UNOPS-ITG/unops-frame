@@ -13,6 +13,7 @@ import { useRegister } from './useRegister'
 export interface RegisterViewProps {
   workspaceId: string
   blueprintId: string
+  viewId?: string
 }
 
 /** A conflicting value, rendered for a human. Never `[object Object]`: the
@@ -33,9 +34,10 @@ function describe(value: unknown): string {
   return JSON.stringify(value) ?? 'an unreadable value'
 }
 
-export function RegisterView({ workspaceId, blueprintId }: RegisterViewProps) {
+export function RegisterView({ workspaceId, blueprintId, viewId }: RegisterViewProps) {
   const { blueprint, page, loading, error, rejection, loadMore, editCell, dismissRejection } =
-    useRegister(workspaceId, blueprintId)
+    useRegister(workspaceId, blueprintId, viewId === undefined ? {} : { viewId })
+  const persona = globalThis.sessionStorage?.getItem('frame-dev-persona')
 
   if (error !== null) {
     return (
@@ -56,6 +58,21 @@ export function RegisterView({ workspaceId, blueprintId }: RegisterViewProps) {
     >
       <header style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap' }}>
         <h1 style={{ font: 'var(--text-heading-3)', margin: 0 }}>{blueprint.name}</h1>
+        {persona !== null && persona !== undefined && (
+          // Development only. Shown because a screenshot of two grids side by
+          // side is meaningless unless each says who is looking at it.
+          <span
+            style={{
+              font: 'var(--text-body-small)',
+              padding: '0.125rem 0.5rem',
+              borderRadius: 'var(--radius-full, 999px)',
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-surface)',
+            }}
+          >
+            {persona}
+          </span>
+        )}
         <span style={{ color: 'var(--color-text-secondary)', font: 'var(--text-body-small)' }}>
           {annotation.visible.toLocaleString()} shown
           {/* Stated, not merely available (PM-5). A reader who cannot see that

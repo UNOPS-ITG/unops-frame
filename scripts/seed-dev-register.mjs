@@ -83,17 +83,27 @@ const blueprint = {
     // typed stub for anyone without a grant that reaches it.
     { id: 'rationale', label: 'Owner rationale', type: 'text', variant: 'long', sensitivity: 2 },
   ],
+  // Expressed with ALLOWS that union, never a deny.
+  //
+  // A deny beats every allow at every scope, which makes it the right tool for
+  // an exclusion nobody may override and the wrong tool for "most people see
+  // the small exposures" — a deny on `*` would also deny the risk team, since
+  // being in a narrower group is not an escape from a deny that names you.
   permissions: [
-    { principals: ['*'], actions: ['read', 'create', 'update'], effect: 'allow', max_band: 1 },
-    // A row-scoped deny, so the withheld count is non-zero and the annotation
-    // has something true to say.
+    // Everyone: unrestricted fields, and only the small exposures.
     {
-      principals: ['*'], actions: ['read'], effect: 'deny',
+      principals: ['*'], actions: ['read', 'create', 'update'], effect: 'allow', max_band: 1,
       row_condition: {
-        type: 'binary', op: 'gte',
+        type: 'binary', op: 'lt',
         left: { type: 'field', id: 'exposure' },
         right: { type: 'literal', value: 5000000 },
       },
+    },
+    // The risk team: every field, every row.
+    {
+      principals: ['group:risk-team'],
+      actions: ['read', 'create', 'update'],
+      effect: 'allow',
     },
   ],
 }
@@ -108,16 +118,27 @@ async function main() {
   await put(`workspaces/${WORKSPACE}`, { name: 'Demo workspace' })
   await put(`workspaces/${WORKSPACE}/blueprints/${BLUEPRINT}`, blueprint)
 
+  // Two personas, because the milestone's whole claim is that they see
+  // different things. A seed with one identity makes the governed grid look
+  // exactly like an ungoverned one.
+  //
   // Membership is keyed on the SUBJECT, never the email: an address is mutable
   // and reassignable, so keying grants on one means a recycled address silently
   // inherits them. The dev bypass prefixes its subject so a bypassed identity
   // is distinguishable downstream from a real session (PM-7), which means a
   // local seed needs BOTH keys — seeding only the email is a silent no-op that
   // makes every group-scoped rule quietly stop matching.
-  for (const email of ['dev@unops.org', process.env.FRAME_DEV_EMAIL].filter(Boolean)) {
-    for (const subject of [email, `dev-bypass:${email}`]) {
+  const people = [
+    { email: 'risk@unops.org', groups: ['staff', 'risk-team'] },
+    { email: 'dev@unops.org', groups: ['staff'] },
+    ...(process.env.FRAME_DEV_EMAIL
+      ? [{ email: process.env.FRAME_DEV_EMAIL, groups: ['staff'] }]
+      : []),
+  ]
+  for (const person of people) {
+    for (const subject of [person.email, `dev-bypass:${person.email}`]) {
       await put(`workspaces/${WORKSPACE}/members/${subject}`, {
-        groups: ['staff'],
+        groups: person.groups,
         roles: ['editor'],
       })
     }
@@ -160,7 +181,31 @@ async function main() {
     if ((i + 1) % 100 === 0) console.log(`  ${i + 1}/${total}`)
   }
 
-  console.log(`done. open http://localhost:${ports.frontend}/#register/${WORKSPACE}/${BLUEPRINT}`)
+  // One shared saved view, so the demonstration is "the same URL", not "two
+  // similar URLs". A view carries a query and grants nothing.
+  await put(`workspaces/${WORKSPACE}/blueprints/${BLUEPRINT}/views/open-risks`, {
+    id: 'open-risks',
+    name: 'Open risks by exposure',
+    blueprint_id: BLUEPRINT,
+    workspace_id: WORKSPACE,
+    scope: 'shared',
+    author: 'dev-bypass:risk@unops.org',
+    filter: {
+      type: 'binary', op: 'eq',
+      left: { type: 'field', id: 'status' },
+      right: { type: 'literal', value: 'open' },
+    },
+    sort: [{ field_id: 'exposure', direction: 'desc' }],
+    columns: [],
+    row_height: 'normal',
+    blueprint_version: 1,
+  })
+
+  const base = `http://localhost:${ports.frontend}`
+  console.log('done.')
+  console.log(`  register:  ${base}/#register/${WORKSPACE}/${BLUEPRINT}`)
+  console.log(`  saved view: ${base}/#view/${WORKSPACE}/${BLUEPRINT}/open-risks`)
+  console.log('  personas:  risk@unops.org (risk-team) · dev@unops.org (staff)')
 }
 
 main().catch((error) => {

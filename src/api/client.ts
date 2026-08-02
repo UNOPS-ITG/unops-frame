@@ -81,7 +81,16 @@ export class ApiError extends Error {
 function devHeaders(): Record<string, string> {
   if (!import.meta.env.DEV) return {}
   const secret = import.meta.env.VITE_DEV_AUTH_BYPASS_SECRET
-  return typeof secret === 'string' && secret !== '' ? { 'X-Dev-Auth-Bypass': secret } : {}
+  if (typeof secret !== 'string' || secret === '') return {}
+
+  const headers: Record<string, string> = { 'X-Dev-Auth-Bypass': secret }
+  // Lets one browser act as a chosen persona, which is what makes the
+  // "two people, one URL" demonstration reproducible without two real Google
+  // accounts. The server still refuses any identity not on its allow-list, so
+  // this selects among sanctioned identities rather than asserting one.
+  const persona = globalThis.sessionStorage?.getItem('frame-dev-persona')
+  if (persona) headers['X-Dev-Auth-Email'] = persona
+  return headers
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -132,6 +141,47 @@ export function queryRows(
       cursor: options.cursor ?? null,
     }),
   })
+}
+
+export interface SavedView {
+  id: string
+  name: string
+  scope: 'personal' | 'shared' | 'default'
+  author: string
+  filter: Record<string, unknown> | null
+  sort: { fieldId: string; direction: 'asc' | 'desc' }[]
+  columns: { fieldId: string; width?: number; hidden?: boolean }[]
+  groupBy: string | null
+  rowHeight: string
+  blueprintVersion: number
+  isMine: boolean
+  /** Non-fatal problems, carried on the view rather than only reported at save
+   * time — the person who opens a view is rarely the person who saved it. */
+  warnings: { code: string; message: string; fieldId: string | null }[]
+}
+
+export function listViews(workspaceId: string, blueprintId: string): Promise<SavedView[]> {
+  return request(`/workspaces/${workspaceId}/blueprints/${blueprintId}/views`)
+}
+
+/**
+ * Rows through a saved view.
+ *
+ * The demonstration endpoint: two principals calling this with the same view id
+ * get the same query and different results, because the query is the view's and
+ * the Decision is theirs.
+ */
+export function readViewRows(
+  workspaceId: string,
+  blueprintId: string,
+  viewId: string,
+  options: { limit?: number; cursor?: string | null } = {},
+): Promise<RowPage> {
+  const params = new URLSearchParams({ limit: String(options.limit ?? 100) })
+  if (options.cursor) params.set('cursor', options.cursor)
+  return request(
+    `/workspaces/${workspaceId}/blueprints/${blueprintId}/views/${viewId}/rows?${params}`,
+  )
 }
 
 /**

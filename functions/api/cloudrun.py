@@ -46,7 +46,14 @@ def main() -> None:
     # scripts/check-ports.mjs fails the build on a hardcoded port.
     port = int(os.environ.get("PORT") or settings.ports["backend"])
     host = os.environ.get("HOST", "127.0.0.1")
-    reload_enabled = os.environ.get("K_SERVICE") is None
+    # FRAME_NO_RELOAD turns the watcher off WITHOUT pretending to be deployed.
+    # Setting K_SERVICE to get the same effect would also close the dev auth
+    # bypass gate — correct, and exactly wrong for a local demo run, where the
+    # symptom is an unexplained 401 that looks like a broken bypass secret.
+    reload_enabled = (
+        os.environ.get("K_SERVICE") is None
+        and os.environ.get("FRAME_NO_RELOAD", "").lower() not in {"1", "true", "yes"}
+    )
 
     if reload_enabled:
         uvicorn.run(
@@ -63,13 +70,34 @@ def main() -> None:
     else:
         uvicorn.run(
             app,
-            host="0.0.0.0",  # noqa: S104 - container ingress
+            # Loopback unless this really is a container. Binding 0.0.0.0 on a
+            # laptop because reload happened to be off would put the API on
+            # every interface the machine has.
+            host="0.0.0.0" if os.environ.get("K_SERVICE") else host,  # noqa: S104
             port=port,
-            loop="uvloop",  # not installed on Windows; uvicorn falls back cleanly
-            http="httptools",
+            # Asked for only when importable. uvicorn does NOT fall back when a
+            # named loop is missing — it raises ModuleNotFoundError at startup,
+            # which on Windows (where uvloop has no wheel) means this branch
+            # cannot run at all. The comment here previously claimed the
+            # opposite, so the failure looked like a broken environment rather
+            # than a wrong argument.
+            loop=_fast_loop(),
+            http=_fast_http(),
             limit_concurrency=400,
             log_level=settings.log_level.lower(),
         )
+
+
+def _fast_loop() -> str:
+    from importlib.util import find_spec
+
+    return "uvloop" if find_spec("uvloop") is not None else "auto"
+
+
+def _fast_http() -> str:
+    from importlib.util import find_spec
+
+    return "httptools" if find_spec("httptools") is not None else "auto"
 
 
 if __name__ == "__main__":

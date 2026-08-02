@@ -25,6 +25,7 @@ import {
   ApiError,
   pollDeltas,
   queryRows,
+  readViewRows,
   getBlueprint,
   updateRow,
   type Channel,
@@ -53,11 +54,20 @@ export interface RegisterState {
   dismissRejection: () => void
 }
 
+export interface RegisterOptions {
+  /** When set, rows come from the saved view rather than the raw register.
+   * The view carries the query; the reader's Decision still governs the
+   * answer, which is the whole point of the demonstration. */
+  viewId?: string
+  channel?: Channel
+}
+
 export function useRegister(
   workspaceId: string,
   blueprintId: string,
-  channel: Channel = 'grid',
+  options: RegisterOptions = {},
 ): RegisterState {
+  const { viewId, channel = 'grid' } = options
   /**
    * One state object keyed by the register it describes.
    *
@@ -67,7 +77,7 @@ export function useRegister(
    * are on screen with the new register's header, and someone eventually
    * reports it as "the grid showed me another team's data".
    */
-  const key = `${workspaceId}/${blueprintId}`
+  const key = `${workspaceId}/${blueprintId}/${viewId ?? ''}`
   const [loaded, setLoaded] = useState<{
     key: string
     blueprint: Blueprint | null
@@ -104,14 +114,19 @@ export function useRegister(
     [],
   )
 
+  const fetchPage = useCallback(
+    (cursor: string | null = null) =>
+      viewId === undefined
+        ? queryRows(workspaceId, blueprintId, { limit: 200, cursor })
+        : readViewRows(workspaceId, blueprintId, viewId, { limit: 200, cursor }),
+    [workspaceId, blueprintId, viewId],
+  )
+
   useEffect(() => {
     let cancelled = false
     watermark.current = null
 
-    Promise.all([
-      getBlueprint(workspaceId, blueprintId),
-      queryRows(workspaceId, blueprintId, { limit: 200 }),
-    ])
+    Promise.all([getBlueprint(workspaceId, blueprintId), fetchPage()])
       .then(([bp, first]) => {
         if (!cancelled) setLoaded({ key, blueprint: bp, page: first, error: null })
       })
@@ -128,16 +143,15 @@ export function useRegister(
     return () => {
       cancelled = true
     }
-  }, [workspaceId, blueprintId, key])
+  }, [workspaceId, blueprintId, key, fetchPage])
 
   const refresh = useCallback(async () => {
     // A full refetch rather than a targeted one. Refetching only the changed
     // rows would leave the annotation and the withheld count stale, and a
     // withheld count that lags is worse than no count at all — it is a wrong
     // number the reader trusts.
-    const fresh = await queryRows(workspaceId, blueprintId, { limit: 200 })
-    setPage(fresh)
-  }, [workspaceId, blueprintId, setPage])
+    setPage(await fetchPage())
+  }, [fetchPage, setPage])
 
   // The delta loop.
   useEffect(() => {
@@ -172,7 +186,7 @@ export function useRegister(
     const current = pageRef.current
     if (!current?.hasMore || !current.cursor) return
 
-    queryRows(workspaceId, blueprintId, { limit: 200, cursor: current.cursor })
+    fetchPage(current.cursor)
       .then((next) => {
         setPage((prev) =>
           prev === null
@@ -198,7 +212,7 @@ export function useRegister(
           error: e instanceof Error ? e.message : 'Could not load more rows',
         }))
       })
-  }, [workspaceId, blueprintId, setPage])
+  }, [fetchPage, setPage])
 
   const editCell = useCallback(
     (rowId: string, fieldId: string, value: unknown) => {
