@@ -91,7 +91,23 @@ fixture JSON → vision verification → then engines and APIs.
 
 Nothing in Now or Next is GCP-blocked; the spine is entirely local work.
 
-## Changes this update (2026-08-02, third edition — method and model decisions)
+## Changes this update (2026-08-02, fourth edition — the app-first correction)
+
+- **The owner rejected the first spine cut at the checkpoint** — it still
+  landed registers on the grid. Rebuilt the same day: a register now
+  lands on an **Overview app home** (purpose hero, intake CTA, real
+  PM-5-annotated state tiles + distribution bar, needs-attention and
+  waiting-on-you panels, activity pulse) with view tabs Overview ·
+  Table · Automations · Fields; the grid is the Table tab. Saved-view
+  and legacy links still open the grid directly.
+- **Two defects discovered by the overview's real queries**: the seed
+  never stamped the `date0` sort slot (fixed in the seed), and rows
+  missing a sorted field silently vanish under that sort — filed as
+  PRD 02 open question 4 for the next reader iteration.
+- **Checkpoint remains open**: the owner walks the updated
+  `specs/pilots/vision-walkthrough.md` (step 1 is now the app landing).
+
+## Prior update (2026-08-02, third edition — method and model decisions)
 
 - **Frontend-first staging adopted** (owner directive): Now is rebuilt
   around it — spine frontend on fixture JSON, then a **vision

@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test'
  */
 
 const WORKSPACE = '/#/w/ws-demo'
-const REGISTER = '/#/w/ws-demo/b/risk'
+const REGISTER = '/#/w/ws-demo/b/risk/table'
 
 async function as(page: import('@playwright/test').Page, email: string, hash: string) {
   await page.addInitScript((who) => {
@@ -29,12 +29,20 @@ test.describe('the shell', () => {
     await expect(sidebar.getByText('Risk register')).toBeVisible()
 
     await page.getByRole('link', { name: /Risk register/ }).first().click()
-    await page.waitForSelector('canvas', { timeout: 20_000 })
+
+    // A register LANDS as an app — the Overview, not the grid. The grid is
+    // the Table tab, one click away. (Owner decision at the first vision
+    // checkpoint: "user clicks risk register, sees a giant grid" was the
+    // failure this ordering exists to prevent.)
+    await page.waitForSelector('.overview', { timeout: 20_000 })
 
     // The header carries the Blueprint's own name rather than the route's noun.
     // It comes from the register list the shell already loaded, so it must not
-    // wait for the grid.
+    // wait for the page.
     await expect(page.getByRole('heading', { name: 'Risk register' })).toBeVisible()
+
+    await page.getByRole('link', { name: 'Table' }).click()
+    await page.waitForSelector('canvas', { timeout: 20_000 })
   })
 
   test('a stale link still lands somewhere useful', async ({ page }) => {

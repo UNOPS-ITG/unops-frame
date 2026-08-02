@@ -14,7 +14,7 @@ import { expect, test } from '@playwright/test'
  * browser read it — passed every unit test that existed.
  */
 
-const REGISTER = '/#/w/ws-demo/b/risk'
+const REGISTER = '/#/w/ws-demo/b/risk/table'
 const VIEW = '/#/w/ws-demo/b/risk/v/open-risks'
 
 /** The persona is set before the app loads, because the client reads it when

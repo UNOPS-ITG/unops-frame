@@ -15,7 +15,9 @@
 
 export type Route =
   | { kind: 'workspace'; workspaceId: string }
-  | { kind: 'register'; workspaceId: string; blueprintId: string; viewId?: string }
+  /** A register is an APP with views. `section: 'overview'` is the landing —
+   * the grid is the `table` section, one tab away, never the front door. */
+  | { kind: 'register'; workspaceId: string; blueprintId: string; section: 'overview' | 'table'; viewId?: string }
   | { kind: 'fields'; workspaceId: string; blueprintId: string }
   | { kind: 'recipes'; workspaceId: string; blueprintId: string }
   | { kind: 'inbox'; workspaceId: string }
@@ -53,10 +55,14 @@ export function parseRoute(hash: string): Route {
       const blueprintId = segments[3]
       if (segments[4] === 'fields') return { kind: 'fields', workspaceId, blueprintId }
       if (segments[4] === 'recipes') return { kind: 'recipes', workspaceId, blueprintId }
-      if (segments[4] === 'v' && segments[5]) {
-        return { kind: 'register', workspaceId, blueprintId, viewId: segments[5] }
+      if (segments[4] === 'table') {
+        return { kind: 'register', workspaceId, blueprintId, section: 'table' }
       }
-      return { kind: 'register', workspaceId, blueprintId }
+      if (segments[4] === 'v' && segments[5]) {
+        // A saved view is a grid rendering, so it lives in the table section.
+        return { kind: 'register', workspaceId, blueprintId, section: 'table', viewId: segments[5] }
+      }
+      return { kind: 'register', workspaceId, blueprintId, section: 'overview' }
     }
 
     return { kind: 'workspace', workspaceId }
@@ -77,12 +83,15 @@ export function parseRoute(hash: string): Route {
 function parseLegacy(hash: string): Route | null {
   const view = /^#view\/([^/]+)\/([^/]+)\/([^/]+)$/.exec(hash)
   if (view?.[1] && view[2] && view[3]) {
-    return { kind: 'register', workspaceId: view[1], blueprintId: view[2], viewId: view[3] }
+    return { kind: 'register', workspaceId: view[1], blueprintId: view[2], section: 'table', viewId: view[3] }
   }
 
   const register = /^#register\/([^/]+)\/([^/]+)$/.exec(hash)
   if (register?.[1] && register[2]) {
-    return { kind: 'register', workspaceId: register[1], blueprintId: register[2] }
+    // The legacy link pointed at the grid, so it keeps meaning the grid —
+    // "a link that used to work and now lands somewhere else is worse than
+    // one that 404s" applies to sections too.
+    return { kind: 'register', workspaceId: register[1], blueprintId: register[2], section: 'table' }
   }
 
   if (hash === '#tokens') return { kind: 'tokens' }
@@ -93,6 +102,7 @@ function parseLegacy(hash: string): Route | null {
 export const href = {
   workspace: (ws: string) => `#/w/${ws}`,
   register: (ws: string, bp: string) => `#/w/${ws}/b/${bp}`,
+  table: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/table`,
   view: (ws: string, bp: string, view: string) => `#/w/${ws}/b/${bp}/v/${view}`,
   fields: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/fields`,
   recipes: (ws: string, bp: string) => `#/w/${ws}/b/${bp}/recipes`,

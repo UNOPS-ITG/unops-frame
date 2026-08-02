@@ -314,6 +314,13 @@ async function main() {
         `fld_exposure=${exposure}`,
       ],
       num0: exposure,
+      // The date slot the compiler assigns `reviewed`. Its absence was found
+      // by the overview's "longest unreviewed" list coming back EMPTY:
+      // Firestore's orderBy excludes documents missing the ordered field, so
+      // an unstamped slot makes every row vanish under that sort — silently,
+      // because the slot legitimately exists. (The platform-level version of
+      // this sharp edge is PRD 02 open question 4.)
+      date0: new Date(2026, 0, 1 + (i % 200)).toISOString(),
       txt0: `Risk ${i + 1}: ${KINDS[i % KINDS.length]} exposure`,
       txt1: STATUSES[i % STATUSES.length],
       txt2: OWNERS[i % OWNERS.length],

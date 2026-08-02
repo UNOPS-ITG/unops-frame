@@ -18,6 +18,9 @@ import type { ActivityEntry, PendingTask, SpineDef } from './contracts'
 export const RISK_SPINE: SpineDef = {
   blueprintId: 'risk',
 
+  purpose:
+    'Track, mitigate and close operational risks — with intake, review gates and an audit trail built in, not bolted on.',
+
   workflow: {
     stateField: 'status',
     states: [

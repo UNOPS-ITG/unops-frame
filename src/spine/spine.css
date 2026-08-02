@@ -938,3 +938,465 @@
   border-block-start: 1px solid var(--color-border-subtle);
   color: var(--color-text-secondary);
 }
+
+/* --- the register app: view tabs ---------------------------------------- */
+
+.appnav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 0 var(--spacing-4);
+  background: var(--color-surface);
+  border-block-end: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+.appnav__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-block-end: 2px solid transparent;
+  margin-block-end: -1px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.appnav__tab:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+
+.appnav__tab--active {
+  color: var(--color-text);
+  border-block-end-color: var(--color-brand-primary);
+}
+
+.appnav__tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+/* --- the overview: the app's home ----------------------------------------
+ *
+ * ENTRANCE STORYBOARD (one orchestrated moment, CSS-only)
+ *
+ *    0ms   hero rises 8px and fades in
+ *   80ms   tiles follow, staggered 60ms left to right
+ *  320ms   distribution bar draws in
+ *  400ms   panels rise together
+ */
+
+.overview {
+  max-width: var(--layout-lg);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+@keyframes overview-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.overview__hero,
+.overview__stats,
+.overview__panels {
+  animation: overview-rise 0.45s ease-out both;
+}
+
+.overview__stats {
+  animation-delay: 80ms;
+}
+
+.overview__panels {
+  animation-delay: 400ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview__hero,
+  .overview__stats,
+  .overview__panels,
+  .tile,
+  .dist__bar {
+    animation: none !important;
+  }
+}
+
+.overview__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* The purpose IS the hero. The shell header already names the register;
+   repeating the name here would be furniture, and what the user needs to
+   feel is what this app is FOR. */
+.overview__purpose {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-snug);
+  margin: 0;
+  max-width: 26ch;
+  text-wrap: balance;
+}
+
+.overview__acts {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-block-start: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+/* --- stat tiles (a headline number is a tile, not a chart) --------------- */
+
+.overview__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: var(--spacing-3);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  text-decoration: none;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  animation: overview-rise 0.4s ease-out both;
+}
+
+.tile:nth-child(1) {
+  animation-delay: 80ms;
+}
+
+.tile:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.tile:nth-child(3) {
+  animation-delay: 200ms;
+}
+
+.tile:nth-child(4) {
+  animation-delay: 260ms;
+}
+
+.tile:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+/* Values wear text tokens, never a series colour; the state chip beside
+   the number carries identity. */
+.tile__value {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.tile__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--chip-font-size);
+  font-weight: var(--chip-font-weight);
+  color: var(--color-text-secondary);
+}
+
+.tile--attention {
+  border-color: var(--color-governance-border);
+  background: var(--color-governance-bg);
+}
+
+.tile--attention .tile__label {
+  color: var(--color-governance-text);
+}
+
+.tile__glyph {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* --- the distribution bar (one thin mark, 2px surface gaps) -------------- */
+
+.dist {
+  margin: var(--spacing-3) 0 0;
+}
+
+.dist__bar {
+  display: flex;
+  gap: 2px;
+  height: 0.625rem;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  transform-origin: left center;
+  animation: dist-draw 0.5s 320ms ease-out both;
+}
+
+@keyframes dist-draw {
+  from {
+    transform: scaleX(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.dist__seg {
+  min-width: 3px;
+}
+
+/* Fills use the status roles' TEXT step — the deep end of each ramp — so
+   the mark clears the surface in all three themes; identity is doubly
+   carried by the legend labels. */
+.dist__seg--danger {
+  background: var(--color-status-danger-text);
+}
+
+.dist__seg--progress {
+  background: var(--color-status-progress-text);
+}
+
+.dist__seg--active {
+  background: var(--color-status-active-text);
+}
+
+.dist__seg--draft {
+  background: var(--color-status-draft-text);
+}
+
+.dist__seg--warning {
+  background: var(--color-status-warning-text);
+}
+
+/* Closed deliberately recedes — done work should read as quiet — and the
+   muted step is what passes the palette validator's adjacent-pair checks
+   against the progress blue in all three themes (normal-vision ΔE 24/19
+   vs 13.8 for the closed-text step; CVD and 3:1 contrast pass). Identity
+   is never colour-alone here: every segment has a labelled, counted
+   legend key and a 2px surface gap. */
+.dist__seg--closed {
+  background: var(--color-text-muted);
+}
+
+.dist__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-block-start: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  flex-wrap: wrap;
+}
+
+.dist__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.dist__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+
+.dist__withheld {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-inline-start: auto;
+  padding: var(--chip-padding-y) var(--chip-padding-x);
+  border-radius: var(--chip-radius);
+  background: var(--color-governance-bg);
+  border: 1px solid var(--color-governance-border);
+  color: var(--color-governance-text);
+  font-weight: var(--font-weight-semibold);
+  cursor: help;
+}
+
+/* --- overview panels ----------------------------------------------------- */
+
+.overview__panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: var(--spacing-4);
+  align-items: start;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  min-height: 12rem;
+}
+
+.panel__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+}
+
+.panel__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  flex: 1;
+}
+
+.panel__subtitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: var(--spacing-2) 0 var(--spacing-1);
+}
+
+.panel__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+
+.panel__more:hover {
+  text-decoration: underline;
+}
+
+.panel__more--static {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel__empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.panel__group {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-1) var(--spacing-2);
+  margin-inline: calc(-1 * var(--spacing-2));
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: start;
+  cursor: pointer;
+}
+
+.panel__row:hover {
+  background: var(--color-hover);
+}
+
+.panel__row:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -1px;
+}
+
+.panel__row-title {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel__row-value {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-xs);
+  flex-shrink: 0;
+}
+
+.panel__task {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  margin-inline: calc(-1 * var(--spacing-2));
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+.panel__task:hover {
+  background: var(--color-hover);
+}
+
+.panel__task-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel__task-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* The overview's activity feed is a tighter guest of the panel. */
+.panel .feed {
+  padding: 0;
+}

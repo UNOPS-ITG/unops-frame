@@ -207,6 +207,10 @@ export interface ExtensionDef {
  * AU-10/FM-1 land in metadata) would return. */
 export interface SpineDef {
   readonly blueprintId: string
+  /** The app's one-line reason to exist, shown as the Overview hero. Drafts
+   * a Blueprint `description` (BP-1); an app that cannot say what it is for
+   * is a table with navigation. */
+  readonly purpose: string
   readonly workflow: WorkflowDef
   readonly forms: readonly FormDef[]
   readonly recipes: readonly RecipeDef[]

@@ -11,11 +11,17 @@ sidebar's persona switch, bottom-left).
 
 ## The walk
 
-1. **The register is the front door.** Open the risk register. The grid is
-   unchanged — chips in the Status column, 200 rows, "20 withheld" in the
-   governance colour. The spine adds three quiet things: **Report a risk**
-   beside New row, **Automations** in the header, **Inbox (2)** in the
-   sidebar.
+1. **The register lands as an app, not a grid.** Open the risk register.
+   You arrive on the **Overview**: what this app is for (the purpose
+   hero), **Report a risk** as the primary act, real state counts on
+   tiles with the distribution bar ("includes N withheld" in the
+   governance colour — the totals are honest), *Needs attention* (longest
+   unreviewed, largest exposure — real sorted queries), *Waiting on you*,
+   and *While you were away*. The view tabs — Overview · Table ·
+   Automations · Fields — are the app's map. The grid is the **Table**
+   tab: one click away, never the front door. *(This step exists because
+   the first cut landed on the grid and the owner rejected it — the
+   correction the checkpoint is for.)*
 
 2. **Intake with line items** (FM-1..3, FM-7). Click *Report a risk*. Note
    what makes it intake rather than a contact form: sections with intent,

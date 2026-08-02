@@ -17,6 +17,7 @@ import { GridDemo } from '@/grid/GridDemo'
 import { CorporatePage } from '@/corporate/CorporatePage'
 import { RegisterPage } from '@/registers/RegisterPage'
 import { InboxPage } from '@/spine/InboxPage'
+import { OverviewPage } from '@/spine/OverviewPage'
 import { RecipesPage } from '@/spine/RecipesPage'
 import { spineFor } from '@/fixtures/spine/store'
 import { AppShell } from './AppShell'
@@ -47,14 +48,66 @@ export function App() {
 
   return (
     <AppShell route={route} workspaceId={workspaceId} title={titleOf(route)} actions={actionsFor(route)}>
+      <RegisterTabs route={route} />
       <Page route={route} />
     </AppShell>
   )
 }
 
+/**
+ * The register's view navigation — what makes it an APP with views rather
+ * than a grid with escape hatches. Present on every register-family page
+ * so the user never loses the map; absent on registers without a spine,
+ * which have only the table today and honestly say so by having no tabs.
+ */
+function RegisterTabs({ route }: { route: Route }) {
+  if (route.kind !== 'register' && route.kind !== 'recipes' && route.kind !== 'fields') return null
+  const { workspaceId, blueprintId } = route
+  if (spineFor(blueprintId) === null) return null
+
+  const active =
+    route.kind === 'recipes'
+      ? 'recipes'
+      : route.kind === 'fields'
+        ? 'fields'
+        : route.section === 'table'
+          ? 'table'
+          : 'overview'
+
+  const tab = (key: string, to: string, label: string, icon: React.ReactNode) => (
+    <a key={key} className={`appnav__tab${active === key ? ' appnav__tab--active' : ''}`} href={to}>
+      {icon}
+      {label}
+    </a>
+  )
+
+  return (
+    <nav className="appnav" aria-label="Register views">
+      {tab('overview', href.register(workspaceId, blueprintId), 'Overview', <Icon.Home />)}
+      {tab('table', href.table(workspaceId, blueprintId), 'Table', <Icon.Table />)}
+      {tab('recipes', href.recipes(workspaceId, blueprintId), 'Automations', <Icon.Bolt />)}
+      {tab('fields', href.fields(workspaceId, blueprintId), 'Fields', <Icon.Fields />)}
+    </nav>
+  )
+}
+
 function Page({ route }: { route: Route }) {
   switch (route.kind) {
-    case 'register':
+    case 'register': {
+      // The overview is the landing — the grid is the table section. A
+      // register without a spine has no overview yet and lands on its
+      // table, which is simply the truth of what it has.
+      const spine = spineFor(route.blueprintId)
+      if (route.section === 'overview' && spine !== null) {
+        return (
+          <OverviewPage
+            key={`${route.workspaceId}/${route.blueprintId}/overview`}
+            workspaceId={route.workspaceId}
+            blueprintId={route.blueprintId}
+            spine={spine}
+          />
+        )
+      }
       return (
         <RegisterPage
           // Keyed on the register AND the view. Without the key, switching
@@ -67,6 +120,7 @@ function Page({ route }: { route: Route }) {
           viewId={route.viewId}
         />
       )
+    }
     case 'fields':
       return <FieldsPage workspaceId={route.workspaceId} blueprintId={route.blueprintId} />
     case 'recipes':
@@ -112,24 +166,17 @@ function titleOf(route: Route): string {
 }
 
 function actionsFor(route: Route) {
-  if (route.kind === 'register') {
+  // Register-family navigation lives in the app tabs (RegisterTabs); the
+  // header keeps links only for registers that have no spine and so no tabs.
+  if (route.kind === 'register' && spineFor(route.blueprintId) === null) {
     return (
-      <>
-        <a
-          className="btn btn--secondary btn--sm"
-          href={href.recipes(route.workspaceId, route.blueprintId)}
-        >
-          <Icon.Bolt />
-          Automations
-        </a>
-        <a className="btn btn--secondary btn--sm" href={href.fields(route.workspaceId, route.blueprintId)}>
-          <Icon.Fields />
-          Fields
-        </a>
-      </>
+      <a className="btn btn--secondary btn--sm" href={href.fields(route.workspaceId, route.blueprintId)}>
+        <Icon.Fields />
+        Fields
+      </a>
     )
   }
-  if (route.kind === 'fields' || route.kind === 'recipes') {
+  if ((route.kind === 'fields' || route.kind === 'recipes') && spineFor(route.blueprintId) === null) {
     return (
       <a
         className="btn btn--secondary btn--sm"
