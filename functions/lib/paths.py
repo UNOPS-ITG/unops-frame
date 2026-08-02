@@ -26,6 +26,8 @@ ROWS = "rows"
 ITEMS = "items"
 CHILDREN = "children"
 CATALOG = "catalog"
+AUDIT = "audit"
+OUTBOX = "outbox"
 
 
 def workspace(db: Any, workspace_id: str) -> Any:
@@ -73,6 +75,28 @@ def child(
     db: Any, workspace_id: str, blueprint_id: str, row_id: str, child_id: str
 ) -> Any:
     return children(db, workspace_id, blueprint_id, row_id).document(child_id)
+
+
+def audit_entry(db: Any, workspace_id: str, entry_id: str) -> Any:
+    """One audit stream per workspace, with a class discriminator on the document.
+
+    One stream rather than four stores (PM-7): one write path, one query surface.
+    Retention differs per class and is applied by a sweep reading that field, not
+    by routing writes to different collections — a row's change history and the
+    governance entry that changed its rules have to be readable together.
+    """
+    return workspace(db, workspace_id).collection(AUDIT).document(entry_id)
+
+
+def outbox_envelope(db: Any, envelope_id: str) -> Any:
+    """Database-level, not workspace-level.
+
+    The relay tails one collection ordered by write time. Per-workspace outboxes
+    would mean the relay either polls every workspace or maintains a discovery
+    list, and either way the ordering guarantee it publishes with is per-shard
+    rather than global.
+    """
+    return db.collection(OUTBOX).document(envelope_id)
 
 
 def child_collection_group(db: Any) -> Any:

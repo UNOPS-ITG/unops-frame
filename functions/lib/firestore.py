@@ -83,7 +83,7 @@ def reset_async_db() -> None:
         _async_db = None
 
 
-def run_in_transaction[T](body: Callable[[Any], T]) -> T:
+def run_in_transaction[T](body: Callable[[Any], T], *, db: Any | None = None) -> T:
     """Run ``body`` inside a Firestore transaction — or directly, under a fake.
 
     The isinstance check is a test seam. With the real client the body is
@@ -97,7 +97,17 @@ def run_in_transaction[T](body: Callable[[Any], T]) -> T:
     from google.cloud.firestore import transactional
     from google.cloud.firestore_v1.transaction import Transaction as _RealTransaction
 
-    txn = get_db().transaction()
+    client = db if db is not None else get_db()
+    txn = client.transaction()
     if isinstance(txn, _RealTransaction):
         return transactional(body)(txn)  # type: ignore[no-any-return]
-    return body(txn)
+
+    # The seam mirrors the real decorator's semantics rather than approximating
+    # them: writes land only if the body returns. A seam that applied writes as
+    # they were issued would let a test prove a rollback that production does
+    # not perform, which is worse than having no seam.
+    result = body(txn)
+    commit = getattr(txn, "commit", None)
+    if callable(commit):
+        commit()
+    return result
