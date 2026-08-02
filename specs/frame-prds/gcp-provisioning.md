@@ -213,13 +213,31 @@ every read and write goes through the API and the permission library.
 
 ---
 
-## 10 · IAP / oauth2-proxy for the deployed API
+## 10 · Sign-in: IAP deployed, oauth2-proxy locally
 
-**What.** Identity-Aware Proxy in front of the API, or oauth2-proxy with an equivalent assertion, and
-the audience value it issues.
+**What.** Two things sharing one mechanism:
+
+- **Deployed** — Identity-Aware Proxy in front of the API, and the audience value it issues.
+- **Locally** — oauth2-proxy on port 6302, issuing an equivalent assertion, which needs a **second**
+  Google OAuth client (a *Desktop* or *Web* client for sign-in, distinct from the BigQuery connector
+  client in item 3) with `http://localhost:6302/oauth2/callback` as a redirect URI.
 
 **Config.** `IAP_AUDIENCE` — there is no default, and the service **refuses to start** without one,
-because an empty audience disables assertion validation entirely.
+because an empty audience would disable assertion validation entirely.
+
+**Current state — oauth2-proxy is NOT set up.** Port 6302 is reserved in `config/ports.json` and
+`scripts/start-oauth-proxy.mjs` exists, but the binary is not downloaded, `oauth2-proxy.cfg.yaml` and
+`oauth2-proxy.cfg.template` do not exist, and nothing in `package.json` or `docker-compose.yml`
+starts it.
+
+**Nothing is blocked by that locally**, and that is by design rather than by luck: the dev auth
+bypass exists precisely so local work does not depend on an interactive Google consent screen. It is
+gated by three independent conditions (a configured secret, `ENVIRONMENT=local`, and `K_SERVICE`
+absent) and impersonates only allow-listed addresses, so it cannot follow the code to a deployment.
+
+**What it would buy.** Exercising the real assertion path locally — `IapAssertionMiddleware`, the
+hosted-domain check, JWKS rotation — rather than trusting that it works because its unit tests pass.
+Worth doing before the first deployment; not worth doing to make local development function.
 
 **Already built and waiting.** `IapAssertionMiddleware`, which fixes six defects found in the
 estate's equivalents (fail-closed audience, clock leeway, never echoing the token, `email_verified`
@@ -257,7 +275,7 @@ back to a service identity when a user's consent is missing.
 | 7 | Sweep service account | deployed sweep |
 | 8 | Cloud Scheduler | an always-current catalogue |
 | 9 | Firestore `frame` (CMEK + PITR at creation) | deployed persistence |
-| 10 | IAP audience | the deployed API starting at all |
+| 10 | IAP audience (deployed) / oauth2-proxy client (local) | the deployed API starting at all; locally, exercising the real sign-in path |
 
 Items 5 and 6 are the pair that matter most for the product's shape: until both exist, corporate data
 works but every lookup is an `entitled` live query, and the performance premise the design rests on
