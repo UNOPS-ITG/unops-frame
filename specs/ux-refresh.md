@@ -126,3 +126,22 @@ result before committing.
 No purple gradients, no glassmorphism, no decoration on the grid surface, no second
 component library, no animation outside the three storyboarded moments, and nothing
 that moves colour or width decisions out of `brand-tokens.css`.
+
+
+---
+
+## Status (2026-08-02, same day)
+
+Implemented and pushed: **U1–U5, U7, U8, U10, U12, U13, U14** in full;
+**U6** as a ghost row that opens the guided dialog (required fields and
+row-conditioned grants make a silent empty-row create refusable for invisible
+reasons); **U9** the row-created moment (import count-up and filter pulse still
+open); **U15** the dev-persona quarantine (theme switch still three words);
+**U16** pluralisation + fixture label; **U19** the font-loading fitness check.
+
+Still open: U11 (register header stat strip and toolbar intent-grouping),
+U9's remaining two moments, U15's theme menu, U17 (needs a row delete/archive
+endpoint before e2e rows can clean up after themselves), U18 (focus-visible
+audit over the new components), and the inline select editor the chips now make
+more visible (editing a status cell still opens a free-text overlay whose value
+is the label rather than the option key — pre-existing, now more noticeable).
