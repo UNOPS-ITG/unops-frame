@@ -388,6 +388,81 @@ def _envelopes_since(
     return envelopes[:limit]
 
 
+@router.get(
+    "/workspaces/{workspace_id}/blueprints/{blueprint_id}/rows/{row_id}/children/{collection_id}"
+)
+def list_children(
+    workspace_id: str,
+    blueprint_id: str,
+    row_id: str,
+    collection_id: str,
+    user: CurrentUser,
+    db: Db,
+) -> RowPageOut:
+    """A parent's children, with the parent ceiling applied last (PM-3).
+
+    The parent is fetched and evaluated FIRST, and a reader who cannot see it
+    gets a 404 for the parent rather than an empty child list — an empty list
+    for a parent that exists and a parent that does not are different facts, and
+    only one of them is safe to disclose.
+    """
+    from lib.paths import children as children_path
+    from lib.paths import row as row_path
+    from lib.rows.children import ChildContext, read_children
+    from lib.rows.reader import PagePlan, RowPage
+
+    compiled = _compiled(db, workspace_id, blueprint_id)
+    principal = resolve_principal(db, workspace_id, user)
+
+    collection = next(
+        (c for c in compiled.blueprint.children if c.id == collection_id), None
+    )
+    if collection is None:
+        raise NotFoundError(f"No child collection {collection_id!r}")
+
+    snapshot = row_path(db, workspace_id, blueprint_id, row_id).get()
+    if not snapshot.exists:
+        raise NotFoundError(f"No row {row_id!r}")
+    parent_row = snapshot.to_dict() or {}
+    parent_row.setdefault("id", row_id)
+
+    parent_decision = evaluate_row(
+        compile_rules(compiled), principal, parent_row, compiled=compiled
+    )
+    if not parent_decision.visible:
+        raise NotFoundError(f"No row {row_id!r}")
+
+    child_compiled = _compiled(db, workspace_id, collection.blueprint)
+
+    rows = [
+        {**(doc.to_dict() or {}), "id": doc.id}
+        for doc in children_path(db, workspace_id, blueprint_id, row_id).stream()
+    ]
+    rows = [r for r in rows if r.get("collectionId") == collection_id]
+
+    trimmed, annotation, stubs = read_children(
+        compile_rules(child_compiled),
+        child_compiled,
+        principal,
+        rows,
+        ChildContext(
+            collection=collection, parent_row=parent_row, parent_decision=parent_decision
+        ),
+    )
+
+    return _page_out(
+        RowPage(
+            rows=trimmed,
+            annotation=annotation,
+            cursor=None,
+            has_more=False,
+            column_stubs=stubs,
+            plan=PagePlan(scanned=len(rows), rounds=1),
+        ),
+        child_compiled,
+    )
+
+
 @router.get("/workspaces/{workspace_id}/blueprints/{blueprint_id}/rows/{row_id}")
 def get_row(
     workspace_id: str,
