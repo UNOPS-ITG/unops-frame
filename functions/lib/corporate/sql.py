@@ -107,12 +107,24 @@ class Query:
         assert_no_aggregation(self.sql)
 
 
+PROJECT_ID = re.compile(r"^[a-z][a-z0-9\-]{4,28}[a-z0-9]$")
+"""Google's own project-id rule. Looser than `IDENTIFIER` because a project id
+may contain hyphens, and stricter in every other respect — it is still the value
+that names which organisation's data a query reads."""
+
+
+def project_id(value: str) -> str:
+    if not PROJECT_ID.match(value or ""):
+        raise UnsafeIdentifier(
+            f"project {value!r} is not a plain GCP project id. This value names "
+            "which organisation's data a query reads; it is not interpolated "
+            "unvalidated."
+        )
+    return value
+
+
 def _table(project: str, dataset: str, table: str) -> str:
-    ident(dataset, "dataset")
-    ident(table, "table")
-    if not re.match(r"^[A-Za-z0-9_.\-]{1,64}$", project or ""):
-        raise UnsafeIdentifier(f"project {project!r} is not a plain project id")
-    return f"`{project}.{dataset}.{table}`"
+    return f"`{project_id(project)}.{ident(dataset, 'dataset')}.{ident(table, 'table')}`"
 
 
 # --- the four templates ---------------------------------------------------

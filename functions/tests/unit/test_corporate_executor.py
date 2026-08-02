@@ -73,7 +73,7 @@ def test_the_ceiling_is_sent_as_a_string() -> None:
 
 
 def test_a_non_positive_ceiling_is_refused() -> None:
-    config = JobConfig(project="p", max_bytes_billed=0)
+    config = JobConfig(project="frame-local", max_bytes_billed=0)
     with pytest.raises(QueryRefused, match="unbounded"):
         prepare(KEYS_QUERY, {"keys": ["A1"]}, config, MAYA)
 
@@ -98,7 +98,7 @@ def test_every_job_is_attributed_to_a_workspace() -> None:
 def test_a_label_is_sanitised_to_what_gcp_accepts() -> None:
     """A rejected label fails the whole job, so a workspace named with a capital
     letter would make corporate data stop working for that workspace only."""
-    config = JobConfig(project="p", workspace_id="WS Demo/Prod", surface="type ahead")
+    config = JobConfig(project="frame-local", workspace_id="WS Demo/Prod", surface="type ahead")
     labels = config.labels()
     assert labels["workspace"] == "ws-demo-prod"
     assert all(len(v) <= 63 for v in labels.values())
@@ -119,7 +119,7 @@ def test_an_array_parameter_is_bound_with_its_declared_element_type() -> None:
     a STRING array is rejected at runtime, and only the catalogue knows the
     column's type."""
     query = fact_measures_at_grain(
-        "p", "Facts_Api", "Asset_Transactions", ["Asset", "Period"], ["Amount"],
+        "frame-local", "Facts_Api", "Asset_Transactions", ["Asset", "Period"], ["Amount"],
         grain_types={"Asset": "STRING", "Period": "INT64"},
     )
     bound = {p["name"]: p for p in bind(query, {"Asset": ["A1"], "Period": [202601]})}
@@ -130,7 +130,7 @@ def test_an_array_parameter_is_bound_with_its_declared_element_type() -> None:
 
 
 def test_a_scalar_parameter_keeps_its_declared_type() -> None:
-    query = search_labels("p", "Dimensions_Api", "Asset", "Asset", "Asset_Description")
+    query = search_labels("frame-local", "Dimensions_Api", "Asset", "Asset", "Asset_Description")
     bound = bind(query, {"prefix": "vehi"})
     assert bound[0]["parameterType"]["type"] == "STRING"
     assert bound[0]["parameterValue"]["value"] == "vehi"

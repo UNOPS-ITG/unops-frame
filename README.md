@@ -96,6 +96,8 @@ found only here.
 | **Master-detail** | PM-3 composition, parent ceiling applied last |
 | **Import / export** | callers of the single write path; withheld counts travel with the file |
 | **The grid** | `FrameGrid` over Glide Data Grid, brand-tokened, withheld cells legible |
+| **Corporate data** | the discovery sweep, the disclosure classifier, four SQL templates, the stored reference |
 
-Not yet built: forms, automations, document generation, the AI layer, corporate data (PRD 14),
-reporting, notifications, search.
+Not yet built: forms, automations, document generation, the AI layer, reporting, notifications,
+search. Corporate data has its catalogue, classifier and query layer but not yet the scheduled sweep
+job or the OAuth connector, so nothing reads the warehouse at runtime.

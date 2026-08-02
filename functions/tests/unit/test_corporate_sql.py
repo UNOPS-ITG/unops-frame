@@ -158,3 +158,72 @@ def test_a_limit_is_always_present() -> None:
         fact_measures_at_grain(P, "Facts_Api", "Asset_Transactions", ["Asset"], ["Amount"]),
     ]:
         assert "LIMIT" in query.sql
+
+
+# --- the project id is validated too --------------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["p", "", "UPPER-CASE", "starts-with-9" [::-1], "has_underscore", "x" * 40, "trailing-"],
+)
+def test_a_project_id_that_is_not_one_is_refused(bad: str) -> None:
+    """It names which organisation's data a query reads. Looser than an
+    identifier because a project id may contain hyphens, and stricter in every
+    other respect."""
+    from lib.corporate.sql import project_id
+
+    with pytest.raises(UnsafeIdentifier):
+        project_id(bad)
+
+
+def test_a_real_project_id_is_accepted() -> None:
+    from lib.corporate.sql import project_id
+
+    assert project_id("unops-datahub") == "unops-datahub"
+    assert project_id("unops-ai-playbook-dev") == "unops-ai-playbook-dev"
+
+
+# --- the catalogue queries ------------------------------------------------
+
+
+def test_the_catalogue_queries_read_the_published_api_layer() -> None:
+    """Not the base datasets. `ai-bob` points at the base layer while every
+    platform integration YAML points at `_Api`, and `_Api` is where the
+    descriptions and metadata coverage actually live."""
+    from lib.corporate.catalogue_queries import dictionary_query
+
+    sql = dictionary_query("unops-datahub", "Metadata_Api").sql
+    assert "Dimensions_Api" in sql
+    assert "Facts_Api" in sql
+    assert "`unops-datahub.Metadata_Api.Datahub_Data_Dictionary`" in sql
+
+
+def test_the_relationship_query_is_not_filtered_to_dimensions() -> None:
+    """Every consumer found in the estate filters to Dimensions_Api, which is
+    why 2,780 fact-to-dimension edges are maintained and unused."""
+    from lib.corporate.catalogue_queries import relations_query
+
+    sql = relations_query("unops-datahub", "Metadata_Api").sql
+    assert "Dataset_Name IN" not in sql
+    assert "Enabled_Flag = 'YES'" in sql
+
+
+def test_the_catalogue_queries_pass_the_aggregation_fence() -> None:
+    """They read a list of column names. They are exempt from the four-template
+    rule, not from the fence."""
+    from lib.corporate.catalogue_queries import (
+        dictionary_query,
+        relations_query,
+        tables_query,
+    )
+
+    for build in (dictionary_query, tables_query, relations_query):
+        assert_no_aggregation(build("unops-datahub", "Metadata_Api").sql)
+
+
+def test_a_bad_metadata_dataset_is_refused() -> None:
+    from lib.corporate.catalogue_queries import dictionary_query
+
+    with pytest.raises(UnsafeIdentifier):
+        dictionary_query("unops-datahub", "Metadata_Api`; DROP")
