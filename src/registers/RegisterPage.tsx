@@ -56,7 +56,7 @@ function describe(value: unknown): string {
 /** Which corporate dimension a field points at. Declared on the field by the
  * Blueprint author; without it there is nothing to search. */
 function dimensionOf(field: BlueprintField): string | null {
-  return field.storage === 'corporate_ref' ? field.variant : null
+  return field.storage === 'corporate_ref' ? field.dimension : null
 }
 
 export function RegisterPage({ workspaceId, blueprintId, viewId }: RegisterPageProps) {

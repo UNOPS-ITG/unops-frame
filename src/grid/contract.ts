@@ -135,6 +135,11 @@ export interface BlueprintField {
   readonly options: readonly { key: string; label: string }[] | null
   readonly default: unknown
   readonly helpText: string | null
+  /** Which corporate dimension a `corporate_reference` field points at
+   * (PRD 14). Null on every other field type — and null on a corporate field
+   * whose author has not chosen one yet, which the register reports rather than
+   * opening an empty picker. */
+  readonly dimension: string | null
 }
 
 export interface Blueprint {

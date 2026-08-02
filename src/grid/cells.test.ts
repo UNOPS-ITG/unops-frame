@@ -21,6 +21,7 @@ const field = (over: Partial<BlueprintField> = {}): BlueprintField => ({
   options: null,
   default: null,
   helpText: null,
+  dimension: null,
   ...over,
 })
 
@@ -167,5 +168,69 @@ describe('dates', () => {
   it('shows an unparseable value as stored rather than as Invalid Date', () => {
     // The raw string is at least a clue about what went wrong upstream.
     expect(formatValue('not-a-date', field({ storage: 'timestamp' }))).toBe('not-a-date')
+  })
+})
+
+describe('the corporate cell (PRD 14)', () => {
+  const agency = field({
+    id: 'agency',
+    label: 'Agency',
+    storage: 'corporate_ref',
+    dimension: 'Demo_Api.Agency',
+  })
+
+  const corporate = (value: Record<string, unknown>) => cell({ agency: value }, agency)
+
+  it('shows the label, never the key', () => {
+    // The key is a warehouse identifier the user never chose. Showing it is how
+    // a governed register comes to look like a database console.
+    const c = corporate({ key: 'AG001', label: 'Agency One', state: 'snapshot' })
+    expect('displayData' in c && c.displayData).toBe('Agency One')
+  })
+
+  it('falls back to the key when there is no label', () => {
+    // An entitled dimension caches no label. Blanking the cell would make the
+    // row look empty rather than unresolved.
+    const c = corporate({ key: 'AG001', state: 'snapshot' })
+    expect('displayData' in c && c.displayData).toBe('AG001')
+  })
+
+  it('marks a stale snapshot', () => {
+    // A silently old label is worse than a visibly old one: the first time
+    // anyone notices otherwise is when two reports disagree.
+    const fresh = corporate({ key: 'AG001', label: 'Agency One', stale: false })
+    const old = corporate({ key: 'AG001', label: 'Agency One', stale: true })
+    expect('displayData' in fresh && fresh.displayData).toBe('Agency One')
+    expect('displayData' in old && old.displayData).not.toBe('Agency One')
+  })
+
+  it('marks an orphaned reference and keeps its key visible', () => {
+    // Hiding it would make the row look empty rather than orphaned, and those
+    // call for different actions.
+    const c = corporate({ key: 'AG001', label: 'AG001', state: 'orphaned' })
+    expect('displayData' in c && c.displayData).toContain('AG001')
+  })
+
+  it('never opens a text overlay', () => {
+    // Picking a corporate value means searching a catalogue of hundreds of
+    // thousands of rows in this reader's own entitlements. A text box would
+    // store a key nobody validated.
+    const c = corporate({ key: 'AG001', label: 'Agency One' })
+    expect(c.allowOverlay).toBe(false)
+  })
+
+  it('copies the key rather than the label', () => {
+    // The label is a snapshot; the key is the identity. A paste that carried
+    // the label would produce a reference to nothing.
+    const c = corporate({ key: 'AG001', label: 'Agency One' })
+    expect('copyData' in c && c.copyData).toBe('AG001')
+  })
+
+  it('is still a restricted stub when the field itself is withheld', () => {
+    // Field-level permission decided first, and the corporate renderer does not
+    // get to reverse it.
+    const c = cell({ agency: { restricted: true } }, agency)
+    expect(c.allowOverlay).toBe(false)
+    expect('displayData' in c && c.displayData).not.toContain('AG')
   })
 })

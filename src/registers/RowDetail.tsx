@@ -156,5 +156,6 @@ function fieldOf(blueprint: Blueprint, fieldId: string): Blueprint['fields'][num
     options: null,
     default: null,
     helpText: null,
+    dimension: null,
   }
 }

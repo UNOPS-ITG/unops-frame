@@ -196,7 +196,7 @@ def read_view_rows(
     different results, because the query is the view's and the Decision is
     theirs. Nothing here consults the view about access.
     """
-    from api.routers.rows import _page_out
+    from api.routers.rows import _page_out, resolve_corporate
 
     compiled = _compiled(db, workspace_id, blueprint_id)
     view = get_view(db, workspace_id, blueprint_id, view_id)
@@ -223,6 +223,7 @@ def read_view_rows(
     except InvalidCursor as exc:
         raise RequestValidationError(f"Invalid cursor: {exc}") from exc
 
+    resolve_corporate(page.rows, compiled, db, workspace_id, user.subject)
     return _page_out(page, compiled)
 
 

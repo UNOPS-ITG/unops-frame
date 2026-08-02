@@ -60,6 +60,16 @@ class FieldOut(ResponseSchema):
     default: Any = None
     help_text: str | None = None
 
+    dimension: str | None = None
+    """Which corporate dimension a `corporate_reference` field points at
+    (PRD 14).
+
+    On the wire because the picker cannot exist without it: a field declared as
+    corporate data with no dimension has nothing to search, and the client would
+    otherwise have to guess from the field id — which is exactly the kind of
+    inference that works until someone names a field sensibly.
+    """
+
 
 class BlueprintOut(ResponseSchema):
     id: str
@@ -123,6 +133,7 @@ def _out(compiled: CompiledBlueprint) -> BlueprintOut:
                 ),
                 default=cf.definition.default,
                 help_text=cf.definition.help_text,
+                dimension=cf.definition.dimension,
             )
             for fid, cf in compiled.fields.items()
         ],

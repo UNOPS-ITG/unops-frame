@@ -82,6 +82,22 @@ const blueprint = {
     // Band 2 is at or above the restricted threshold, so this renders as a
     // typed stub for anyone without a grant that reaches it.
     { id: 'rationale', label: 'Owner rationale', type: 'text', variant: 'long', sensitivity: 2 },
+    // PRD 14. Present so the corporate cell renderer and the picker are
+    // exercisable locally: without a corporate field seeded, the only way to
+    // see either is to hand-write a Blueprint, which means neither gets looked
+    // at until a real one exists.
+    //
+    // The dimension is a LOCAL demo relation seeded below, not a real one. It
+    // has to be, and the reason is worth writing down: every relation in the
+    // real swept catalogue classifies as `entitled`, because the probe cannot
+    // confirm an all-staff audience without the floor principal that is still
+    // waiting on GCP provisioning. An entitled dimension resolves live or
+    // renders a restricted stub — correct, and it means the snapshot and
+    // staleness treatments would never appear in development.
+    {
+      id: 'agency', label: 'Agency', type: 'corporate_reference',
+      dimension: 'Demo_Api.Agency',
+    },
   ],
   // Expressed with ALLOWS that union, never a deny.
   //
@@ -112,11 +128,95 @@ const OWNERS = ['A. Haddad', 'M. Osei', 'L. Fernández', 'R. Nakamura', 'T. Berg
 const STATUSES = ['open', 'mitigating', 'closed']
 const KINDS = ['delivery', 'supplier', 'compliance', 'currency', 'safety']
 
+/**
+ * One `open` corporate dimension, for development only.
+ *
+ * Everything in the real swept catalogue classifies as `entitled`, and
+ * correctly so: the disclosure probe refuses to call anything open until a
+ * floor principal confirms the all-staff audience, and that principal is
+ * waiting on GCP provisioning. An entitled dimension resolves live or renders a
+ * PM-5 stub, which is right — and means the snapshot, staleness and orphan
+ * treatments never appear locally.
+ *
+ * Written only if the workspace has no catalogue root yet, so a real sweep is
+ * never overwritten. `Demo_Api` is not a dataset in `unops-datahub`; because an
+ * open dimension is never queried, that costs nothing.
+ */
+async function seedCorporateDemo() {
+  const root = `workspaces/${WORKSPACE}/corporateCatalogue/current`
+  const swept = await fetch(`${BASE}/${root}`, { headers: ADMIN }).catch(() => null)
+
+  // The demo relation is written either way; the root only if there is no real
+  // sweep to overwrite. A real sweep's summary counts are its own, and
+  // replacing them with "1 dimension" would make the catalogue page report
+  // something false about the warehouse.
+  if (!swept?.ok) {
+    await put(root, {
+      source: {
+        id: 'demo',
+        project: 'frame-local-demo',
+        excludedDatasets: [],
+        location: 'EU',
+        metadataDataset: 'Metadata_Api',
+        maxBytesBilled: 2000000000,
+        requirePartitionFilter: true,
+        enabled: true,
+      },
+      sweptAt: new Date().toISOString(),
+      dimensionCount: 1,
+      factCount: 0,
+      relationCount: 1,
+      openDimensionCount: 1,
+      quarantined: [],
+      restored: [],
+      errors: [],
+    })
+  }
+
+  // snake_case, matching what the sweep writes. The Dimension model forbids
+  // extra keys, so a camelCase copy validates as nothing and the relation reads
+  // back as missing — which renders every reference to it as orphaned, a
+  // symptom that points at the data rather than at the seed.
+  await put(`${root}/relations/Demo_Api__Agency`, {
+    kind: 'dimension',
+    id: 'Demo_Api.Agency',
+    dataset: 'Demo_Api',
+    table: 'Agency',
+    label: 'Agency (development fixture)',
+    description: 'Seeded locally so the corporate cell treatments are visible.',
+    business_domain: 'Demo',
+    business_key: 'Agency_Code',
+    effective_date_column: null,
+    attributes: [
+      {
+        name: 'Agency_Code', label: 'Agency code', description: null, data_type: 'STRING',
+        role: 'dimension', policy_tag: null, is_business_key: true,
+      },
+      {
+        name: 'Agency_Name', label: 'Agency name', description: null, data_type: 'STRING',
+        role: 'dimension', policy_tag: null, is_business_key: false,
+      },
+    ],
+    disclosure: 'open',
+    label_visibility: 'open',
+    status: 'active',
+    classification_reasons: [
+      'Seeded for local development; not the result of a disclosure probe.',
+    ],
+  })
+  console.log(
+    swept?.ok
+      ? '  corporate: added the open demo dimension beside the swept catalogue'
+      : '  corporate: seeded one open demo dimension',
+  )
+}
+
 async function main() {
   console.log(`seeding ${PROJECT}/${DATABASE} at ${HOST}`);
 
   await put(`workspaces/${WORKSPACE}`, { name: 'Demo workspace' })
   await put(`workspaces/${WORKSPACE}/blueprints/${BLUEPRINT}`, blueprint)
+  await seedCorporateDemo()
 
   // Two personas, because the milestone's whole claim is that they see
   // different things. A seed with one identity makes the governed grid look
@@ -161,6 +261,24 @@ async function main() {
         exposure,
         reviewed: new Date(2026, 0, 1 + (i % 200)).toISOString(),
         rationale: `Reviewed with the owner in Q${(i % 4) + 1}.`,
+        // Three of the four corporate states, so the renderer's treatments are
+        // visible without waiting for a warehouse to go wrong: a fresh
+        // snapshot, one old enough to be marked stale, and one whose relation
+        // was withdrawn upstream. The fourth — a live resolve — needs a
+        // connection and cannot be seeded.
+        ...(i % 3 === 0
+          ? {
+              agency: {
+                key: `AG${String((i % 40) + 1).padStart(3, '0')}`,
+                label: `Agency ${(i % 40) + 1}`,
+                snapshotAt:
+                  i % 9 === 0
+                    ? new Date(2024, 0, 1).toISOString() // older than 90 days
+                    : new Date().toISOString(),
+                catalogueVersion: 1,
+              },
+            }
+          : {}),
       },
       fieldVersions: { title: 1, status: 1, owner: 1, exposure: 1 },
       // The generic index projection the reader queries against. Written here

@@ -12,6 +12,7 @@ reads or writes. Nothing in this file decides anything.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request, Response
@@ -56,6 +57,8 @@ from lib.rows.reader import (
 )
 from lib.rows.source import FirestoreRowSource
 from lib.rows.writer import WriteConflict, WriteContext, WriteRejected, write_row
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["rows"])
 
@@ -130,6 +133,7 @@ def query_rows(
     except InvalidCursor as exc:
         raise RequestValidationError(f"Invalid cursor: {exc}") from exc
 
+    resolve_corporate(page.rows, compiled, db, workspace_id, user.subject)
     return _page_out(page, compiled)
 
 
@@ -170,6 +174,7 @@ def list_rows(
     except InvalidCursor as exc:
         raise RequestValidationError(f"Invalid cursor: {exc}") from exc
 
+    resolve_corporate(page.rows, compiled, db, workspace_id, user.subject)
     return _page_out(page, compiled)
 
 
@@ -458,6 +463,7 @@ def list_children(
         ),
     )
 
+    resolve_corporate(trimmed, child_compiled, db, workspace_id, user.subject)
     return _page_out(
         RowPage(
             rows=trimmed,
@@ -500,6 +506,7 @@ def get_row(
         # answer is the right one.
         raise NotFoundError(f"No row {row_id!r}")
 
+    resolve_corporate([trimmed], compiled, db, workspace_id, user.subject)
     return _row_out(trimmed)
 
 
@@ -667,6 +674,79 @@ def _row_out(row: dict[str, Any]) -> RowOut:
         updated_at=row.get("updatedAt"),
         updated_by=row.get("updatedBy"),
     )
+
+
+def resolve_corporate(
+    rows: list[dict[str, Any]],
+    compiled: CompiledBlueprint,
+    db: Any,
+    workspace_id: str,
+    subject: str,
+) -> None:
+    """Render every corporate reference on the page (PRD 14).
+
+    Called once per page, never per row: one query per referenced *dimension*,
+    batched over every key on the page. At BigQuery's ~300-400ms best case,
+    per-row resolution is not slow, it is unusable — and there is no
+    warehouse-side fix, because results are not cached for tables under
+    row-level security and BI Engine does not accelerate them at all.
+
+    Costs nothing on a Blueprint with no corporate fields, which is almost all
+    of them: the plan is empty and the function returns before touching the
+    store.
+    """
+    from lib.corporate.resolve import (
+        apply_resolution,
+        load_dimensions,
+        plan_resolution,
+        resolve_labels,
+    )
+
+    plan = plan_resolution(rows, compiled)
+    if plan.empty:
+        return
+
+    dimensions = load_dimensions(db, workspace_id, set(plan.by_dimension))
+
+    resolved: dict[str, dict[str, str]] = {}
+    try:
+        source = _corporate_source(db, workspace_id)
+        if source is not None:
+            from api.core.config import get_settings
+            from api.routers.corporate_data import _tokens
+
+            settings = get_settings()
+            resolved = resolve_labels(
+                plan,
+                dimensions,
+                source,
+                _tokens(db).credential(subject),
+                billing_project=settings.corporate_billing_project or source.project,
+                workspace_id=workspace_id,
+            )
+    except Exception:  # noqa: BLE001 - a register must survive a warehouse outage
+        # Stubs on one column rather than a 500 on the register. Whatever went
+        # wrong — no consent, a denied table, BigQuery down — the honest render
+        # is "this reader could not be shown a label", and the reader can still
+        # work with every other column.
+        logger.exception("Resolving corporate labels failed for %s", compiled.id)
+
+    apply_resolution(rows, plan, dimensions, resolved)
+
+
+def _corporate_source(db: Any, workspace_id: str) -> Any:
+    """The source the catalogue was swept from, or None if there is no catalogue."""
+    from lib.corporate.model import Source
+    from lib.corporate.sweep_job import CATALOGUE_COLLECTION, CURRENT
+    from lib.paths import workspace
+
+    snapshot = (
+        workspace(db, workspace_id).collection(CATALOGUE_COLLECTION).document(CURRENT).get()
+    )
+    if not snapshot.exists:
+        return None
+    raw = (snapshot.to_dict() or {}).get("source")
+    return Source.model_validate(raw) if raw else None
 
 
 def _page_out(page: RowPage, compiled: CompiledBlueprint) -> RowPageOut:

@@ -69,6 +69,7 @@ function f(
     options: null,
     default: null,
     helpText: null,
+    dimension: null,
     ...over,
   }
 }
