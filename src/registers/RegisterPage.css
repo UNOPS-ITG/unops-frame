@@ -150,8 +150,9 @@
 
 .state__title {
   font-family: var(--font-family-display);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
   color: var(--color-text);
   margin: 0;
 }
@@ -297,8 +298,9 @@
 
 .detail__title {
   font-family: var(--font-family-display);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-snug);
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;

@@ -39,9 +39,14 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-family-body);
+  line-height: var(--line-height-normal);
   background: var(--color-bg);
   color: var(--color-text);
+  /* Bob's reset parity: both smoothing hints plus text-size-adjust, so the
+     same family renders with the same weight-feel in both products. */
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
 }
 
 #root {

@@ -116,14 +116,17 @@ describe('brand tokens', () => {
   })
 
   it('every typeface the tokens name is actually loaded', () => {
-    // The failure this guards happened: the tokens named Inter for months,
-    // nothing loaded it, and the entire product silently rendered in the OS
-    // default. A missing font throws nothing and fails no test — the text
-    // just quietly isn't the brand — so a machine has to compare the two
-    // sides, exactly like the class-name check.
+    // The failure is real in the estate today: ai-bob's tokens name Inter and
+    // nothing there loads it, so its "Inter" renders in the OS default. A
+    // missing font throws nothing and fails no test — the text just quietly
+    // isn't the brand — so a machine compares the two sides, exactly like the
+    // class-name check. Frame loads through the @fontsource imports in
+    // src/index.css; this asserts every family the tokens declare has a
+    // matching import, so removing one is a red build rather than a quiet
+    // fall-through.
     const tokens = walk('src', ['.css']).find((f) => f.path === 'src/styles/brand-tokens.css')
-    const boot = walk('.', ['index.html']).find((f) => f.path === 'index.html')
-    expect(tokens && boot, 'token file or index.html not found').toBeTruthy()
+    const entry = walk('src', ['.css']).find((f) => f.path === 'src/index.css')
+    expect(tokens && entry, 'token file or src/index.css not found').toBeTruthy()
 
     const families = new Set<string>()
     for (const name of ['display', 'body', 'mono'] as const) {
@@ -134,18 +137,15 @@ describe('brand tokens', () => {
     }
     expect(families.size, 'no font families declared in tokens').toBeGreaterThan(0)
 
-    const missing = [...families].filter(
-      (family) => !boot!.text.includes(`font-family: '${family}'`),
-    )
+    const missing = [...families].filter((family) => {
+      const slug = family.toLowerCase().replace(/\s+/g, '-')
+      return !new RegExp(`@import '@fontsource[^']*${slug}`).test(entry!.text)
+    })
     expect(
       missing,
-      'These families are named by the tokens but have no @font-face in\n' +
-        'index.html, so they silently fall through to the OS default:',
+      'These families are named by the tokens but have no @fontsource import\n' +
+        'in src/index.css, so they silently fall through to the OS default:',
     ).toEqual([])
-
-    // And the two families the first paint depends on are preloaded — a late
-    // swap re-measures every canvas-drawn grid column.
-    expect(boot!.text).toContain('rel="preload"')
   })
 
   it('the theme contract is documented where it is easy to get wrong', () => {

@@ -117,12 +117,13 @@
      2. TYPOGRAPHY
      -------------------------------------------------------------------------- */
 
-  /* Inter — the estate's declared family (ai-bob's tokens name it too), now
-     actually LOADED: self-hosted variable 100–900 in index.html, latin subsets
-     only, with the Noto fallbacks carrying Arabic and CJK. For months the
-     whole estate named Inter and nothing loaded it, so every product silently
-     rendered in the OS default; the fitness suite now asserts the declared
-     families are preloaded, so a font cannot vanish without a red build. */
+  /* Inter — the estate's declared family, loaded via the @fontsource imports
+     at the top of src/index.css (variable cut, self-hosted through npm; field
+     offices cannot depend on a CDN). The Noto fallbacks carry Arabic and CJK
+     codepoints Inter lacks. The fitness suite asserts every family named here
+     is actually imported, because a missing font fails nothing visibly — the
+     text just quietly isn't the brand (ai-bob has exactly that bug today: its
+     tokens name Inter and nothing loads it). */
   --font-family-display: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
   --font-family-body: 'Inter', 'Noto Sans Arabic', 'Noto Sans SC', 'Noto Sans', system-ui, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace;

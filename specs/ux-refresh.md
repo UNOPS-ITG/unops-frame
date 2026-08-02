@@ -161,3 +161,20 @@ chips, hatch, the grid signals, the launcher, the grouped catalogue.
 
 U17 is now real: the seed clears rows it did not write, so e2e litter no
 longer accumulates at the top of the demo register.
+
+### Type-scale alignment with Bob (correction + follow-through)
+
+A correction to U1's claim, for the record: **Frame was loading Inter all
+along** — through the `@fontsource` imports in `src/index.css` — so "no fonts
+loaded" was wrong for Frame (it remains true of ai-bob, whose tokens name
+Inter and load nothing). The self-hosted `public/fonts` + `index.html`
+pipeline added during the refresh duplicated the fontsource one and has been
+removed; the fitness check now asserts the token-declared families against
+the fontsource imports instead.
+
+The real gap behind "understated and uninviting" was **scale**, measured
+against Bob's components and closed one step at a time: hero headlines
+4xl→5xl bold (Bob's greeting), section titles lg semibold, card titles base
+bold on Bob's exact card recipe (padding-5, radius-xl, raised surface,
+resting shadow-sm → hover shadow-md), dialog/drawer titles lg, empty-state
+titles xl, buttons on radius-lg, and Bob's reset parity for font smoothing.

@@ -9,7 +9,9 @@
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--radius-md);
+  /* radius-lg, matching Bob's action buttons — the softer corner is a real
+     part of why its chrome reads inviting. */
+  border-radius: var(--radius-lg);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   font-family: inherit;

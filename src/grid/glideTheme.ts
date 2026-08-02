@@ -55,10 +55,10 @@ export interface GlideTheme {
 function fontFamily(): string {
   if (typeof document === 'undefined') return "'Inter', system-ui, sans-serif"
   // --font-family-body, not a Tailwind alias: this read used --font-sans for a
-  // while, which does not exist, so the fallback applied — and the fallback
-  // named Inter, which was never loaded, so the canvas silently measured and
-  // painted in the OS default. Two absent fonts deep before anything was
-  // wrong on screen enough to notice.
+  // while, which does not exist, so the canvas silently ran on the fallback
+  // string instead of the token — harmless only because the fallback happened
+  // to name the same family. A rename in the token file would have split the
+  // canvas from the DOM with no error anywhere.
   const declared = getComputedStyle(document.documentElement)
     .getPropertyValue('--font-family-body')
     .trim()
