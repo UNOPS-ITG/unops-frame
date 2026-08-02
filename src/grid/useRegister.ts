@@ -60,6 +60,11 @@ export interface RegisterOptions {
    * answer, which is the whole point of the demonstration. */
   viewId?: string
   channel?: Channel
+  /** Bumped by callers that changed the register out of band — an import, a
+   * bulk delete. After one of those the row set, the annotation and the
+   * withheld count all move together, so refetching everything is both simpler
+   * and more honest than patching three things that must agree. */
+  generation?: number
 }
 
 export function useRegister(
@@ -67,7 +72,7 @@ export function useRegister(
   blueprintId: string,
   options: RegisterOptions = {},
 ): RegisterState {
-  const { viewId, channel = 'grid' } = options
+  const { viewId, channel = 'grid', generation = 0 } = options
   /**
    * One state object keyed by the register it describes.
    *
@@ -77,7 +82,7 @@ export function useRegister(
    * are on screen with the new register's header, and someone eventually
    * reports it as "the grid showed me another team's data".
    */
-  const key = `${workspaceId}/${blueprintId}/${viewId ?? ''}`
+  const key = `${workspaceId}/${blueprintId}/${viewId ?? ''}/${generation}`
   const [loaded, setLoaded] = useState<{
     key: string
     blueprint: Blueprint | null

@@ -204,11 +204,15 @@ def import_rows(
     ):
         raise AuthorizationError("You do not have permission to import into this register")
 
-    # Field-level writability still comes from an evaluated Decision — the gate
-    # above answers "may you import at all", not "which fields may you set".
-    decision = evaluate_row(rule_set, principal, {"values": {}}, compiled=compiled)
-
-    plan = plan_import(body.csv, compiled, decision)
+    # Per row, not once. A create grant may carry a row condition, and that
+    # condition is about the row being created — judging it against an empty row
+    # makes it never match, so a principal who may add rows one at a time can
+    # import none of them.
+    plan = plan_import(
+        body.csv,
+        compiled,
+        lambda values: evaluate_row(rule_set, principal, {"values": values}, compiled=compiled),
+    )
 
     ctx = WriteContext(
         workspace_id=workspace_id,
@@ -541,7 +545,7 @@ def _write(
 ) -> RowWriteOut:
     compiled = _compiled(db, workspace_id, blueprint_id)
     principal = resolve_principal(db, workspace_id, user)
-    decision = _write_decision(compiled, principal, db, workspace_id, row_id)
+    decision = _write_decision(compiled, principal, db, workspace_id, row_id, body.values)
 
     ctx = WriteContext(
         workspace_id=workspace_id,
@@ -583,19 +587,31 @@ def _write_decision(
     db: Any,
     workspace_id: str,
     row_id: str | None,
+    submitted_values: dict[str, Any] | None = None,
 ) -> Any:
     """The Decision the write is judged against.
 
-    On update this is evaluated against the row as it currently stands, not
-    against the submitted values. Evaluating against what the client sent would
-    let a writer move a row into a scope they have rights over and edit it in
-    the same request — the classic confused-deputy write.
+    The two cases differ on purpose.
+
+    On UPDATE it is evaluated against the row as it currently stands, never
+    against what the client sent — otherwise a writer could move a row into a
+    scope they have rights over and edit it in the same request, which is the
+    classic confused-deputy write.
+
+    On CREATE it is evaluated against the values being PROPOSED, because there
+    is no stored row and a create grant's row condition is a statement about the
+    row being created: "you may create risks below five million" means exactly
+    that. Evaluating against an empty row instead makes such a condition never
+    match, so a principal who may add rows one at a time can add none — which
+    reads as a broken permission rather than a strict one.
     """
     from lib.paths import row as row_path
 
     rule_set = compile_rules(compiled)
     if row_id is None:
-        return evaluate_row(rule_set, principal, {"values": {}}, compiled=compiled)
+        return evaluate_row(
+            rule_set, principal, {"values": submitted_values or {}}, compiled=compiled
+        )
 
     snapshot = row_path(db, workspace_id, compiled.id, row_id).get()
     if not snapshot.exists:

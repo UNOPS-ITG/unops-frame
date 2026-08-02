@@ -16,7 +16,11 @@ import { expect, test } from '@playwright/test'
  * protects nothing.
  */
 
-const APP = 'http://localhost:6300/'
+// Relative, so it resolves against `baseURL` in playwright.config.ts, which
+// reads config/ports.json and honours FRAME_PORT_*. A literal here works
+// until someone shifts their block, and then fails with seven red tests and
+// no clue that the port is the reason.
+const APP = '/'
 
 test.describe('the grid renders', () => {
   test('paints a non-blank canvas in brand colours', async ({ page }) => {

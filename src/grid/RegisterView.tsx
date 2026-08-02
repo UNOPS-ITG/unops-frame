@@ -7,7 +7,9 @@
  * refused — each stated rather than left for the user to infer.
  */
 
+import { useCallback, useState } from 'react'
 import { FrameGrid } from './FrameGrid'
+import { RegisterToolbar } from './RegisterToolbar'
 import { useRegister } from './useRegister'
 
 export interface RegisterViewProps {
@@ -35,9 +37,26 @@ function describe(value: unknown): string {
 }
 
 export function RegisterView({ workspaceId, blueprintId, viewId }: RegisterViewProps) {
+  // Bumped after an import so the whole page refetches: the row set, the
+  // annotation and the withheld count all move together, and rebuilding from
+  // one source is both simpler and more honest than patching three things that
+  // have to agree.
+  const [generation, setGeneration] = useState(0)
   const { blueprint, page, loading, error, rejection, loadMore, editCell, dismissRejection } =
-    useRegister(workspaceId, blueprintId, viewId === undefined ? {} : { viewId })
+    useRegister(workspaceId, blueprintId, {
+      generation,
+      ...(viewId === undefined ? {} : { viewId }),
+    })
   const persona = globalThis.sessionStorage?.getItem('frame-dev-persona')
+
+  const selectView = useCallback((next: string | undefined) => {
+    globalThis.location.hash =
+      next === undefined
+        ? `#register/${workspaceId}/${blueprintId}`
+        : `#view/${workspaceId}/${blueprintId}/${next}`
+  }, [workspaceId, blueprintId])
+
+  const onImported = useCallback(() => setGeneration((g) => g + 1), [])
 
   if (error !== null) {
     return (
@@ -88,6 +107,14 @@ export function RegisterView({ workspaceId, blueprintId, viewId }: RegisterViewP
           </span>
         )}
       </header>
+
+      <RegisterToolbar
+        workspaceId={workspaceId}
+        blueprintId={blueprintId}
+        activeViewId={viewId}
+        onSelectView={selectView}
+        onImported={onImported}
+      />
 
       {rejection !== null && (
         <div

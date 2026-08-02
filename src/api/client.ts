@@ -219,6 +219,73 @@ export function createRow(
   })
 }
 
+export interface ImportResult {
+  dryRun: boolean
+  parsedRows: number
+  validRows: number
+  writtenRows: number
+  unmappedColumns: string[]
+  errors: { line: number; fieldId: string | null; message: string; code: string }[]
+  truncatedErrors: number
+}
+
+/**
+ * Import a CSV.
+ *
+ * Defaults to a dry run and the UI is built around that: an import that reports
+ * its failures only after writing half the file is one the user cannot safely
+ * retry, because they cannot tell which rows landed.
+ */
+export function importCsv(
+  workspaceId: string,
+  blueprintId: string,
+  csv: string,
+  dryRun = true,
+): Promise<ImportResult> {
+  return request(`/workspaces/${workspaceId}/blueprints/${blueprintId}/rows/import`, {
+    method: 'POST',
+    body: JSON.stringify({ csv, dryRun }),
+  })
+}
+
+export interface ExportResult {
+  csv: string
+  visible: number
+  withheld: number
+  certainty: string
+}
+
+export async function exportCsv(
+  workspaceId: string,
+  blueprintId: string,
+  filter: Record<string, unknown> | null = null,
+): Promise<ExportResult> {
+  const response = await fetch(
+    `${BASE}/workspaces/${workspaceId}/blueprints/${blueprintId}/rows/export`,
+    {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', ...devHeaders() },
+      body: JSON.stringify({ filter, sort: [], limit: 100, cursor: null }),
+    },
+  )
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => ({}))
+    throw new ApiError(
+      response.status,
+      typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {},
+    )
+  }
+  return {
+    csv: await response.text(),
+    // Read from headers as well as the file trailer, so the UI can state the
+    // count without parsing CSV it is about to hand straight to the user.
+    visible: Number(response.headers.get('X-Frame-Rows-Visible') ?? 0),
+    withheld: Number(response.headers.get('X-Frame-Rows-Withheld') ?? 0),
+    certainty: response.headers.get('X-Frame-Count-Certainty') ?? 'exact',
+  }
+}
+
 export interface DeltaPage {
   deltas: Delta[]
   since: string | null

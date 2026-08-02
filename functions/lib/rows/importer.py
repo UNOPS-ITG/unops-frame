@@ -31,6 +31,7 @@ from __future__ import annotations
 import csv
 import io
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import UTC, datetime
@@ -190,7 +191,7 @@ def _coerce(cell: str, compiled: CompiledBlueprint, field_id: str) -> Any:
 def plan_import(
     text: str,
     compiled: CompiledBlueprint,
-    decision: Decision,
+    decision_for: Callable[[dict[str, Any]], Decision] | Decision,
 ) -> ImportPlan:
     """Validate every row before writing any of them.
 
@@ -198,24 +199,38 @@ def plan_import(
     show the user exactly what will happen and what will not. An import that
     reports its failures only after writing half the file is one the user cannot
     safely retry.
+
+    ``decision_for`` is a callable taking the PROPOSED row, not a single
+    Decision, because a create grant may carry a row condition — "you may create
+    risks below five million" — and that condition is about the row being
+    created. Evaluating it against an empty row instead makes the condition
+    never match, which presents as a principal who may add rows one at a time
+    being unable to import a single one. A bare Decision is still accepted for
+    callers with no row-conditioned grants.
     """
     plan = ImportPlan()
 
-    if not decision.may(Action.IMPORT) and not decision.may(Action.CREATE):
-        plan.errors.append(
-            RowError(1, None, "You do not have permission to import into this register", "forbidden")
-        )
-        return plan
+    resolve = decision_for if callable(decision_for) else (lambda _values: decision_for)
 
+    # Gate on a row that at least has the shape of the file's first row, so a
+    # row-conditioned grant is judged on something it can match.
     rows, unmapped, errors = parse_csv(text, compiled)
     plan.unmapped_columns = unmapped
     plan.errors.extend(errors)
     plan.total_lines = len(rows)
 
+    gate = resolve(rows[0] if rows else {})
+    if not gate.may(Action.IMPORT) and not gate.may(Action.CREATE):
+        plan.errors.append(
+            RowError(1, None, "You do not have permission to import into this register", "forbidden")
+        )
+        plan.rows = []
+        return plan
+
     for offset, values in enumerate(rows):
         line = offset + 2  # header is line 1
         outcome = validate_write(
-            compiled, submitted=values, stored=None, decision=decision, is_create=True
+            compiled, submitted=values, stored=None, decision=resolve(values), is_create=True
         )
         if outcome.rejected_fields:
             plan.errors.extend(

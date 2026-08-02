@@ -19,13 +19,25 @@ import { ports } from '../config/ports.mjs'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const problems = []
 
+/* The FILE defaults, deliberately unaffected by FRAME_PORT_* overrides.
+ *
+ * Checks that compare a tracked file against `ports` are asking "do these two
+ * tracked files agree", and the answer must not change because a developer is
+ * running a second checkout on a shifted block. Comparing against the resolved
+ * ports told them a committed file had "drifted" and to go and edit it — a
+ * gate that is wrong under a supported workflow is one people learn to ignore.
+ */
+const fileDefaults = JSON.parse(readFileSync(join(root, 'config/ports.json'), 'utf8'))
+
 /* --- 1. emulator-config.json agrees with config/ports.json ---------------- */
 const emu = JSON.parse(readFileSync(join(root, 'scripts/emulator-config.json'), 'utf8'))
+// File defaults, not resolved ports: emulator-config.json is a tracked file and
+// this check asks whether two tracked files agree.
 const expected = {
-  auth: ports.emulators.auth,
-  firestore: ports.emulators.firestore,
-  functions: ports.emulators.functions,
-  storage: ports.emulators.storage,
+  auth: fileDefaults.emulators.auth,
+  firestore: fileDefaults.emulators.firestore,
+  functions: fileDefaults.emulators.functions,
+  storage: fileDefaults.emulators.storage,
 }
 for (const [name, want] of Object.entries(expected)) {
   const got = emu.emulators?.[name]?.port
@@ -86,6 +98,41 @@ for (const rel of SCANNED) {
   }
 }
 
+/* --- 2b. No FRAME port literals in tooling either -------------------------- */
+// A file that hardcodes Frame's OWN port is not stealing anyone's traffic, so
+// rule 2 lets it through — and it works perfectly until someone shifts their
+// block with FRAME_PORT_OFFSET, at which point it fails against a server that
+// is not there. That happened to the perf suite: seven red tests and nothing
+// pointing at the port as the cause.
+const OWN_PORTS = new Set([
+  fileDefaults.frontend,
+  fileDefaults.backend,
+  fileDefaults.oauthProxy,
+  ...Object.values(fileDefaults.emulators),
+  fileDefaults.postgres,
+])
+
+const TOOLING = ['tools/perf/grid.spec.ts', 'tools/e2e/register.spec.ts', 'tools/demo/split-screen.mjs']
+
+for (const rel of TOOLING) {
+  let text
+  try {
+    text = readFileSync(join(root, rel), 'utf8')
+  } catch {
+    continue
+  }
+  const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*(\/\/|#).*$/gm, '')
+  for (const port of OWN_PORTS) {
+    if (new RegExp(`\\b${port}\\b`).test(code)) {
+      problems.push(
+        `${rel}: hard-codes Frame's own port ${port}. Use the baseURL from ` +
+          'playwright.config.ts, or import config/ports.mjs — a literal breaks ' +
+          'under FRAME_PORT_OFFSET and the failure does not name the port.',
+      )
+    }
+  }
+}
+
 /* --- 3. firebase.docker.json agrees with firebase.json, on 0.0.0.0 -------- */
 // Inside a container 127.0.0.1 means "reachable only from this container", so the
 // published ports would answer nothing while the stack looked started.
@@ -122,15 +169,18 @@ try {
 try {
   const compose = readFileSync(join(root, 'docker-compose.yml'), 'utf8')
   const expected = [
-    ['FRAME_PORT_POSTGRES', ports.postgres],
-    ['FRAME_PORT_FIRESTORE', ports.emulators.firestore],
-    ['FRAME_PORT_AUTH', ports.emulators.auth],
-    ['FRAME_PORT_FUNCTIONS', ports.emulators.functions],
-    ['FRAME_PORT_STORAGE', ports.emulators.storage],
-    ['FRAME_PORT_PUBSUB', ports.emulators.pubsub],
-    ['FRAME_PORT_EMULATOR_UI', ports.emulators.ui],
-    ['FRAME_PORT_EMULATOR_HUB', ports.emulators.hub],
-    ['FRAME_PORT_BACKEND', ports.backend],
+    // File defaults: the compose file's inline `:-NNNN` IS the default, so
+    // comparing it against an overridden port would report drift in a tracked
+    // file whenever a developer shifts their block.
+    ['FRAME_PORT_POSTGRES', fileDefaults.postgres],
+    ['FRAME_PORT_FIRESTORE', fileDefaults.emulators.firestore],
+    ['FRAME_PORT_AUTH', fileDefaults.emulators.auth],
+    ['FRAME_PORT_FUNCTIONS', fileDefaults.emulators.functions],
+    ['FRAME_PORT_STORAGE', fileDefaults.emulators.storage],
+    ['FRAME_PORT_PUBSUB', fileDefaults.emulators.pubsub],
+    ['FRAME_PORT_EMULATOR_UI', fileDefaults.emulators.ui],
+    ['FRAME_PORT_EMULATOR_HUB', fileDefaults.emulators.hub],
+    ['FRAME_PORT_BACKEND', fileDefaults.backend],
   ]
   for (const [envName, port] of expected) {
     // Compose cannot import config/ports.mjs, so the default is written inline and

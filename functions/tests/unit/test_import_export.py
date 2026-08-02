@@ -13,6 +13,7 @@ from typing import Any
 
 import pytest
 
+from lib.blueprint.compile import compile_blueprint
 from lib.permissions.model import Action, Annotation, Decision
 from lib.rows.export import WITHHELD_CELL, to_csv
 from lib.rows.importer import (
@@ -129,6 +130,43 @@ def test_import_needs_the_import_or_create_verb() -> None:
     read_only = Decision(allowed=frozenset({Action.READ}), readable_fields=ALL)
     plan = plan_import("title\nx\n", COMPILED, read_only)
     assert [e.code for e in plan.errors] == ["forbidden"]
+
+
+def test_a_row_conditioned_grant_can_still_import() -> None:
+    """The bug a browser found and no unit test had.
+
+    A grant conditioned on a field value — "you may create risks below a
+    million" — is a statement about the row being created. Judged against an
+    empty row the condition never matches, so a principal who may add rows one
+    at a time could import none of them, and it presented as a broken permission
+    rather than a strict one.
+    """
+    from lib.blueprint.model import Blueprint
+    from lib.permissions.evaluate import compile_rules, evaluate_row
+    from lib.permissions.model import Principal
+    from tests.unit.test_write_path import BP
+
+    doc = BP.model_dump()
+    doc["permissions"] = [
+        {"principals": ["*"], "actions": ["read", "create", "import"], "effect": "allow",
+         "row_condition": {"type": "binary", "op": "lt",
+                           "left": {"type": "field", "id": "amount"},
+                           "right": {"type": "literal", "value": 1_000}}},
+    ]
+    compiled = compile_blueprint(Blueprint.model_validate(doc))
+    rules = compile_rules(compiled)
+    maya = Principal(subject="u1", email="maya@unops.org")
+
+    def decision_for(values: dict[str, Any]) -> Any:
+        return evaluate_row(rules, maya, {"values": values}, compiled=compiled)
+
+    plan = plan_import("title,amount\nsmall,100\nbig,5000\n", compiled, decision_for)
+
+    # The row that satisfies the condition imports; the one that does not is
+    # refused — which is the rule working, not the gate being broken.
+    assert len(plan.rows) == 1
+    assert plan.rows[0]["title"] == "small"
+    assert any(e.code == "forbidden_field" for e in plan.errors)
 
 
 def test_defaults_apply_on_import_exactly_as_on_create() -> None:
